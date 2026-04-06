@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Puzzle, Plug, Users, CheckCircle2, XCircle } from "lucide-react";
+import { Puzzle, Plug, CheckCircle2, XCircle } from "lucide-react";
 
 export default function TenantDashboardPage() {
   const { tenantId } = useAuth();
