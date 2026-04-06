@@ -14,6 +14,199 @@ export type Database = {
   }
   public: {
     Tables: {
+      case_items: {
+        Row: {
+          attachments_meta: Json | null
+          body_html: string | null
+          body_preview: string | null
+          body_text: string | null
+          case_id: string
+          cc_emails: string[] | null
+          created_at: string
+          created_by: string | null
+          from_email: string | null
+          from_name: string | null
+          id: string
+          internet_message_id: string | null
+          received_at: string | null
+          sent_at: string | null
+          subject: string | null
+          tenant_id: string
+          to_emails: string[] | null
+          type: string
+        }
+        Insert: {
+          attachments_meta?: Json | null
+          body_html?: string | null
+          body_preview?: string | null
+          body_text?: string | null
+          case_id: string
+          cc_emails?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          from_email?: string | null
+          from_name?: string | null
+          id?: string
+          internet_message_id?: string | null
+          received_at?: string | null
+          sent_at?: string | null
+          subject?: string | null
+          tenant_id: string
+          to_emails?: string[] | null
+          type?: string
+        }
+        Update: {
+          attachments_meta?: Json | null
+          body_html?: string | null
+          body_preview?: string | null
+          body_text?: string | null
+          case_id?: string
+          cc_emails?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          from_email?: string | null
+          from_name?: string | null
+          id?: string
+          internet_message_id?: string | null
+          received_at?: string | null
+          sent_at?: string | null
+          subject?: string | null
+          tenant_id?: string
+          to_emails?: string[] | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_items_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cases: {
+        Row: {
+          assigned_at: string | null
+          assigned_to_user_id: string | null
+          case_number: string
+          created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          due_at: string | null
+          id: string
+          last_activity_at: string | null
+          mailbox_address: string | null
+          next_action: Database["public"]["Enums"]["case_next_action"]
+          owner_user_id: string | null
+          priority: Database["public"]["Enums"]["case_priority"]
+          status: Database["public"]["Enums"]["case_status"]
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_to_user_id?: string | null
+          case_number: string
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          due_at?: string | null
+          id?: string
+          last_activity_at?: string | null
+          mailbox_address?: string | null
+          next_action?: Database["public"]["Enums"]["case_next_action"]
+          owner_user_id?: string | null
+          priority?: Database["public"]["Enums"]["case_priority"]
+          status?: Database["public"]["Enums"]["case_status"]
+          tenant_id: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_to_user_id?: string | null
+          case_number?: string
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          due_at?: string | null
+          id?: string
+          last_activity_at?: string | null
+          mailbox_address?: string | null
+          next_action?: Database["public"]["Enums"]["case_next_action"]
+          owner_user_id?: string | null
+          priority?: Database["public"]["Enums"]["case_priority"]
+          status?: Database["public"]["Enums"]["case_status"]
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cases_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mailboxes: {
+        Row: {
+          address: string
+          created_at: string
+          display_name: string
+          id: string
+          is_enabled: boolean
+          provider: Database["public"]["Enums"]["integration_provider"]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          display_name: string
+          id?: string
+          is_enabled?: boolean
+          provider?: Database["public"]["Enums"]["integration_provider"]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_enabled?: boolean
+          provider?: Database["public"]["Enums"]["integration_provider"]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mailboxes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -210,6 +403,24 @@ export type Database = {
     }
     Enums: {
       app_role: "master_admin" | "tenant_admin" | "user"
+      case_next_action:
+        | "call"
+        | "quote"
+        | "clarify"
+        | "order"
+        | "schedule"
+        | "document"
+        | "none"
+      case_priority: "low" | "normal" | "high" | "critical"
+      case_status:
+        | "new"
+        | "triage"
+        | "in_progress"
+        | "waiting_customer"
+        | "waiting_internal"
+        | "closed"
+        | "archived"
+        | "converted"
       credential_status: "connected" | "disconnected" | "error" | "pending"
       integration_provider: "microsoft" | "google"
       module_name: "postkontoret" | "ressursplanlegger"
@@ -342,6 +553,26 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["master_admin", "tenant_admin", "user"],
+      case_next_action: [
+        "call",
+        "quote",
+        "clarify",
+        "order",
+        "schedule",
+        "document",
+        "none",
+      ],
+      case_priority: ["low", "normal", "high", "critical"],
+      case_status: [
+        "new",
+        "triage",
+        "in_progress",
+        "waiting_customer",
+        "waiting_internal",
+        "closed",
+        "archived",
+        "converted",
+      ],
       credential_status: ["connected", "disconnected", "error", "pending"],
       integration_provider: ["microsoft", "google"],
       module_name: ["postkontoret", "ressursplanlegger"],
