@@ -166,6 +166,98 @@ export type Database = {
           },
         ]
       }
+      event_technicians: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          technician_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          technician_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          technician_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_technicians_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_technicians_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          address: string | null
+          created_at: string
+          created_by: string | null
+          customer: string | null
+          deleted_at: string | null
+          description: string | null
+          end_time: string
+          id: string
+          start_time: string
+          status: Database["public"]["Enums"]["event_status"]
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          end_time: string
+          id?: string
+          start_time: string
+          status?: Database["public"]["Enums"]["event_status"]
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          end_time?: string
+          id?: string
+          start_time?: string
+          status?: Database["public"]["Enums"]["event_status"]
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mailboxes: {
         Row: {
           address: string
@@ -241,6 +333,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      technicians: {
+        Row: {
+          color: string | null
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean
+          name: string
+          phone: string | null
+          tenant_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          phone?: string | null
+          tenant_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          phone?: string | null
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technicians_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -437,6 +576,7 @@ export type Database = {
         | "archived"
         | "converted"
       credential_status: "connected" | "disconnected" | "error" | "pending"
+      event_status: "planned" | "in_progress" | "completed" | "cancelled"
       integration_provider: "microsoft" | "google"
       module_name: "postkontoret" | "ressursplanlegger"
       tenant_status: "active" | "inactive" | "trial" | "suspended"
@@ -589,6 +729,7 @@ export const Constants = {
         "converted",
       ],
       credential_status: ["connected", "disconnected", "error", "pending"],
+      event_status: ["planned", "in_progress", "completed", "cancelled"],
       integration_provider: ["microsoft", "google"],
       module_name: ["postkontoret", "ressursplanlegger"],
       tenant_status: ["active", "inactive", "trial", "suspended"],
