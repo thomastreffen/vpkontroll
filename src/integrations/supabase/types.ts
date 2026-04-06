@@ -250,42 +250,57 @@ export type Database = {
       }
       tenant_credentials: {
         Row: {
+          access_token_encrypted: string | null
           client_id: string | null
           client_secret_encrypted: string | null
           created_at: string
           id: string
+          last_sync_at: string | null
           last_verified_at: string | null
           provider: Database["public"]["Enums"]["integration_provider"]
+          refresh_token_encrypted: string | null
           scopes: Json | null
           status: Database["public"]["Enums"]["credential_status"]
+          sync_cursor: string | null
           tenant_domain: string | null
           tenant_id: string
+          token_expires_at: string | null
           updated_at: string
         }
         Insert: {
+          access_token_encrypted?: string | null
           client_id?: string | null
           client_secret_encrypted?: string | null
           created_at?: string
           id?: string
+          last_sync_at?: string | null
           last_verified_at?: string | null
           provider: Database["public"]["Enums"]["integration_provider"]
+          refresh_token_encrypted?: string | null
           scopes?: Json | null
           status?: Database["public"]["Enums"]["credential_status"]
+          sync_cursor?: string | null
           tenant_domain?: string | null
           tenant_id: string
+          token_expires_at?: string | null
           updated_at?: string
         }
         Update: {
+          access_token_encrypted?: string | null
           client_id?: string | null
           client_secret_encrypted?: string | null
           created_at?: string
           id?: string
+          last_sync_at?: string | null
           last_verified_at?: string | null
           provider?: Database["public"]["Enums"]["integration_provider"]
+          refresh_token_encrypted?: string | null
           scopes?: Json | null
           status?: Database["public"]["Enums"]["credential_status"]
+          sync_cursor?: string | null
           tenant_domain?: string | null
           tenant_id?: string
+          token_expires_at?: string | null
           updated_at?: string
         }
         Relationships: [

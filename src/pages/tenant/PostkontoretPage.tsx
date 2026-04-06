@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { EmailComposeForm } from "@/components/postkontoret/EmailComposeForm";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -86,9 +87,11 @@ export default function PostkontoretPage() {
   const [cases, setCases] = useState<Case[]>([]);
   const [items, setItems] = useState<CaseItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>("all");
   const [search, setSearch] = useState("");
+  const [showCompose, setShowCompose] = useState(false);
 
   const selectedCase = cases.find((c) => c.id === selectedId);
   const selectedItems = items.filter((i) => i.case_id === selectedId);
@@ -141,7 +144,24 @@ export default function PostkontoretPage() {
     return () => { supabase.removeChannel(channel); };
   }, [fetchCases, tenantId]);
 
-  const openCase = (c: Case) => {
+  const syncInbox = useCallback(async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("inbox-sync");
+      if (error) throw error;
+      if (data?.ms_reauth) {
+        toast.error("Integrasjonstilkobling må fornyes. Gå til Integrasjoner.");
+        return;
+      }
+      toast.success(`Synkronisert! ${data?.new_cases || 0} nye saker, ${data?.new_items || 0} nye meldinger.`);
+      await fetchCases();
+    } catch (err: any) {
+      toast.error("Synkronisering feilet: " + (err.message || "Ukjent feil"));
+    } finally {
+      setSyncing(false);
+    }
+  }, [fetchCases]);
+
     setSelectedId(c.id);
     if (c.status === "new") {
       supabase.from("cases").update({ status: "triage" } as any).eq("id", c.id);
@@ -184,10 +204,16 @@ export default function PostkontoretPage() {
           <h1 className="text-3xl font-bold tracking-tight">Postkontoret</h1>
           <p className="text-muted-foreground mt-1">Håndter innkommende henvendelser og e-post</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => fetchCases()} className="gap-2">
-          <RefreshCw className="h-4 w-4" />
-          Oppdater
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={syncInbox} disabled={syncing} className="gap-2">
+            <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Synkroniserer..." : "Synk e-post"}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => fetchCases()} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Oppdater
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-6 min-h-[calc(100vh-220px)]">
@@ -344,6 +370,16 @@ export default function PostkontoretPage() {
                   </div>
                 )}
               </ScrollArea>
+
+              {/* Compose reply */}
+              <div className="p-4 border-t border-border/50">
+                <EmailComposeForm
+                  caseId={selectedCase.id}
+                  defaultTo={selectedCase.customer_email || ""}
+                  defaultSubject={`Re: ${selectedCase.title}`}
+                  onSent={() => fetchItems(selectedCase.id)}
+                />
+              </div>
             </Card>
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground">
