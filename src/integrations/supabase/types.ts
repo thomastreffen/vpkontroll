@@ -166,6 +166,319 @@ export type Database = {
           },
         ]
       }
+      crm_activities: {
+        Row: {
+          body: string | null
+          case_id: string | null
+          company_id: string | null
+          completed_at: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          deal_id: string | null
+          due_at: string | null
+          id: string
+          subject: string | null
+          tenant_id: string
+          type: Database["public"]["Enums"]["activity_type"]
+        }
+        Insert: {
+          body?: string | null
+          case_id?: string | null
+          company_id?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string | null
+          due_at?: string | null
+          id?: string
+          subject?: string | null
+          tenant_id: string
+          type?: Database["public"]["Enums"]["activity_type"]
+        }
+        Update: {
+          body?: string | null
+          case_id?: string | null
+          company_id?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string | null
+          due_at?: string | null
+          id?: string
+          subject?: string | null
+          tenant_id?: string
+          type?: Database["public"]["Enums"]["activity_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_activities_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_companies: {
+        Row: {
+          address: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          industry: string | null
+          name: string
+          notes: string | null
+          org_number: string | null
+          phone: string | null
+          postal_code: string | null
+          tenant_id: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          industry?: string | null
+          name: string
+          notes?: string | null
+          org_number?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          tenant_id: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          industry?: string | null
+          name?: string
+          notes?: string | null
+          org_number?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          tenant_id?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_companies_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_contacts: {
+        Row: {
+          address: string | null
+          city: string | null
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          first_name: string
+          id: string
+          is_primary_contact: boolean | null
+          last_name: string | null
+          mobile: string | null
+          notes: string | null
+          phone: string | null
+          postal_code: string | null
+          tenant_id: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          first_name: string
+          id?: string
+          is_primary_contact?: boolean | null
+          last_name?: string | null
+          mobile?: string | null
+          notes?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          tenant_id: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          first_name?: string
+          id?: string
+          is_primary_contact?: boolean | null
+          last_name?: string | null
+          mobile?: string | null
+          notes?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          tenant_id?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contacts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_deals: {
+        Row: {
+          case_id: string | null
+          closed_at: string | null
+          company_id: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string | null
+          description: string | null
+          expected_close_date: string | null
+          id: string
+          lost_reason: string | null
+          owner_user_id: string | null
+          stage: Database["public"]["Enums"]["deal_stage"]
+          tenant_id: string
+          title: string
+          updated_at: string
+          value: number | null
+        }
+        Insert: {
+          case_id?: string | null
+          closed_at?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string | null
+          description?: string | null
+          expected_close_date?: string | null
+          id?: string
+          lost_reason?: string | null
+          owner_user_id?: string | null
+          stage?: Database["public"]["Enums"]["deal_stage"]
+          tenant_id: string
+          title: string
+          updated_at?: string
+          value?: number | null
+        }
+        Update: {
+          case_id?: string | null
+          closed_at?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string | null
+          description?: string | null
+          expected_close_date?: string | null
+          id?: string
+          lost_reason?: string | null
+          owner_user_id?: string | null
+          stage?: Database["public"]["Enums"]["deal_stage"]
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_deals_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_technicians: {
         Row: {
           created_at: string
@@ -704,6 +1017,13 @@ export type Database = {
       }
     }
     Enums: {
+      activity_type:
+        | "note"
+        | "call"
+        | "email"
+        | "meeting"
+        | "task"
+        | "status_change"
       app_role: "master_admin" | "tenant_admin" | "user"
       case_next_action:
         | "call"
@@ -724,9 +1044,17 @@ export type Database = {
         | "archived"
         | "converted"
       credential_status: "connected" | "disconnected" | "error" | "pending"
+      deal_stage:
+        | "lead"
+        | "qualified"
+        | "quote_sent"
+        | "site_visit"
+        | "negotiation"
+        | "won"
+        | "lost"
       event_status: "planned" | "in_progress" | "completed" | "cancelled"
       integration_provider: "microsoft" | "google"
-      module_name: "postkontoret" | "ressursplanlegger"
+      module_name: "postkontoret" | "ressursplanlegger" | "crm"
       tenant_status: "active" | "inactive" | "trial" | "suspended"
     }
     CompositeTypes: {
@@ -855,6 +1183,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      activity_type: [
+        "note",
+        "call",
+        "email",
+        "meeting",
+        "task",
+        "status_change",
+      ],
       app_role: ["master_admin", "tenant_admin", "user"],
       case_next_action: [
         "call",
@@ -877,9 +1213,18 @@ export const Constants = {
         "converted",
       ],
       credential_status: ["connected", "disconnected", "error", "pending"],
+      deal_stage: [
+        "lead",
+        "qualified",
+        "quote_sent",
+        "site_visit",
+        "negotiation",
+        "won",
+        "lost",
+      ],
       event_status: ["planned", "in_progress", "completed", "cancelled"],
       integration_provider: ["microsoft", "google"],
-      module_name: ["postkontoret", "ressursplanlegger"],
+      module_name: ["postkontoret", "ressursplanlegger", "crm"],
       tenant_status: ["active", "inactive", "trial", "suspended"],
     },
   },
