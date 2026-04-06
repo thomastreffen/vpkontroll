@@ -370,6 +370,16 @@ export default function PostkontoretPage() {
                   </div>
                 )}
               </ScrollArea>
+
+              {/* Compose reply */}
+              <div className="p-4 border-t border-border/50">
+                <EmailComposeForm
+                  caseId={selectedCase.id}
+                  defaultTo={selectedCase.customer_email || ""}
+                  defaultSubject={`Re: ${selectedCase.title}`}
+                  onSent={() => fetchItems(selectedCase.id)}
+                />
+              </div>
             </Card>
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground">
