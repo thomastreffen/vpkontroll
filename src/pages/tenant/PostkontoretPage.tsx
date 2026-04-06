@@ -86,9 +86,11 @@ export default function PostkontoretPage() {
   const [cases, setCases] = useState<Case[]>([]);
   const [items, setItems] = useState<CaseItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>("all");
   const [search, setSearch] = useState("");
+  const [showCompose, setShowCompose] = useState(false);
 
   const selectedCase = cases.find((c) => c.id === selectedId);
   const selectedItems = items.filter((i) => i.case_id === selectedId);
