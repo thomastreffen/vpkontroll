@@ -1,0 +1,323 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Loader2, ChevronRight, Copy, Trash2, Users, Info, Search, LayoutGrid, Zap } from "lucide-react";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Separator } from "@/components/ui/separator";
+import { PERMISSION_CATEGORIES, MODULE_PERMISSION_KEYS, getPermLabel, getPermDescription } from "@/lib/permission-labels";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+interface Role {
+  id: string;
+  name: string;
+  description: string | null;
+  is_system_role: boolean;
+  permissions: Record<string, boolean>;
+  user_count: number;
+}
+
+export function RolesTab() {
+  const { tenantId } = useAuth();
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<Role | null>(null);
+  const [form, setForm] = useState({ name: "", description: "", permissions: {} as Record<string, boolean> });
+  const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Role | null>(null);
+  const [permSearch, setPermSearch] = useState("");
+
+  const fetchRoles = async () => {
+    if (!tenantId) return;
+    setLoading(true);
+    const [{ data: rolesData }, { data: permsData }, { data: assignments }] = await Promise.all([
+      supabase.from("tenant_roles").select("*").eq("tenant_id", tenantId).order("name"),
+      supabase.from("tenant_role_permissions").select("*"),
+      supabase.from("tenant_user_role_assignments").select("role_id").eq("tenant_id", tenantId),
+    ]);
+
+    const permsByRole: Record<string, Record<string, boolean>> = {};
+    for (const p of (permsData as any[]) || []) {
+      if (!permsByRole[p.role_id]) permsByRole[p.role_id] = {};
+      permsByRole[p.role_id][p.permission_key] = p.allowed;
+    }
+
+    const countByRole: Record<string, number> = {};
+    for (const a of (assignments as any[]) || []) {
+      countByRole[a.role_id] = (countByRole[a.role_id] || 0) + 1;
+    }
+
+    setRoles(
+      (rolesData as any[] || []).map((r: any) => ({
+        ...r,
+        permissions: permsByRole[r.id] || {},
+        user_count: countByRole[r.id] || 0,
+      }))
+    );
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchRoles(); }, [tenantId]);
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm({ name: "", description: "", permissions: {} });
+    setPermSearch("");
+    setDialogOpen(true);
+  };
+
+  const openEdit = (r: Role) => {
+    setEditing(r);
+    setForm({ name: r.name, description: r.description || "", permissions: { ...r.permissions } });
+    setPermSearch("");
+    setDialogOpen(true);
+  };
+
+  const openDuplicate = (r: Role, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditing(null);
+    setForm({ name: `${r.name} (kopi)`, description: r.description || "", permissions: { ...r.permissions } });
+    setPermSearch("");
+    setDialogOpen(true);
+  };
+
+  const togglePerm = (key: string) => {
+    setForm((f) => ({ ...f, permissions: { ...f.permissions, [key]: !f.permissions[key] } }));
+  };
+
+  const handleSave = async () => {
+    if (!form.name.trim() || !tenantId) {
+      toast.error("Rollenavn er påkrevd");
+      return;
+    }
+    setSaving(true);
+    try {
+      let roleId = editing?.id;
+      if (editing) {
+        await supabase.from("tenant_roles").update({ name: form.name, description: form.description || null }).eq("id", editing.id);
+      } else {
+        const { data, error } = await supabase.from("tenant_roles").insert({ tenant_id: tenantId, name: form.name, description: form.description || null }).select("id").single();
+        if (error) throw error;
+        roleId = data.id;
+      }
+      await supabase.from("tenant_role_permissions").delete().eq("role_id", roleId!);
+      const permRows = Object.entries(form.permissions)
+        .filter(([, v]) => v)
+        .map(([key]) => ({ role_id: roleId!, permission_key: key, allowed: true }));
+      if (permRows.length > 0) {
+        await supabase.from("tenant_role_permissions").insert(permRows);
+      }
+      toast.success(editing ? "Rolle oppdatert" : "Rolle opprettet");
+      setDialogOpen(false);
+      fetchRoles();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setSaving(true);
+    try {
+      await supabase.from("tenant_role_permissions").delete().eq("role_id", deleteTarget.id);
+      await supabase.from("tenant_user_role_assignments").delete().eq("role_id", deleteTarget.id);
+      await supabase.from("tenant_roles").delete().eq("id", deleteTarget.id);
+      toast.success("Rolle slettet");
+      setDeleteTarget(null);
+      fetchRoles();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const getModuleCount = (r: Role) => MODULE_PERMISSION_KEYS.filter((k) => r.permissions[k]).length;
+  const getActionCount = (r: Role) =>
+    Object.entries(r.permissions).filter(([k, v]) => v && !k.startsWith("module.")).length;
+
+  const activeModuleCount = MODULE_PERMISSION_KEYS.filter((k) => form.permissions[k]).length;
+  const activePermCount = Object.entries(form.permissions).filter(([k, v]) => v && !k.startsWith("module.")).length;
+
+  const filteredModuleKeys = MODULE_PERMISSION_KEYS.filter((key) => {
+    if (!permSearch) return true;
+    const q = permSearch.toLowerCase();
+    return getPermLabel(key).toLowerCase().includes(q) || key.toLowerCase().includes(q);
+  });
+
+  const filteredPermCategories = PERMISSION_CATEGORIES.map((cat) => ({
+    ...cat,
+    keys: cat.keys.filter((key) => {
+      if (!permSearch) return true;
+      const q = permSearch.toLowerCase();
+      return getPermLabel(key).toLowerCase().includes(q) || key.toLowerCase().includes(q);
+    }),
+  })).filter((cat) => cat.keys.length > 0);
+
+  if (loading) return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+
+  return (
+    <TooltipProvider>
+      <div className="space-y-4">
+        <div className="rounded-lg border border-border bg-muted/30 p-3 flex gap-2">
+          <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p><strong>Roller</strong> er standardpakker med rettigheter. Tildel roller til brukere for å gi dem en samlet tilgangsprofil.</p>
+            <p><strong>Modultilgang</strong> (🟦) styrer hvilke menypunkter brukeren ser. <strong>Handlingstillatelser</strong> (🟧) styrer hva brukeren kan gjøre inni modulen.</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">Roller ({roles.length})</h3>
+          <Button size="sm" onClick={openCreate} className="gap-1.5"><Plus className="h-4 w-4" /> Ny rolle</Button>
+        </div>
+
+        {roles.map((r) => (
+          <Card key={r.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => openEdit(r)}>
+            <CardContent className="p-4 flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium text-sm">{r.name}</span>
+                  <Badge variant={r.is_system_role ? "secondary" : "outline"} className="text-[10px]">
+                    {r.is_system_role ? "Systemrolle" : "Egendefinert"}
+                  </Badge>
+                </div>
+                {r.description && <p className="text-xs text-muted-foreground mt-0.5">{r.description}</p>}
+                <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1"><LayoutGrid className="h-3 w-3" />{getModuleCount(r)} moduler</span>
+                  <span>·</span>
+                  <span className="flex items-center gap-1"><Zap className="h-3 w-3" />{getActionCount(r)} handlinger</span>
+                  <span>·</span>
+                  <span className="flex items-center gap-1"><Users className="h-3 w-3" />{r.user_count} bruker{r.user_count !== 1 ? "e" : ""}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <Tooltip><TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => openDuplicate(r, e)}><Copy className="h-3.5 w-3.5" /></Button>
+                </TooltipTrigger><TooltipContent>Dupliser rolle</TooltipContent></Tooltip>
+                {!r.is_system_role && (
+                  <Tooltip><TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteTarget(r); }}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger><TooltipContent>Slett rolle</TooltipContent></Tooltip>
+                )}
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+
+        {/* Create/Edit Dialog */}
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="max-w-lg max-h-[85vh]">
+            <DialogHeader>
+              <DialogTitle>{editing ? `Rediger: ${editing.name}` : "Ny rolle"}</DialogTitle>
+              {editing?.is_system_role && (
+                <p className="text-xs text-yellow-600">Systemrolle – vurder å duplisere før du endrer.</p>
+              )}
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Rollenavn</Label>
+                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              </div>
+              <div>
+                <Label>Beskrivelse</Label>
+                <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} placeholder="Kort beskrivelse…" />
+              </div>
+
+              <div className="relative">
+                <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input placeholder="Søk i rettigheter…" value={permSearch} onChange={(e) => setPermSearch(e.target.value)} className="pl-7 h-8 text-xs" />
+              </div>
+
+              <ScrollArea className="h-[360px] pr-4">
+                <div className="space-y-5">
+                  {filteredModuleKeys.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <LayoutGrid className="h-3.5 w-3.5 text-blue-500" />
+                        <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Modultilgang ({activeModuleCount} valgt)</p>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mb-2">Styrer hvilke moduler brukeren ser i menyen.</p>
+                      <div className="grid grid-cols-2 gap-1">
+                        {filteredModuleKeys.map((key) => (
+                          <label key={key} className="flex items-center gap-2 cursor-pointer text-sm py-0.5">
+                            <Checkbox checked={form.permissions[key] || false} onCheckedChange={() => togglePerm(key)} />
+                            <span className="text-xs">{getPermLabel(key)}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <Separator />
+
+                  <div className="flex items-center gap-1.5">
+                    <Zap className="h-3.5 w-3.5 text-amber-500" />
+                    <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Handlingstillatelser ({activePermCount} valgt)</p>
+                  </div>
+
+                  {filteredPermCategories.map((group) => (
+                    <div key={group.category}>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{group.category}</p>
+                      <p className="text-[11px] text-muted-foreground mb-2">{group.description}</p>
+                      <div className="space-y-1.5">
+                        {group.keys.map((key) => {
+                          const desc = getPermDescription(key);
+                          return (
+                            <label key={key} className="flex items-center gap-2 cursor-pointer text-sm">
+                              <Checkbox checked={form.permissions[key] || false} onCheckedChange={() => togglePerm(key)} />
+                              <span>{getPermLabel(key)}</span>
+                              {desc && (
+                                <Tooltip><TooltipTrigger asChild><Info className="h-3.5 w-3.5 text-muted-foreground shrink-0" /></TooltipTrigger>
+                                  <TooltipContent side="right" className="max-w-[250px] text-xs">{desc}</TooltipContent></Tooltip>
+                              )}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+            <DialogFooter>
+              <Button onClick={handleSave} disabled={saving}>{saving ? "Lagrer…" : "Lagre"}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete confirmation */}
+        <AlertDialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Slett rolle «{deleteTarget?.name}»?</AlertDialogTitle>
+              <AlertDialogDescription>Alle brukere med denne rollen mister tilgangen den ga. Dette kan ikke angres.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Avbryt</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Slett</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </TooltipProvider>
+  );
+}
