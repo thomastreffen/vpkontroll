@@ -162,6 +162,7 @@ export default function PostkontoretPage() {
     }
   }, [fetchCases]);
 
+  const openCase = (c: Case) => {
     setSelectedId(c.id);
     if (c.status === "new") {
       supabase.from("cases").update({ status: "triage" } as any).eq("id", c.id);
