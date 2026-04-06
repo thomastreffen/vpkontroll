@@ -204,10 +204,16 @@ export default function PostkontoretPage() {
           <h1 className="text-3xl font-bold tracking-tight">Postkontoret</h1>
           <p className="text-muted-foreground mt-1">Håndter innkommende henvendelser og e-post</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => fetchCases()} className="gap-2">
-          <RefreshCw className="h-4 w-4" />
-          Oppdater
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={syncInbox} disabled={syncing} className="gap-2">
+            <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Synkroniserer..." : "Synk e-post"}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => fetchCases()} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Oppdater
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-6 min-h-[calc(100vh-220px)]">
