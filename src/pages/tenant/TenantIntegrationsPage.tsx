@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, AlertCircle, Clock, Settings, Plus } from "lucide-react";
+import { CheckCircle2, XCircle, AlertCircle, Clock, Settings, Plus, ExternalLink, Copy, Unplug } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Credential = Tables<"tenant_credentials">;
@@ -36,10 +36,10 @@ const providerInfo: Record<Provider, { label: string; abbr: string; description:
 };
 
 const statusConfig: Record<string, { label: string; icon: typeof CheckCircle2; className: string }> = {
-  connected: { label: "Tilkoblet", icon: CheckCircle2, className: "text-accent" },
+  connected: { label: "Tilkoblet", icon: CheckCircle2, className: "text-green-600" },
   disconnected: { label: "Frakoblet", icon: XCircle, className: "text-muted-foreground" },
   error: { label: "Feil", icon: AlertCircle, className: "text-destructive" },
-  pending: { label: "Venter", icon: Clock, className: "text-yellow-600" },
+  pending: { label: "Venter på tilkobling", icon: Clock, className: "text-yellow-600" },
 };
 
 export default function TenantIntegrationsPage() {
@@ -49,6 +49,8 @@ export default function TenantIntegrationsPage() {
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
   const [tenantDomain, setTenantDomain] = useState("");
+
+  const redirectUri = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oauth-callback`;
 
   const { data: credentials, isLoading } = useQuery({
     queryKey: ["my-credentials", tenantId],
@@ -63,30 +65,46 @@ export default function TenantIntegrationsPage() {
     enabled: !!tenantId,
   });
 
+  // Listen for OAuth popup messages
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === "oauth-success") {
+        toast.success("Tilkobling vellykket!");
+        queryClient.invalidateQueries({ queryKey: ["my-credentials"] });
+      } else if (e.data?.type === "oauth-error") {
+        toast.error("Tilkobling feilet: " + (e.data.error || "Ukjent feil"));
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [queryClient]);
+
   const upsertMutation = useMutation({
     mutationFn: async () => {
       if (!tenantId || !editProvider) return;
       const existing = credentials?.find((c) => c.provider === editProvider);
 
+      const payload: any = {
+        client_id: clientId,
+        tenant_domain: tenantDomain || null,
+        status: "pending" as Credential["status"],
+      };
+      if (clientSecret) {
+        payload.client_secret_encrypted = clientSecret;
+      }
+
       if (existing) {
         const { error } = await supabase
           .from("tenant_credentials")
-          .update({
-            client_id: clientId,
-            client_secret_encrypted: clientSecret,
-            tenant_domain: tenantDomain || null,
-            status: "pending" as Credential["status"],
-          })
+          .update(payload)
           .eq("id", existing.id);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("tenant_credentials").insert({
+          ...payload,
           tenant_id: tenantId,
           provider: editProvider,
-          client_id: clientId,
           client_secret_encrypted: clientSecret,
-          tenant_domain: tenantDomain || null,
-          status: "pending" as Credential["status"],
           scopes: providerInfo[editProvider].scopes,
         });
         if (error) throw error;
@@ -94,8 +112,46 @@ export default function TenantIntegrationsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-credentials"] });
-      toast.success("Integrasjon lagret");
+      toast.success("Credentials lagret — klar for tilkobling");
       closeEdit();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const connectMutation = useMutation({
+    mutationFn: async (provider: Provider) => {
+      const cred = credentials?.find((c) => c.provider === provider);
+      if (!cred) throw new Error("Sett opp credentials først");
+
+      const { data, error } = await supabase.functions.invoke("oauth-start", {
+        body: { provider, credential_id: cred.id },
+      });
+      if (error) throw error;
+      if (data?.auth_url) {
+        window.open(data.auth_url, "oauth-popup", "width=600,height=700,popup=yes");
+      }
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const disconnectMutation = useMutation({
+    mutationFn: async (provider: Provider) => {
+      const cred = credentials?.find((c) => c.provider === provider);
+      if (!cred) return;
+      const { error } = await supabase
+        .from("tenant_credentials")
+        .update({
+          access_token_encrypted: null,
+          refresh_token_encrypted: null,
+          token_expires_at: null,
+          status: "disconnected" as Credential["status"],
+        })
+        .eq("id", cred.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-credentials"] });
+      toast.success("Tilkobling fjernet");
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -118,32 +174,52 @@ export default function TenantIntegrationsPage() {
   const getCredential = (provider: Provider) =>
     credentials?.find((c) => c.provider === provider);
 
+  const copyRedirectUri = () => {
+    navigator.clipboard.writeText(redirectUri);
+    toast.success("Redirect URI kopiert");
+  };
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Integrasjoner</h1>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Integrasjoner</h1>
         <p className="text-muted-foreground mt-1">
           Koble til Microsoft 365 og/eller Google Workspace
         </p>
       </div>
 
+      {/* Redirect URI info */}
+      <Card className="border-border/50 bg-muted/30">
+        <CardContent className="p-4">
+          <p className="text-xs font-medium mb-1.5">OAuth Redirect URI (legg inn i din app-registrering):</p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 text-xs bg-background px-3 py-2 rounded-md border border-border truncate">
+              {redirectUri}
+            </code>
+            <Button variant="outline" size="icon" className="shrink-0" onClick={copyRedirectUri}>
+              <Copy className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {(Object.entries(providerInfo) as [Provider, typeof providerInfo.microsoft][]).map(([provider, info]) => {
           const cred = getCredential(provider);
           const sc = statusConfig[cred?.status ?? "disconnected"];
+          const isConnected = cred?.status === "connected";
+          const hasCreds = !!cred?.client_id;
 
           return (
             <Card key={provider} className="border-border/50">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-sm font-bold">
-                      {info.abbr}
-                    </div>
-                    <div>
-                      <CardTitle className="text-base">{info.label}</CardTitle>
-                      <CardDescription className="text-xs">{info.description}</CardDescription>
-                    </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-sm font-bold">
+                    {info.abbr}
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">{info.label}</CardTitle>
+                    <CardDescription className="text-xs">{info.description}</CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -154,7 +230,7 @@ export default function TenantIntegrationsPage() {
                     <span className="text-sm font-medium">{sc.label}</span>
                   </div>
                   <Badge variant="outline" className="text-xs">
-                    {cred ? "Konfigurert" : "Ikke satt opp"}
+                    {hasCreds ? "Konfigurert" : "Ikke satt opp"}
                   </Badge>
                 </div>
 
@@ -162,21 +238,49 @@ export default function TenantIntegrationsPage() {
                   <div className="text-xs text-muted-foreground space-y-1">
                     <p>Client ID: {cred.client_id.slice(0, 8)}...{cred.client_id.slice(-4)}</p>
                     {cred.tenant_domain && <p>Domene: {cred.tenant_domain}</p>}
+                    {cred.last_verified_at && (
+                      <p>Sist verifisert: {new Date(cred.last_verified_at).toLocaleString("nb-NO")}</p>
+                    )}
                   </div>
                 )}
 
-                <Button
-                  variant={cred ? "outline" : "default"}
-                  size="sm"
-                  className="w-full"
-                  onClick={() => openEdit(provider)}
-                >
-                  {cred ? (
-                    <><Settings className="w-4 h-4 mr-2" />Endre credentials</>
-                  ) : (
-                    <><Plus className="w-4 h-4 mr-2" />Sett opp</>
-                  )}
-                </Button>
+                <div className="flex flex-col gap-2">
+                  {isConnected ? (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => disconnectMutation.mutate(provider)}
+                      disabled={disconnectMutation.isPending}
+                    >
+                      <Unplug className="w-4 h-4 mr-2" />
+                      Koble fra
+                    </Button>
+                  ) : hasCreds ? (
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={() => connectMutation.mutate(provider)}
+                      disabled={connectMutation.isPending}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Koble til {info.label}
+                    </Button>
+                  ) : null}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => openEdit(provider)}
+                  >
+                    {hasCreds ? (
+                      <><Settings className="w-4 h-4 mr-2" />Endre credentials</>
+                    ) : (
+                      <><Plus className="w-4 h-4 mr-2" />Sett opp credentials</>
+                    )}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           );
@@ -236,6 +340,11 @@ export default function TenantIntegrationsPage() {
                 </div>
               </div>
             )}
+
+            <div className="rounded-lg bg-muted/50 p-3">
+              <p className="text-xs font-medium mb-1">Redirect URI:</p>
+              <code className="text-xs break-all">{redirectUri}</code>
+            </div>
 
             <Button type="submit" className="w-full" disabled={upsertMutation.isPending}>
               {upsertMutation.isPending ? "Lagrer..." : "Lagre credentials"}
