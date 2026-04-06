@@ -20,6 +20,7 @@ import TenantModulesPage from "@/pages/tenant/TenantModulesPage";
 import TenantIntegrationsPage from "@/pages/tenant/TenantIntegrationsPage";
 import TenantUsersPage from "@/pages/tenant/TenantUsersPage";
 import PostkontoretPage from "@/pages/tenant/PostkontoretPage";
+import RessursplanleggerPage from "@/pages/tenant/RessursplanleggerPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -69,6 +70,7 @@ function AppRoutes() {
       {/* Tenant Admin routes */}
       <Route path="/tenant" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantDashboardPage /></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/postkontoret" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><PostkontoretPage /></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/ressursplanlegger" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><RessursplanleggerPage /></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/modules" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantModulesPage /></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/integrations" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantIntegrationsPage /></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/users" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantUsersPage /></TenantAdminLayout></ProtectedRoute>} />
