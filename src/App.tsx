@@ -19,6 +19,7 @@ import TenantDashboardPage from "@/pages/tenant/TenantDashboardPage";
 import TenantModulesPage from "@/pages/tenant/TenantModulesPage";
 import TenantIntegrationsPage from "@/pages/tenant/TenantIntegrationsPage";
 import TenantUsersPage from "@/pages/tenant/TenantUsersPage";
+import PostkontoretPage from "@/pages/tenant/PostkontoretPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
