@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lexend:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,93 +6,109 @@
 
 @layer base {
   :root {
-    --background: 220 20% 97%;
-    --foreground: 220 30% 10%;
+    --background: 0 0% 98%;
+    --foreground: 220 20% 14%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 30% 10%;
+    --card-foreground: 220 20% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 30% 10%;
+    --popover-foreground: 220 20% 14%;
 
-    --primary: 220 70% 50%;
+    --primary: 246 65% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 15% 92%;
-    --secondary-foreground: 220 30% 15%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 20% 20%;
 
-    --muted: 220 15% 95%;
-    --muted-foreground: 220 10% 45%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 10% 46%;
 
-    --accent: 160 60% 45%;
+    --accent: 24 95% 53%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 90%;
-    --input: 220 15% 90%;
-    --ring: 220 70% 50%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 246 65% 55%;
 
-    --radius: 0.625rem;
+    --radius: 0.5rem;
 
-    --sidebar-background: 220 30% 12%;
-    --sidebar-foreground: 220 10% 85%;
-    --sidebar-primary: 220 70% 55%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 20% 14%;
+    --sidebar-primary: 246 65% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 25% 18%;
-    --sidebar-accent-foreground: 220 10% 90%;
-    --sidebar-border: 220 25% 20%;
-    --sidebar-ring: 220 70% 55%;
+    --sidebar-accent: 246 65% 97%;
+    --sidebar-accent-foreground: 246 65% 45%;
+    --sidebar-border: 220 13% 93%;
+    --sidebar-ring: 246 65% 55%;
 
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
-    --success: 160 60% 45%;
+    --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
+
+    --crm-lead: 220 70% 55%;
+    --crm-qualified: 246 65% 55%;
+    --crm-quote: 24 95% 53%;
+    --crm-visit: 160 60% 42%;
+    --crm-negotiation: 280 60% 55%;
+    --crm-won: 142 71% 45%;
+    --crm-lost: 0 72% 51%;
   }
 
   .dark {
-    --background: 220 25% 8%;
+    --background: 222 22% 7%;
     --foreground: 220 10% 92%;
 
-    --card: 220 25% 12%;
+    --card: 222 22% 10%;
     --card-foreground: 220 10% 92%;
 
-    --popover: 220 25% 12%;
+    --popover: 222 22% 10%;
     --popover-foreground: 220 10% 92%;
 
-    --primary: 220 70% 55%;
+    --primary: 246 65% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 20% 18%;
+    --secondary: 222 18% 15%;
     --secondary-foreground: 220 10% 85%;
 
-    --muted: 220 20% 15%;
+    --muted: 222 18% 14%;
     --muted-foreground: 220 10% 55%;
 
-    --accent: 160 60% 40%;
+    --accent: 24 95% 55%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62% 35%;
+    --destructive: 0 62% 40%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 20% 18%;
-    --input: 220 20% 18%;
-    --ring: 220 70% 55%;
+    --border: 222 18% 18%;
+    --input: 222 18% 18%;
+    --ring: 246 65% 60%;
 
-    --sidebar-background: 220 30% 6%;
+    --sidebar-background: 222 22% 5%;
     --sidebar-foreground: 220 10% 80%;
-    --sidebar-primary: 220 70% 55%;
+    --sidebar-primary: 246 65% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 25% 12%;
-    --sidebar-accent-foreground: 220 10% 85%;
-    --sidebar-border: 220 25% 15%;
-    --sidebar-ring: 220 70% 55%;
+    --sidebar-accent: 246 30% 12%;
+    --sidebar-accent-foreground: 246 40% 70%;
+    --sidebar-border: 222 18% 15%;
+    --sidebar-ring: 246 65% 60%;
 
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
-    --success: 160 60% 40%;
+    --success: 142 71% 40%;
     --success-foreground: 0 0% 100%;
+
+    --crm-lead: 220 70% 60%;
+    --crm-qualified: 246 65% 60%;
+    --crm-quote: 24 95% 55%;
+    --crm-visit: 160 60% 40%;
+    --crm-negotiation: 280 60% 60%;
+    --crm-won: 142 71% 40%;
+    --crm-lost: 0 62% 40%;
   }
 }
 
@@ -107,6 +123,6 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-family: 'Lexend', system-ui, sans-serif;
   }
 }

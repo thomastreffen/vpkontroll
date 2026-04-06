@@ -15,12 +15,17 @@ import DashboardPage from "@/pages/admin/DashboardPage";
 import TenantsPage from "@/pages/admin/TenantsPage";
 import ModulesPage from "@/pages/admin/ModulesPage";
 import IntegrationsPage from "@/pages/admin/IntegrationsPage";
+import AdminAccessControlPage from "@/pages/admin/AccessControlPage";
 import TenantDashboardPage from "@/pages/tenant/TenantDashboardPage";
 import TenantModulesPage from "@/pages/tenant/TenantModulesPage";
 import TenantIntegrationsPage from "@/pages/tenant/TenantIntegrationsPage";
 import TenantUsersPage from "@/pages/tenant/TenantUsersPage";
 import PostkontoretPage from "@/pages/tenant/PostkontoretPage";
 import RessursplanleggerPage from "@/pages/tenant/RessursplanleggerPage";
+import TenantAccessControlPage from "@/pages/tenant/AccessControlPage";
+import CrmContactsPage from "@/pages/tenant/CrmContactsPage";
+import CrmCompaniesPage from "@/pages/tenant/CrmCompaniesPage";
+import CrmDealsPage from "@/pages/tenant/CrmDealsPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,7 +52,6 @@ function AppRoutes() {
 
   const getHomeRedirect = () => {
     if (!user) return "/login";
-    // If user has multiple roles, show role selector
     if (isMasterAdmin && isTenantAdmin) return "/select-role";
     if (isMasterAdmin) return "/admin";
     if (isTenantAdmin) return "/tenant";
@@ -66,6 +70,7 @@ function AppRoutes() {
       <Route path="/admin/tenants" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><TenantsPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/modules" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><ModulesPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/integrations" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><IntegrationsPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/access-control" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminAccessControlPage /></MasterAdminLayout></ProtectedRoute>} />
 
       {/* Tenant Admin routes */}
       <Route path="/tenant" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantDashboardPage /></TenantAdminLayout></ProtectedRoute>} />
@@ -74,6 +79,12 @@ function AppRoutes() {
       <Route path="/tenant/modules" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantModulesPage /></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/integrations" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantIntegrationsPage /></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/users" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantUsersPage /></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/access-control" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantAccessControlPage /></TenantAdminLayout></ProtectedRoute>} />
+
+      {/* CRM routes */}
+      <Route path="/tenant/crm/contacts" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><CrmContactsPage /></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/crm/companies" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><CrmCompaniesPage /></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/crm/deals" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><CrmDealsPage /></TenantAdminLayout></ProtectedRoute>} />
 
       <Route path="/" element={<Navigate to={getHomeRedirect()} replace />} />
       <Route path="*" element={<NotFound />} />
