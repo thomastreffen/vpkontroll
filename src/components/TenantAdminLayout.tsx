@@ -1,10 +1,11 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useTenantModules } from "@/hooks/useTenantModules";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Plug, LogOut, Flame, Puzzle, Users, Mail,
-  CalendarDays, Menu, X, Search, Bell, ChevronDown, Contact,
+  CalendarDays, Menu, Search, Bell, Contact,
   Building2, TrendingUp, Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -13,26 +14,31 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 
-const navSections = [
+interface NavItem {
+  label: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+  module?: string;
+}
+
+const navSections: { label: string; items: NavItem[] }[] = [
   {
     label: "Oversikt",
-    items: [
-      { label: "Dashboard", href: "/tenant", icon: LayoutDashboard },
-    ],
+    items: [{ label: "Dashboard", href: "/tenant", icon: LayoutDashboard }],
   },
   {
     label: "CRM",
     items: [
-      { label: "Kontakter", href: "/tenant/crm/contacts", icon: Contact },
-      { label: "Bedrifter", href: "/tenant/crm/companies", icon: Building2 },
-      { label: "Deals", href: "/tenant/crm/deals", icon: TrendingUp },
+      { label: "Kontakter", href: "/tenant/crm/contacts", icon: Contact, module: "crm" },
+      { label: "Bedrifter", href: "/tenant/crm/companies", icon: Building2, module: "crm" },
+      { label: "Deals", href: "/tenant/crm/deals", icon: TrendingUp, module: "crm" },
     ],
   },
   {
     label: "Operasjon",
     items: [
-      { label: "Postkontoret", href: "/tenant/postkontoret", icon: Mail },
-      { label: "Ressursplanlegger", href: "/tenant/ressursplanlegger", icon: CalendarDays },
+      { label: "Postkontoret", href: "/tenant/postkontoret", icon: Mail, module: "postkontoret" },
+      { label: "Ressursplanlegger", href: "/tenant/ressursplanlegger", icon: CalendarDays, module: "ressursplanlegger" },
     ],
   },
   {
@@ -46,10 +52,21 @@ const navSections = [
   },
 ];
 
-function SidebarNav({ location, onNavigate, collapsed }: { location: any; onNavigate?: () => void; collapsed?: boolean }) {
+function SidebarNav({ location, onNavigate, collapsed, hasModule }: { location: ReturnType<typeof useLocation>; onNavigate?: () => void; collapsed?: boolean; hasModule: (moduleName: string) => boolean }) {
+  const visibleSections = useMemo(
+    () =>
+      navSections
+        .map((section) => ({
+          ...section,
+          items: section.items.filter((item) => !item.module || hasModule(item.module)),
+        }))
+        .filter((section) => section.items.length > 0),
+    [hasModule]
+  );
+
   return (
     <nav className="flex-1 overflow-y-auto py-2">
-      {navSections.map((section) => (
+      {visibleSections.map((section) => (
         <div key={section.label} className="mb-1">
           {!collapsed && (
             <p className="px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
@@ -117,6 +134,7 @@ function TopBar({ user, signOut, onMenuClick, isMobile }: { user: any; signOut: 
 
 export default function TenantAdminLayout({ children }: { children: ReactNode }) {
   const { signOut, user } = useAuth();
+  const { hasModule } = useTenantModules();
   const location = useLocation();
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
@@ -134,7 +152,7 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
               </div>
               <span className="text-sm font-semibold">VPKontroll</span>
             </div>
-            <SidebarNav location={location} onNavigate={() => setOpen(false)} />
+            <SidebarNav location={location} onNavigate={() => setOpen(false)} hasModule={hasModule} />
           </SheetContent>
         </Sheet>
         <main className="flex-1 overflow-auto">
@@ -153,7 +171,7 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
           </div>
           <span className="text-sm font-semibold">VPKontroll</span>
         </div>
-        <SidebarNav location={location} />
+        <SidebarNav location={location} hasModule={hasModule} />
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar user={user} signOut={signOut} isMobile={false} />

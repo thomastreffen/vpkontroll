@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mail, CalendarDays, Puzzle } from "lucide-react";
+import { Mail, CalendarDays, TrendingUp } from "lucide-react";
 
 const moduleInfo: Record<string, { label: string; description: string; icon: typeof Mail }> = {
   postkontoret: {
@@ -15,6 +15,11 @@ const moduleInfo: Record<string, { label: string; description: string; icon: typ
     label: "Ressursplanlegger",
     description: "Kalender, ressursallokering og planlegging",
     icon: CalendarDays,
+  },
+  crm: {
+    label: "CRM",
+    description: "Kontakter, bedrifter, deals og salgsoppfølging",
+    icon: TrendingUp,
   },
 };
 

@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import ModuleRouteGuard from "@/components/ModuleRouteGuard";
 import MasterAdminLayout from "@/components/MasterAdminLayout";
 import TenantAdminLayout from "@/components/TenantAdminLayout";
 import LoginPage from "@/pages/LoginPage";
@@ -74,17 +75,17 @@ function AppRoutes() {
 
       {/* Tenant Admin routes */}
       <Route path="/tenant" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantDashboardPage /></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/postkontoret" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><PostkontoretPage /></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/ressursplanlegger" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><RessursplanleggerPage /></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/postkontoret" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="postkontoret"><PostkontoretPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/ressursplanlegger" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="ressursplanlegger"><RessursplanleggerPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/modules" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantModulesPage /></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/integrations" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantIntegrationsPage /></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/users" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantUsersPage /></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/access-control" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantAccessControlPage /></TenantAdminLayout></ProtectedRoute>} />
 
       {/* CRM routes */}
-      <Route path="/tenant/crm/contacts" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><CrmContactsPage /></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/crm/companies" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><CrmCompaniesPage /></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/crm/deals" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><CrmDealsPage /></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/crm/contacts" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><CrmContactsPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/crm/companies" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><CrmCompaniesPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/crm/deals" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><CrmDealsPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
 
       <Route path="/" element={<Navigate to={getHomeRedirect()} replace />} />
       <Route path="*" element={<NotFound />} />

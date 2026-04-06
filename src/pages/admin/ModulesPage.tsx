@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Mail, CalendarDays, Puzzle } from "lucide-react";
+import { Mail, CalendarDays, Puzzle, TrendingUp } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type TenantModule = Tables<"tenant_modules">;
@@ -19,6 +19,11 @@ const moduleInfo: Record<string, { label: string; description: string; icon: typ
     label: "Ressursplanlegger",
     description: "Kalender, ressursallokering og planlegging",
     icon: CalendarDays,
+  },
+  crm: {
+    label: "CRM",
+    description: "Kontakter, bedrifter, deals og salgsoppfølging",
+    icon: TrendingUp,
   },
 };
 
