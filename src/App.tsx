@@ -7,6 +7,8 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import MasterAdminLayout from "@/components/MasterAdminLayout";
 import LoginPage from "@/pages/LoginPage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import DashboardPage from "@/pages/admin/DashboardPage";
 import TenantsPage from "@/pages/admin/TenantsPage";
 import ModulesPage from "@/pages/admin/ModulesPage";
