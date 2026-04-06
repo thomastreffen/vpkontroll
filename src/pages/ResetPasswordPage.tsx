@@ -13,21 +13,26 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [isRecovery, setIsRecovery] = useState(false);
 
   useEffect(() => {
-    const hash = window.location.hash;
-    if (hash.includes("type=recovery")) {
-      setIsRecovery(true);
-    }
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event) => {
         if (event === "PASSWORD_RECOVERY") {
           setIsRecovery(true);
+          setChecking(false);
         }
       }
     );
+
+    // Also check if there's already an active session (recovery link already processed)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setIsRecovery(true);
+      }
+      setChecking(false);
+    });
 
     return () => subscription.unsubscribe();
   }, []);
@@ -52,6 +57,14 @@ export default function ResetPasswordPage() {
       navigate("/login");
     }
   };
+
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!isRecovery) {
     return (
