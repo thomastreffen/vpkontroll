@@ -63,6 +63,14 @@ export default function LoginPage() {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Logger inn..." : "Logg inn"}
             </Button>
+            <div className="text-center">
+              <Link
+                to="/forgot-password"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Glemt passord?
+              </Link>
+            </div>
           </form>
         </CardContent>
       </Card>
