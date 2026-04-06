@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,32 +11,12 @@ import { Flame } from "lucide-react";
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
+  const { user, isPasswordRecovery, clearPasswordRecovery } = useAuth();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [checking, setChecking] = useState(true);
-  const [isRecovery, setIsRecovery] = useState(false);
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event) => {
-        if (event === "PASSWORD_RECOVERY") {
-          setIsRecovery(true);
-          setChecking(false);
-        }
-      }
-    );
-
-    // Also check if there's already an active session (recovery link already processed)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setIsRecovery(true);
-      }
-      setChecking(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const canReset = isPasswordRecovery || user;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,20 +34,13 @@ export default function ResetPasswordPage() {
     if (error) {
       toast.error(error.message);
     } else {
+      clearPasswordRecovery();
       toast.success("Passordet er oppdatert!");
-      navigate("/login");
+      navigate("/admin");
     }
   };
 
-  if (checking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!isRecovery) {
+  if (!canReset) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md shadow-lg border-border/50">

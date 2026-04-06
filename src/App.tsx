@@ -18,13 +18,23 @@ import NotFound from "@/pages/NotFound";
 const queryClient = new QueryClient();
 
 function AppRoutes() {
-  const { user, loading, isMasterAdmin } = useAuth();
+  const { user, loading, isPasswordRecovery } = useAuth();
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
+    );
+  }
+
+  // If in password recovery mode, force show the reset page
+  if (isPasswordRecovery) {
+    return (
+      <Routes>
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="*" element={<Navigate to="/reset-password" replace />} />
+      </Routes>
     );
   }
 

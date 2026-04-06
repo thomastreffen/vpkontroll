@@ -12,6 +12,8 @@ interface AuthContextType {
   tenantId: string | null;
   isMasterAdmin: boolean;
   isTenantAdmin: boolean;
+  isPasswordRecovery: boolean;
+  clearPasswordRecovery: () => void;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -25,6 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [tenantId, setTenantId] = useState<string | null>(null);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   const fetchUserMeta = async (userId: string) => {
     const [rolesResult, profileResult] = await Promise.all([
@@ -41,9 +44,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        if (event === "PASSWORD_RECOVERY") {
+          setIsPasswordRecovery(true);
+        }
         if (session?.user) {
           setTimeout(() => fetchUserMeta(session.user.id), 0);
         } else {
@@ -65,6 +71,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const clearPasswordRecovery = () => setIsPasswordRecovery(false);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -94,6 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         tenantId,
         isMasterAdmin: roles.includes("master_admin"),
         isTenantAdmin: roles.includes("tenant_admin"),
+        isPasswordRecovery,
+        clearPasswordRecovery,
         signIn,
         signUp,
         signOut,
