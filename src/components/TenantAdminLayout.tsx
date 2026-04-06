@@ -9,11 +9,13 @@ import {
   Flame,
   Puzzle,
   Users,
+  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { label: "Dashboard", href: "/tenant", icon: LayoutDashboard },
+  { label: "Postkontoret", href: "/tenant/postkontoret", icon: Mail },
   { label: "Moduler", href: "/tenant/modules", icon: Puzzle },
   { label: "Integrasjoner", href: "/tenant/integrations", icon: Plug },
   { label: "Brukere", href: "/tenant/users", icon: Users },
