@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import MasterAdminLayout from "@/components/MasterAdminLayout";
+import TenantAdminLayout from "@/components/TenantAdminLayout";
 import LoginPage from "@/pages/LoginPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
@@ -13,12 +14,16 @@ import DashboardPage from "@/pages/admin/DashboardPage";
 import TenantsPage from "@/pages/admin/TenantsPage";
 import ModulesPage from "@/pages/admin/ModulesPage";
 import IntegrationsPage from "@/pages/admin/IntegrationsPage";
+import TenantDashboardPage from "@/pages/tenant/TenantDashboardPage";
+import TenantModulesPage from "@/pages/tenant/TenantModulesPage";
+import TenantIntegrationsPage from "@/pages/tenant/TenantIntegrationsPage";
+import TenantUsersPage from "@/pages/tenant/TenantUsersPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
 function AppRoutes() {
-  const { user, loading, isPasswordRecovery } = useAuth();
+  const { user, loading, isPasswordRecovery, isMasterAdmin, isTenantAdmin } = useAuth();
 
   if (loading) {
     return (
@@ -28,7 +33,6 @@ function AppRoutes() {
     );
   }
 
-  // If in password recovery mode, force show the reset page
   if (isPasswordRecovery) {
     return (
       <Routes>
@@ -38,44 +42,32 @@ function AppRoutes() {
     );
   }
 
+  const getHomeRedirect = () => {
+    if (!user) return "/login";
+    if (isMasterAdmin) return "/admin";
+    if (isTenantAdmin) return "/tenant";
+    return "/login";
+  };
+
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/admin" replace /> : <LoginPage />} />
+      <Route path="/login" element={user ? <Navigate to={getHomeRedirect()} replace /> : <LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute requireRole="master_admin">
-            <MasterAdminLayout><DashboardPage /></MasterAdminLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/tenants"
-        element={
-          <ProtectedRoute requireRole="master_admin">
-            <MasterAdminLayout><TenantsPage /></MasterAdminLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/modules"
-        element={
-          <ProtectedRoute requireRole="master_admin">
-            <MasterAdminLayout><ModulesPage /></MasterAdminLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/integrations"
-        element={
-          <ProtectedRoute requireRole="master_admin">
-            <MasterAdminLayout><IntegrationsPage /></MasterAdminLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/" element={<Navigate to={user ? "/admin" : "/login"} replace />} />
+
+      {/* Master Admin routes */}
+      <Route path="/admin" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><DashboardPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/tenants" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><TenantsPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/modules" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><ModulesPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/integrations" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><IntegrationsPage /></MasterAdminLayout></ProtectedRoute>} />
+
+      {/* Tenant Admin routes */}
+      <Route path="/tenant" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantDashboardPage /></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/modules" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantModulesPage /></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/integrations" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantIntegrationsPage /></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/users" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantUsersPage /></TenantAdminLayout></ProtectedRoute>} />
+
+      <Route path="/" element={<Navigate to={getHomeRedirect()} replace />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
