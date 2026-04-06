@@ -1,4 +1,4 @@
-import { test, expect } from "./playwright-fixture";
+import { test, expect } from "@playwright/test";
 
 // Test unauthenticated pages
 test.describe("Public pages", () => {
