@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import ModuleRouteGuard from "@/components/ModuleRouteGuard";
 import MasterAdminLayout from "@/components/MasterAdminLayout";
 import TenantAdminLayout from "@/components/TenantAdminLayout";
 import LoginPage from "@/pages/LoginPage";

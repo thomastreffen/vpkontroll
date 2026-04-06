@@ -45,6 +45,7 @@ export default function TenantDashboardPage() {
   const moduleLabels: Record<string, string> = {
     postkontoret: "Postkontoret",
     ressursplanlegger: "Ressursplanlegger",
+    crm: "CRM",
   };
 
   return (
