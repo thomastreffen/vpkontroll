@@ -144,7 +144,24 @@ export default function PostkontoretPage() {
     return () => { supabase.removeChannel(channel); };
   }, [fetchCases, tenantId]);
 
-  const openCase = (c: Case) => {
+  const syncInbox = useCallback(async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("inbox-sync");
+      if (error) throw error;
+      if (data?.ms_reauth) {
+        toast.error("Integrasjonstilkobling må fornyes. Gå til Integrasjoner.");
+        return;
+      }
+      toast.success(`Synkronisert! ${data?.new_cases || 0} nye saker, ${data?.new_items || 0} nye meldinger.`);
+      await fetchCases();
+    } catch (err: any) {
+      toast.error("Synkronisering feilet: " + (err.message || "Ukjent feil"));
+    } finally {
+      setSyncing(false);
+    }
+  }, [fetchCases]);
+
     setSelectedId(c.id);
     if (c.status === "new") {
       supabase.from("cases").update({ status: "triage" } as any).eq("id", c.id);
