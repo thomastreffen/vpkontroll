@@ -10,6 +10,7 @@ import TenantAdminLayout from "@/components/TenantAdminLayout";
 import LoginPage from "@/pages/LoginPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
+import RoleSelectorPage from "@/pages/RoleSelectorPage";
 import DashboardPage from "@/pages/admin/DashboardPage";
 import TenantsPage from "@/pages/admin/TenantsPage";
 import ModulesPage from "@/pages/admin/ModulesPage";
@@ -44,6 +45,8 @@ function AppRoutes() {
 
   const getHomeRedirect = () => {
     if (!user) return "/login";
+    // If user has multiple roles, show role selector
+    if (isMasterAdmin && isTenantAdmin) return "/select-role";
     if (isMasterAdmin) return "/admin";
     if (isTenantAdmin) return "/tenant";
     return "/login";
@@ -54,6 +57,7 @@ function AppRoutes() {
       <Route path="/login" element={user ? <Navigate to={getHomeRedirect()} replace /> : <LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/select-role" element={user ? <RoleSelectorPage /> : <Navigate to="/login" replace />} />
 
       {/* Master Admin routes */}
       <Route path="/admin" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><DashboardPage /></MasterAdminLayout></ProtectedRoute>} />
