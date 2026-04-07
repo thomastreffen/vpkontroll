@@ -398,6 +398,23 @@ export default function PostkontoretPage() {
                   onSent={() => fetchItems(selectedCase.id)}
                 />
               </div>
+                </div>
+
+                {/* Right sidebar: Linking */}
+                <div className="w-56 border-l border-border/50 p-3 overflow-y-auto">
+                  <CaseLinkingSection
+                    caseData={{
+                      id: selectedCase.id,
+                      company_id: selectedCase.company_id ?? null,
+                      site_id: selectedCase.site_id ?? null,
+                      asset_id: selectedCase.asset_id ?? null,
+                      job_id: selectedCase.job_id ?? null,
+                      warranty_case_id: selectedCase.warranty_case_id ?? null,
+                    }}
+                    onUpdated={() => fetchCases()}
+                  />
+                </div>
+              </div>
             </Card>
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground">
