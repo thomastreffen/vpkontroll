@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useJobDetail } from "@/hooks/useJobDetail";
 import { Card } from "@/components/ui/card";
@@ -5,17 +6,19 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, ArrowLeft, Info, Users, ClipboardCheck, FileText } from "lucide-react";
+import { Loader2, ArrowLeft, Info, Users, ClipboardCheck, FileText, Pencil } from "lucide-react";
 import {
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
   ENERGY_SOURCE_LABELS, DOCUMENT_CATEGORY_LABELS,
   formatDate, formatDateTime,
 } from "@/lib/domain-labels";
 import { CASE_PRIORITY_LABELS, CASE_PRIORITY_COLOR } from "@/lib/case-labels";
+import { JobEditDialog } from "@/components/crud/JobEditDialog";
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { job, company, contact, site, asset, technicians, checklists, documents } = useJobDetail(id);
+  const [editOpen, setEditOpen] = useState(false);
 
   if (job.isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -41,6 +44,7 @@ export default function JobDetailPage() {
             <span className={`text-sm font-medium ${CASE_PRIORITY_COLOR[j.priority as keyof typeof CASE_PRIORITY_COLOR] || ""}`}>
               {CASE_PRIORITY_LABELS[j.priority as keyof typeof CASE_PRIORITY_LABELS] || j.priority}
             </span>
+            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Pencil className="h-3 w-3 mr-1" />Rediger</Button>
           </div>
           <p className="text-lg mt-1">{j.title}</p>
           <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mt-2">
@@ -132,6 +136,8 @@ export default function JobDetailPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      <JobEditDialog open={editOpen} onOpenChange={setEditOpen} job={j} />
     </div>
   );
 }

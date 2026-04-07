@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useCompanyDetail } from "@/hooks/useCompanyDetail";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, ArrowLeft, Building2, Contact, MapPin, Thermometer, TrendingUp, Wrench, ShieldCheck, FileText, Mail, Phone } from "lucide-react";
+import { Loader2, ArrowLeft, Building2, Contact, MapPin, Thermometer, TrendingUp, Wrench, ShieldCheck, FileText, Mail, Phone, Plus, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DEAL_STAGE_LABELS, DEAL_STAGE_COLORS, formatCurrency,
@@ -17,10 +18,17 @@ import {
   SITE_TYPE_LABELS, DOCUMENT_CATEGORY_LABELS,
   formatDate,
 } from "@/lib/domain-labels";
+import { SiteFormDialog } from "@/components/crud/SiteFormDialog";
+import { AssetFormDialog } from "@/components/crud/AssetFormDialog";
+import { AgreementFormDialog } from "@/components/crud/AgreementFormDialog";
 
 export default function CompanyDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { company, contacts, sites, assets, deals, jobs, agreements, warrantyCases, documents } = useCompanyDetail(id);
+
+  const [siteDialog, setSiteDialog] = useState<{ open: boolean; site?: any }>({ open: false });
+  const [assetDialog, setAssetDialog] = useState<{ open: boolean; asset?: any }>({ open: false });
+  const [agreementDialog, setAgreementDialog] = useState<{ open: boolean; agreement?: any }>({ open: false });
 
   if (company.isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -93,6 +101,9 @@ export default function CompanyDetailPage() {
         </TabsContent>
 
         <TabsContent value="sites" className="mt-4">
+          <div className="flex justify-end mb-3">
+            <Button size="sm" onClick={() => setSiteDialog({ open: true })}><Plus className="h-3.5 w-3.5 mr-1" />Nytt sted</Button>
+          </div>
           {sites.data?.length === 0 ? <EmptyState text="Ingen anleggssteder" /> : (
             <div className="grid gap-3">
               {sites.data?.map(s => (
@@ -102,7 +113,12 @@ export default function CompanyDetailPage() {
                       <p className="font-medium text-sm">{s.name || s.address || "Uten navn"}</p>
                       <p className="text-xs text-muted-foreground">{s.address}, {s.postal_code} {s.city}</p>
                     </div>
-                    <Badge variant="outline" className="text-[10px]">{SITE_TYPE_LABELS[s.site_type] || s.site_type}</Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-[10px]">{SITE_TYPE_LABELS[s.site_type] || s.site_type}</Badge>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSiteDialog({ open: true, site: s })}>
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               ))}
@@ -111,6 +127,11 @@ export default function CompanyDetailPage() {
         </TabsContent>
 
         <TabsContent value="assets" className="mt-4">
+          <div className="flex justify-end mb-3">
+            <Button size="sm" onClick={() => setAssetDialog({ open: true })} disabled={!sites.data?.length}>
+              <Plus className="h-3.5 w-3.5 mr-1" />Nytt anlegg
+            </Button>
+          </div>
           {assets.data?.length === 0 ? <EmptyState text="Ingen anlegg" /> : (
             <div className="grid gap-3">
               {assets.data?.map(a => (
@@ -157,6 +178,9 @@ export default function CompanyDetailPage() {
         </TabsContent>
 
         <TabsContent value="agreements" className="mt-4">
+          <div className="flex justify-end mb-3">
+            <Button size="sm" onClick={() => setAgreementDialog({ open: true })}><Plus className="h-3.5 w-3.5 mr-1" />Ny avtale</Button>
+          </div>
           {agreements.data?.length === 0 ? <EmptyState text="Ingen serviceavtaler" /> : (
             <div className="grid gap-3">
               {agreements.data?.map(a => (
@@ -200,6 +224,29 @@ export default function CompanyDetailPage() {
           <DocumentsList documents={documents.data} />
         </TabsContent>
       </Tabs>
+
+      {/* Dialogs */}
+      <SiteFormDialog
+        open={siteDialog.open}
+        onOpenChange={open => setSiteDialog(s => ({ ...s, open }))}
+        companyId={id!}
+        site={siteDialog.site}
+      />
+      <AssetFormDialog
+        open={assetDialog.open}
+        onOpenChange={open => setAssetDialog(s => ({ ...s, open }))}
+        siteId={sites.data?.[0]?.id || ""}
+        asset={assetDialog.asset}
+        sites={sites.data?.map(s => ({ id: s.id, name: s.name, address: s.address })) || []}
+      />
+      <AgreementFormDialog
+        open={agreementDialog.open}
+        onOpenChange={open => setAgreementDialog(s => ({ ...s, open }))}
+        companyId={id!}
+        agreement={agreementDialog.agreement}
+        sites={sites.data?.map(s => ({ id: s.id, name: s.name, address: s.address })) || []}
+        assets={assets.data?.map(a => ({ id: a.id, manufacturer: a.manufacturer, model: a.model })) || []}
+      />
     </div>
   );
 }
