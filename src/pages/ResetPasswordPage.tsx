@@ -40,9 +40,9 @@ export default function ResetPasswordPage() {
       toast.error("Passordet må være minst 6 tegn");
       return;
     }
-    setLoading(true);
+    setSubmitting(true);
     const { error } = await supabase.auth.updateUser({ password });
-    setLoading(false);
+    setSubmitting(false);
     if (error) {
       toast.error(error.message);
     } else {
