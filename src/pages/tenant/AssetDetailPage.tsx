@@ -151,6 +151,7 @@ export default function AssetDetailPage() {
       </Tabs>
 
       <AssetFormDialog open={editOpen} onOpenChange={setEditOpen} siteId={a.site_id} asset={a} />
+      <WarrantyFormDialog open={warrantyOpen} onOpenChange={setWarrantyOpen} assetId={id} companyId={company.data?.id} />
     </div>
   );
 }

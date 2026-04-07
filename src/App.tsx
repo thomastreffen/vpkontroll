@@ -95,6 +95,7 @@ function AppRoutes() {
       <Route path="/tenant/crm/assets/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><AssetDetailPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/crm/jobs/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><JobDetailPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/crm/agreements/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><AgreementDetailPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/crm/warranty/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><WarrantyDetailPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
 
       <Route path="/" element={<Navigate to={getHomeRedirect()} replace />} />
       <Route path="*" element={<NotFound />} />
