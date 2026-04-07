@@ -104,8 +104,8 @@ export default function ResetPasswordPage() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Oppdaterer..." : "Oppdater passord"}
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? "Oppdaterer..." : "Oppdater passord"}
             </Button>
           </form>
         </CardContent>
