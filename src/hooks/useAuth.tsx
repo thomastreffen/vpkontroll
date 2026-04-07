@@ -27,7 +27,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [tenantId, setTenantId] = useState<string | null>(null);
-  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(() => {
+    // Check URL hash immediately on mount for recovery token
+    const hash = window.location.hash;
+    return hash.includes("type=recovery") || hash.includes("type=magiclink");
+  });
 
   const fetchUserMeta = async (userId: string) => {
     const [rolesResult, profileResult] = await Promise.all([

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,10 +11,22 @@ import { Flame } from "lucide-react";
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
-  const { user, isPasswordRecovery, clearPasswordRecovery } = useAuth();
+  const { user, loading, isPasswordRecovery, clearPasswordRecovery } = useAuth();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [waitingForSession, setWaitingForSession] = useState(true);
+
+  // Give auth state time to settle after redirect
+  useEffect(() => {
+    const timer = setTimeout(() => setWaitingForSession(false), 2000);
+    // Clear early if we get a session or recovery flag
+    if (isPasswordRecovery || user) {
+      setWaitingForSession(false);
+      clearTimeout(timer);
+    }
+    return () => clearTimeout(timer);
+  }, [isPasswordRecovery, user]);
 
   const canReset = isPasswordRecovery || user;
 
@@ -28,9 +40,9 @@ export default function ResetPasswordPage() {
       toast.error("Passordet må være minst 6 tegn");
       return;
     }
-    setLoading(true);
+    setSubmitting(true);
     const { error } = await supabase.auth.updateUser({ password });
-    setLoading(false);
+    setSubmitting(false);
     if (error) {
       toast.error(error.message);
     } else {
@@ -39,6 +51,14 @@ export default function ResetPasswordPage() {
       navigate("/admin");
     }
   };
+
+  if (loading || waitingForSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!canReset) {
     return (
@@ -84,8 +104,8 @@ export default function ResetPasswordPage() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Oppdaterer..." : "Oppdater passord"}
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? "Oppdaterer..." : "Oppdater passord"}
             </Button>
           </form>
         </CardContent>
