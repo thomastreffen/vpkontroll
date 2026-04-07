@@ -5,15 +5,16 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, ArrowLeft, Info, Users, ClipboardCheck, FileText, Pencil } from "lucide-react";
 import {
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
-  ENERGY_SOURCE_LABELS, DOCUMENT_CATEGORY_LABELS,
+  DOCUMENT_CATEGORY_LABELS,
   formatDate, formatDateTime,
 } from "@/lib/domain-labels";
 import { CASE_PRIORITY_LABELS, CASE_PRIORITY_COLOR } from "@/lib/case-labels";
 import { JobEditDialog } from "@/components/crud/JobEditDialog";
+import { DocumentUploadSection } from "@/components/crud/DocumentUploadSection";
+import { ChecklistSection } from "@/components/crud/ChecklistSection";
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -96,44 +97,16 @@ export default function JobDetailPage() {
         </TabsContent>
 
         <TabsContent value="checklists" className="mt-4">
-          {!checklists.data?.length ? <Empty text="Ingen sjekklister" /> : (
-            <div className="space-y-4">
-              {checklists.data.map((cl: any) => (
-                <Card key={cl.id} className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="font-medium text-sm">{cl.template_name}</p>
-                    {cl.completed_at && <Badge variant="secondary" className="text-[10px]">Fullført {formatDate(cl.completed_at)}</Badge>}
-                  </div>
-                  <div className="space-y-2">
-                    {cl.items?.map((item: any) => (
-                      <div key={item.id} className="flex items-start gap-2">
-                        <Checkbox checked={item.is_checked} disabled className="mt-0.5" />
-                        <div>
-                          <p className={`text-sm ${item.is_checked ? "line-through text-muted-foreground" : ""}`}>{item.label}</p>
-                          {item.note && <p className="text-xs text-muted-foreground">{item.note}</p>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
+          <ChecklistSection checklists={checklists.data} jobId={id!} jobType={j.job_type} />
         </TabsContent>
 
         <TabsContent value="documents" className="mt-4">
-          {!documents.data?.length ? <Empty text="Ingen dokumenter" /> : (
-            <div className="grid gap-3">
-              {documents.data.map(d => (
-                <Card key={d.id} className="p-4 flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-sm">{d.file_name}</p>
-                    <p className="text-xs text-muted-foreground">{DOCUMENT_CATEGORY_LABELS[d.category] || d.category} · {formatDate(d.created_at)}</p>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
+          <DocumentUploadSection
+            documents={documents.data}
+            entityType="job"
+            entityId={id!}
+            queryKey={["job-documents", id!]}
+          />
         </TabsContent>
       </Tabs>
 
