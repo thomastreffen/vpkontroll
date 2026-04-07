@@ -216,6 +216,57 @@ export type Database = {
           },
         ]
       }
+      checklist_items: {
+        Row: {
+          checked_at: string | null
+          checked_by: string | null
+          checklist_id: string
+          id: string
+          is_checked: boolean
+          label: string
+          note: string | null
+          sort_order: number
+          tenant_id: string
+        }
+        Insert: {
+          checked_at?: string | null
+          checked_by?: string | null
+          checklist_id: string
+          id?: string
+          is_checked?: boolean
+          label: string
+          note?: string | null
+          sort_order?: number
+          tenant_id: string
+        }
+        Update: {
+          checked_at?: string | null
+          checked_by?: string | null
+          checklist_id?: string
+          id?: string
+          is_checked?: boolean
+          label?: string
+          note?: string | null
+          sort_order?: number
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_items_checklist_fk"
+            columns: ["tenant_id", "checklist_id"]
+            isOneToOne: false
+            referencedRelation: "installation_checklists"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "checklist_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_activities: {
         Row: {
           body: string | null
@@ -850,6 +901,54 @@ export type Database = {
           },
           {
             foreignKeyName: "hvac_assets_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      installation_checklists: {
+        Row: {
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          id: string
+          job_id: string
+          notes: string | null
+          template_name: string
+          tenant_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          job_id: string
+          notes?: string | null
+          template_name: string
+          tenant_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          job_id?: string
+          notes?: string | null
+          template_name?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installation_checklists_job_fk"
+            columns: ["tenant_id", "job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "installation_checklists_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
