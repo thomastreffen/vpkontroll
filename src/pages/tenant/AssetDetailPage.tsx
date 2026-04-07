@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Wrench, ShieldCheck, FileText, Info, Pencil } from "lucide-react";
+import { Loader2, ArrowLeft, Wrench, ShieldCheck, FileText, Info, Pencil, Plus } from "lucide-react";
 import {
   ENERGY_SOURCE_LABELS, ASSET_STATUS_LABELS, ASSET_STATUS_COLORS,
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
@@ -15,11 +15,13 @@ import {
 } from "@/lib/domain-labels";
 import { AssetFormDialog } from "@/components/crud/AssetFormDialog";
 import { DocumentUploadSection } from "@/components/crud/DocumentUploadSection";
+import { WarrantyFormDialog } from "@/components/crud/WarrantyFormDialog";
 
 export default function AssetDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { asset, site, company, serviceVisits, warrantyCases, jobs, documents } = useAssetDetail(id);
   const [editOpen, setEditOpen] = useState(false);
+  const [warrantyOpen, setWarrantyOpen] = useState(false);
 
   if (asset.isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -118,16 +120,21 @@ export default function AssetDetailPage() {
         </TabsContent>
 
         <TabsContent value="warranty" className="mt-4">
+          <div className="flex justify-end mb-3">
+            <Button size="sm" onClick={() => setWarrantyOpen(true)}><Plus className="h-3.5 w-3.5 mr-1" />Ny garantisak</Button>
+          </div>
           {!warrantyCases.data?.length ? <Empty text="Ingen garantisaker" /> : (
             <div className="grid gap-3">
               {warrantyCases.data.map(w => (
-                <Card key={w.id} className="p-4 flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-sm">{w.warranty_number}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-1">{w.issue_description}</p>
-                  </div>
-                  <Badge className={`text-[10px] ${WARRANTY_STATUS_COLORS[w.status] || ""}`}>{WARRANTY_STATUS_LABELS[w.status] || w.status}</Badge>
-                </Card>
+                <Link key={w.id} to={`/tenant/crm/warranty/${w.id}`}>
+                  <Card className="p-4 hover:shadow-md transition-shadow flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-sm">{w.warranty_number}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{w.issue_description}</p>
+                    </div>
+                    <Badge className={`text-[10px] ${WARRANTY_STATUS_COLORS[w.status] || ""}`}>{WARRANTY_STATUS_LABELS[w.status] || w.status}</Badge>
+                  </Card>
+                </Link>
               ))}
             </div>
           )}
@@ -144,6 +151,7 @@ export default function AssetDetailPage() {
       </Tabs>
 
       <AssetFormDialog open={editOpen} onOpenChange={setEditOpen} siteId={a.site_id} asset={a} />
+      <WarrantyFormDialog open={warrantyOpen} onOpenChange={setWarrantyOpen} assetId={id} companyId={company.data?.id} />
     </div>
   );
 }

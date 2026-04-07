@@ -16,7 +16,7 @@ type DocCategory = Database["public"]["Enums"]["document_category"];
 interface DocumentUploadSectionProps {
   documents: any[] | undefined;
   /** Which entity this is for */
-  entityType: "job" | "asset";
+  entityType: "job" | "asset" | "warranty";
   entityId: string;
   /** react-query key to invalidate */
   queryKey: string[];
@@ -41,7 +41,8 @@ export function DocumentUploadSection({ documents, entityType, entityId, queryKe
         .upload(filePath, file, { upsert: false });
       if (storageErr) throw storageErr;
 
-      const fkCol = entityType === "job" ? "job_id" : "asset_id";
+      const fkMap = { job: "job_id", asset: "asset_id", warranty: "warranty_case_id" } as const;
+      const fkCol = fkMap[entityType];
       const { error: dbErr } = await supabase.from("documents").insert({
         tenant_id: tenantId,
         [fkCol]: entityId,

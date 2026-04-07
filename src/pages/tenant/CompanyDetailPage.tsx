@@ -21,6 +21,7 @@ import {
 import { SiteFormDialog } from "@/components/crud/SiteFormDialog";
 import { AssetFormDialog } from "@/components/crud/AssetFormDialog";
 import { AgreementFormDialog } from "@/components/crud/AgreementFormDialog";
+import { WarrantyFormDialog } from "@/components/crud/WarrantyFormDialog";
 
 export default function CompanyDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -29,6 +30,7 @@ export default function CompanyDetailPage() {
   const [siteDialog, setSiteDialog] = useState<{ open: boolean; site?: any }>({ open: false });
   const [assetDialog, setAssetDialog] = useState<{ open: boolean; asset?: any }>({ open: false });
   const [agreementDialog, setAgreementDialog] = useState<{ open: boolean; agreement?: any }>({ open: false });
+  const [warrantyDialog, setWarrantyDialog] = useState(false);
 
   if (company.isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -203,18 +205,23 @@ export default function CompanyDetailPage() {
         </TabsContent>
 
         <TabsContent value="warranty" className="mt-4">
+          <div className="flex justify-end mb-3">
+            <Button size="sm" onClick={() => setWarrantyDialog(true)}><Plus className="h-3.5 w-3.5 mr-1" />Ny garantisak</Button>
+          </div>
           {warrantyCases.data?.length === 0 ? <EmptyState text="Ingen garantisaker" /> : (
             <div className="grid gap-3">
               {warrantyCases.data?.map(w => (
-                <Card key={w.id} className="p-4 flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-sm">{w.warranty_number}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-1">{w.issue_description}</p>
-                  </div>
-                  <Badge className={`text-[10px] ${WARRANTY_STATUS_COLORS[w.status] || ""}`}>
-                    {WARRANTY_STATUS_LABELS[w.status] || w.status}
-                  </Badge>
-                </Card>
+                <Link key={w.id} to={`/tenant/crm/warranty/${w.id}`}>
+                  <Card className="p-4 hover:shadow-md transition-shadow flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-sm">{w.warranty_number}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{w.issue_description}</p>
+                    </div>
+                    <Badge className={`text-[10px] ${WARRANTY_STATUS_COLORS[w.status] || ""}`}>
+                      {WARRANTY_STATUS_LABELS[w.status] || w.status}
+                    </Badge>
+                  </Card>
+                </Link>
               ))}
             </div>
           )}
@@ -245,6 +252,12 @@ export default function CompanyDetailPage() {
         companyId={id!}
         agreement={agreementDialog.agreement}
         sites={sites.data?.map(s => ({ id: s.id, name: s.name, address: s.address })) || []}
+        assets={assets.data?.map(a => ({ id: a.id, manufacturer: a.manufacturer, model: a.model })) || []}
+      />
+      <WarrantyFormDialog
+        open={warrantyDialog}
+        onOpenChange={setWarrantyDialog}
+        companyId={id!}
         assets={assets.data?.map(a => ({ id: a.id, manufacturer: a.manufacturer, model: a.model })) || []}
       />
     </div>
