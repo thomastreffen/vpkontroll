@@ -53,6 +53,11 @@ type Case = {
   customer_email: string | null;
   last_activity_at: string | null;
   created_at: string;
+  company_id: string | null;
+  site_id: string | null;
+  asset_id: string | null;
+  job_id: string | null;
+  warranty_case_id: string | null;
 };
 
 type CaseItem = {
