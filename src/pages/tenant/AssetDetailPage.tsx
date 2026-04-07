@@ -10,10 +10,11 @@ import {
   ENERGY_SOURCE_LABELS, ASSET_STATUS_LABELS, ASSET_STATUS_COLORS,
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
   WARRANTY_STATUS_LABELS, WARRANTY_STATUS_COLORS,
-  VISIT_STATUS_LABELS, DOCUMENT_CATEGORY_LABELS,
+  VISIT_STATUS_LABELS,
   formatDate,
 } from "@/lib/domain-labels";
 import { AssetFormDialog } from "@/components/crud/AssetFormDialog";
+import { DocumentUploadSection } from "@/components/crud/DocumentUploadSection";
 
 export default function AssetDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -133,27 +134,16 @@ export default function AssetDetailPage() {
         </TabsContent>
 
         <TabsContent value="documents" className="mt-4">
-          {!documents.data?.length ? <Empty text="Ingen dokumenter" /> : (
-            <div className="grid gap-3">
-              {documents.data.map(d => (
-                <Card key={d.id} className="p-4 flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-sm">{d.file_name}</p>
-                    <p className="text-xs text-muted-foreground">{DOCUMENT_CATEGORY_LABELS[d.category] || d.category} · {formatDate(d.created_at)}</p>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
+          <DocumentUploadSection
+            documents={documents.data}
+            entityType="asset"
+            entityId={id!}
+            queryKey={["asset-documents", id!]}
+          />
         </TabsContent>
       </Tabs>
 
-      <AssetFormDialog
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        siteId={a.site_id}
-        asset={a}
-      />
+      <AssetFormDialog open={editOpen} onOpenChange={setEditOpen} siteId={a.site_id} asset={a} />
     </div>
   );
 }
