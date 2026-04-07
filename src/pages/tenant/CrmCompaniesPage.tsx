@@ -22,6 +22,7 @@ type Company = {
 
 export default function CrmCompaniesPage() {
   const { tenantId, user } = useAuth();
+  const navigate = useNavigate();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
