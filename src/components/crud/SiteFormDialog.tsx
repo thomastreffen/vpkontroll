@@ -18,7 +18,8 @@ interface SiteFormDialogProps {
   site?: any;
 }
 
-const EMPTY = { name: "", address: "", postal_code: "", city: "", site_type: "residential", access_info: "", notes: "" };
+type SiteType = "residential" | "commercial" | "industrial" | "cabin";
+const EMPTY = { name: "", address: "", postal_code: "", city: "", site_type: "residential" as SiteType, access_info: "", notes: "" };
 
 export function SiteFormDialog({ open, onOpenChange, companyId, site }: SiteFormDialogProps) {
   const { tenantId } = useAuth();
