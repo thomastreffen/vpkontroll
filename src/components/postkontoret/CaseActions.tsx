@@ -127,14 +127,15 @@ export function CaseActions({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {warrantyOpen && tenantId && (
+      {warrantyOpen && (
         <WarrantyFormDialog
           open={warrantyOpen}
-          onOpenChange={setWarrantyOpen}
-          tenantId={tenantId}
+          onOpenChange={(o) => {
+            setWarrantyOpen(o);
+            if (!o) onUpdated();
+          }}
           companyId={companyId || undefined}
           assetId={assetId || undefined}
-          onCreated={handleWarrantyCreated}
         />
       )}
     </>

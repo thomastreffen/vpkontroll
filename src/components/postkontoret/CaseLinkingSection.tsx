@@ -54,40 +54,40 @@ export function CaseLinkingSection({ caseData, onUpdated }: CaseLinkingSectionPr
   const fetchLinkedInfo = async () => {
     const info: LinkedInfo = {};
 
-    const promises: Promise<void>[] = [];
+    const fetchers: (() => Promise<void>)[] = [];
 
     if (caseData.company_id) {
-      promises.push(
-        supabase.from("crm_companies").select("id, name").eq("id", caseData.company_id).single()
-          .then(({ data }) => { info.company = data; })
-      );
+      fetchers.push(async () => {
+        const { data } = await supabase.from("crm_companies").select("id, name").eq("id", caseData.company_id!).single();
+        info.company = data;
+      });
     }
     if (caseData.site_id) {
-      promises.push(
-        supabase.from("customer_sites").select("id, name, address").eq("id", caseData.site_id).single()
-          .then(({ data }) => { info.site = data; })
-      );
+      fetchers.push(async () => {
+        const { data } = await supabase.from("customer_sites").select("id, name, address").eq("id", caseData.site_id!).single();
+        info.site = data;
+      });
     }
     if (caseData.asset_id) {
-      promises.push(
-        supabase.from("hvac_assets").select("id, manufacturer, model").eq("id", caseData.asset_id).single()
-          .then(({ data }) => { info.asset = data; })
-      );
+      fetchers.push(async () => {
+        const { data } = await supabase.from("hvac_assets").select("id, manufacturer, model").eq("id", caseData.asset_id!).single();
+        info.asset = data;
+      });
     }
     if (caseData.job_id) {
-      promises.push(
-        supabase.from("jobs").select("id, job_number, title").eq("id", caseData.job_id).single()
-          .then(({ data }) => { info.job = data; })
-      );
+      fetchers.push(async () => {
+        const { data } = await supabase.from("jobs").select("id, job_number, title").eq("id", caseData.job_id!).single();
+        info.job = data;
+      });
     }
     if (caseData.warranty_case_id) {
-      promises.push(
-        supabase.from("warranty_cases").select("id, warranty_number").eq("id", caseData.warranty_case_id).single()
-          .then(({ data }) => { info.warranty = data; })
-      );
+      fetchers.push(async () => {
+        const { data } = await supabase.from("warranty_cases").select("id, warranty_number").eq("id", caseData.warranty_case_id!).single();
+        info.warranty = data;
+      });
     }
 
-    await Promise.all(promises);
+    await Promise.all(fetchers.map(f => f()));
     setLinked(info);
   };
 
