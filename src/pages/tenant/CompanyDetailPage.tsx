@@ -254,6 +254,12 @@ export default function CompanyDetailPage() {
         sites={sites.data?.map(s => ({ id: s.id, name: s.name, address: s.address })) || []}
         assets={assets.data?.map(a => ({ id: a.id, manufacturer: a.manufacturer, model: a.model })) || []}
       />
+      <WarrantyFormDialog
+        open={warrantyDialog}
+        onOpenChange={setWarrantyDialog}
+        companyId={id!}
+        assets={assets.data?.map(a => ({ id: a.id, manufacturer: a.manufacturer, model: a.model })) || []}
+      />
     </div>
   );
 }
