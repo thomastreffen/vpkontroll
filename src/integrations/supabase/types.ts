@@ -702,6 +702,96 @@ export type Database = {
           },
         ]
       }
+      documents: {
+        Row: {
+          asset_id: string | null
+          category: Database["public"]["Enums"]["document_category"]
+          created_at: string
+          deleted_at: string | null
+          description: string | null
+          file_name: string
+          file_path: string
+          file_size_bytes: number | null
+          id: string
+          job_id: string | null
+          mime_type: string | null
+          service_visit_id: string | null
+          tenant_id: string
+          uploaded_by: string | null
+          warranty_case_id: string | null
+        }
+        Insert: {
+          asset_id?: string | null
+          category?: Database["public"]["Enums"]["document_category"]
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          file_name: string
+          file_path: string
+          file_size_bytes?: number | null
+          id?: string
+          job_id?: string | null
+          mime_type?: string | null
+          service_visit_id?: string | null
+          tenant_id: string
+          uploaded_by?: string | null
+          warranty_case_id?: string | null
+        }
+        Update: {
+          asset_id?: string | null
+          category?: Database["public"]["Enums"]["document_category"]
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          file_size_bytes?: number | null
+          id?: string
+          job_id?: string | null
+          mime_type?: string | null
+          service_visit_id?: string | null
+          tenant_id?: string
+          uploaded_by?: string | null
+          warranty_case_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_asset_fk"
+            columns: ["tenant_id", "asset_id"]
+            isOneToOne: false
+            referencedRelation: "hvac_assets"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "documents_job_fk"
+            columns: ["tenant_id", "job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "documents_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_visit_fk"
+            columns: ["tenant_id", "service_visit_id"]
+            isOneToOne: false
+            referencedRelation: "service_visits"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "documents_warranty_fk"
+            columns: ["tenant_id", "warranty_case_id"]
+            isOneToOne: false
+            referencedRelation: "warranty_cases"
+            referencedColumns: ["tenant_id", "id"]
+          },
+        ]
+      }
       event_technicians: {
         Row: {
           created_at: string
@@ -2015,6 +2105,17 @@ export type Database = {
         | "negotiation"
         | "won"
         | "lost"
+      document_category:
+        | "photo"
+        | "certificate"
+        | "manual"
+        | "invoice"
+        | "quote_pdf"
+        | "service_report"
+        | "checklist_pdf"
+        | "warranty_doc"
+        | "contract"
+        | "other"
       energy_source:
         | "air_air"
         | "air_water"
@@ -2236,6 +2337,18 @@ export const Constants = {
         "negotiation",
         "won",
         "lost",
+      ],
+      document_category: [
+        "photo",
+        "certificate",
+        "manual",
+        "invoice",
+        "quote_pdf",
+        "service_report",
+        "checklist_pdf",
+        "warranty_doc",
+        "contract",
+        "other",
       ],
       energy_source: [
         "air_air",
