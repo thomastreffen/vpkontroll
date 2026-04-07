@@ -46,11 +46,12 @@ export function SiteFormDialog({ open, onOpenChange, companyId, site }: SiteForm
   const mutation = useMutation({
     mutationFn: async () => {
       const payload = { ...form, company_id: companyId, tenant_id: tenantId! };
+      const typedForm = { ...form, site_type: form.site_type as SiteType };
       if (isEdit) {
-        const { error } = await supabase.from("customer_sites").update(form).eq("id", site.id);
+        const { error } = await supabase.from("customer_sites").update(typedForm).eq("id", site.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("customer_sites").insert(payload);
+        const { error } = await supabase.from("customer_sites").insert({ ...typedForm, company_id: companyId, tenant_id: tenantId! });
         if (error) throw error;
       }
     },
