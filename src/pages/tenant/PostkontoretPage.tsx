@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailComposeForm } from "@/components/postkontoret/EmailComposeForm";
+import { CaseLinkingSection } from "@/components/postkontoret/CaseLinkingSection";
+import { CaseActions } from "@/components/postkontoret/CaseActions";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +53,11 @@ type Case = {
   customer_email: string | null;
   last_activity_at: string | null;
   created_at: string;
+  company_id: string | null;
+  site_id: string | null;
+  asset_id: string | null;
+  job_id: string | null;
+  warranty_case_id: string | null;
 };
 
 type CaseItem = {
@@ -326,16 +333,31 @@ export default function PostkontoretPage() {
                       </p>
                     )}
                   </div>
-                  {!selectedCase.assigned_to_user_id && (
-                    <Button size="sm" onClick={() => assignToMe(selectedCase)} className="gap-1.5">
-                      <UserCheck className="h-4 w-4" />
-                      Tildel meg
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <CaseActions
+                      caseId={selectedCase.id}
+                      companyId={selectedCase.company_id}
+                      siteId={selectedCase.site_id}
+                      assetId={selectedCase.asset_id}
+                      customerName={selectedCase.customer_name}
+                      customerEmail={selectedCase.customer_email}
+                      caseTitle={selectedCase.title}
+                      onUpdated={() => fetchCases()}
+                    />
+                    {!selectedCase.assigned_to_user_id && (
+                      <Button size="sm" onClick={() => assignToMe(selectedCase)} className="gap-1.5">
+                        <UserCheck className="h-4 w-4" />
+                        Tildel meg
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <ScrollArea className="flex-1 p-4">
+              <div className="flex flex-1 min-h-0">
+                {/* Messages */}
+                <div className="flex-1 flex flex-col min-w-0">
+                  <ScrollArea className="flex-1 p-4">
                 {selectedItems.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
                     <Mail className="h-8 w-8 mx-auto mb-2 opacity-30" />
@@ -380,6 +402,23 @@ export default function PostkontoretPage() {
                   defaultSubject={`Re: ${selectedCase.title}`}
                   onSent={() => fetchItems(selectedCase.id)}
                 />
+              </div>
+                </div>
+
+                {/* Right sidebar: Linking */}
+                <div className="w-56 border-l border-border/50 p-3 overflow-y-auto">
+                  <CaseLinkingSection
+                    caseData={{
+                      id: selectedCase.id,
+                      company_id: selectedCase.company_id ?? null,
+                      site_id: selectedCase.site_id ?? null,
+                      asset_id: selectedCase.asset_id ?? null,
+                      job_id: selectedCase.job_id ?? null,
+                      warranty_case_id: selectedCase.warranty_case_id ?? null,
+                    }}
+                    onUpdated={() => fetchCases()}
+                  />
+                </div>
               </div>
             </Card>
           ) : (
