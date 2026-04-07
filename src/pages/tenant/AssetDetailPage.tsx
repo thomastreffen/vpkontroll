@@ -15,11 +15,13 @@ import {
 } from "@/lib/domain-labels";
 import { AssetFormDialog } from "@/components/crud/AssetFormDialog";
 import { DocumentUploadSection } from "@/components/crud/DocumentUploadSection";
+import { WarrantyFormDialog } from "@/components/crud/WarrantyFormDialog";
 
 export default function AssetDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { asset, site, company, serviceVisits, warrantyCases, jobs, documents } = useAssetDetail(id);
   const [editOpen, setEditOpen] = useState(false);
+  const [warrantyOpen, setWarrantyOpen] = useState(false);
 
   if (asset.isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
