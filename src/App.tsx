@@ -27,6 +27,10 @@ import TenantAccessControlPage from "@/pages/tenant/AccessControlPage";
 import CrmContactsPage from "@/pages/tenant/CrmContactsPage";
 import CrmCompaniesPage from "@/pages/tenant/CrmCompaniesPage";
 import CrmDealsPage from "@/pages/tenant/CrmDealsPage";
+import CompanyDetailPage from "@/pages/tenant/CompanyDetailPage";
+import AssetDetailPage from "@/pages/tenant/AssetDetailPage";
+import JobDetailPage from "@/pages/tenant/JobDetailPage";
+import AgreementDetailPage from "@/pages/tenant/AgreementDetailPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
