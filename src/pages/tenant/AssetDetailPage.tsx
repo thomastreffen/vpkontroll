@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAssetDetail } from "@/hooks/useAssetDetail";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Wrench, ShieldCheck, FileText, Info } from "lucide-react";
+import { Loader2, ArrowLeft, Wrench, ShieldCheck, FileText, Info, Pencil } from "lucide-react";
 import {
   ENERGY_SOURCE_LABELS, ASSET_STATUS_LABELS, ASSET_STATUS_COLORS,
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
@@ -12,10 +13,12 @@ import {
   VISIT_STATUS_LABELS, DOCUMENT_CATEGORY_LABELS,
   formatDate,
 } from "@/lib/domain-labels";
+import { AssetFormDialog } from "@/components/crud/AssetFormDialog";
 
 export default function AssetDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { asset, site, company, serviceVisits, warrantyCases, jobs, documents } = useAssetDetail(id);
+  const [editOpen, setEditOpen] = useState(false);
 
   if (asset.isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -37,6 +40,7 @@ export default function AssetDetailPage() {
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold">{a.manufacturer} {a.model || ""}</h1>
             <Badge className={ASSET_STATUS_COLORS[a.status] || ""}>{ASSET_STATUS_LABELS[a.status] || a.status}</Badge>
+            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Pencil className="h-3 w-3 mr-1" />Rediger</Button>
           </div>
           <div className="flex gap-3 text-sm text-muted-foreground mt-1">
             <span>{ENERGY_SOURCE_LABELS[a.energy_source] || a.energy_source}</span>
@@ -143,6 +147,13 @@ export default function AssetDetailPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      <AssetFormDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        siteId={a.site_id}
+        asset={a}
+      />
     </div>
   );
 }
