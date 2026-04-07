@@ -119,7 +119,7 @@ export default function CrmCompaniesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((c) => (
-            <Card key={c.id} className="p-4 hover:shadow-md transition-shadow cursor-pointer group" onClick={() => openEdit(c)}>
+            <Card key={c.id} className="p-4 hover:shadow-md transition-shadow cursor-pointer group" onClick={() => navigate(`/tenant/crm/companies/${c.id}`)}>
               <div className="flex items-start gap-3">
                 <Avatar className="h-10 w-10 shrink-0">
                   <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
