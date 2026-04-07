@@ -31,6 +31,7 @@ import CompanyDetailPage from "@/pages/tenant/CompanyDetailPage";
 import AssetDetailPage from "@/pages/tenant/AssetDetailPage";
 import JobDetailPage from "@/pages/tenant/JobDetailPage";
 import AgreementDetailPage from "@/pages/tenant/AgreementDetailPage";
+import WarrantyDetailPage from "@/pages/tenant/WarrantyDetailPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
