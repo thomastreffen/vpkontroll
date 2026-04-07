@@ -328,16 +328,31 @@ export default function PostkontoretPage() {
                       </p>
                     )}
                   </div>
-                  {!selectedCase.assigned_to_user_id && (
-                    <Button size="sm" onClick={() => assignToMe(selectedCase)} className="gap-1.5">
-                      <UserCheck className="h-4 w-4" />
-                      Tildel meg
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <CaseActions
+                      caseId={selectedCase.id}
+                      companyId={selectedCase.company_id}
+                      siteId={selectedCase.site_id}
+                      assetId={selectedCase.asset_id}
+                      customerName={selectedCase.customer_name}
+                      customerEmail={selectedCase.customer_email}
+                      caseTitle={selectedCase.title}
+                      onUpdated={() => fetchCases()}
+                    />
+                    {!selectedCase.assigned_to_user_id && (
+                      <Button size="sm" onClick={() => assignToMe(selectedCase)} className="gap-1.5">
+                        <UserCheck className="h-4 w-4" />
+                        Tildel meg
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <ScrollArea className="flex-1 p-4">
+              <div className="flex flex-1 min-h-0">
+                {/* Messages */}
+                <div className="flex-1 flex flex-col min-w-0">
+                  <ScrollArea className="flex-1 p-4">
                 {selectedItems.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
                     <Mail className="h-8 w-8 mx-auto mb-2 opacity-30" />
