@@ -11,10 +11,22 @@ import { Flame } from "lucide-react";
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
-  const { user, isPasswordRecovery, clearPasswordRecovery } = useAuth();
+  const { user, loading, isPasswordRecovery, clearPasswordRecovery } = useAuth();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [waitingForSession, setWaitingForSession] = useState(true);
+
+  // Give auth state time to settle after redirect
+  useEffect(() => {
+    const timer = setTimeout(() => setWaitingForSession(false), 2000);
+    // Clear early if we get a session or recovery flag
+    if (isPasswordRecovery || user) {
+      setWaitingForSession(false);
+      clearTimeout(timer);
+    }
+    return () => clearTimeout(timer);
+  }, [isPasswordRecovery, user]);
 
   const canReset = isPasswordRecovery || user;
 
