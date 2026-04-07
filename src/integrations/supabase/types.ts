@@ -1499,10 +1499,50 @@ export type Database = {
           },
         ]
       }
+      service_generation_runs: {
+        Row: {
+          agreements_scanned: number
+          completed_at: string | null
+          error_details: Json | null
+          errors_count: number
+          id: string
+          jobs_created: number
+          started_at: string
+          status: string
+          triggered_by: string | null
+          visits_created: number
+        }
+        Insert: {
+          agreements_scanned?: number
+          completed_at?: string | null
+          error_details?: Json | null
+          errors_count?: number
+          id?: string
+          jobs_created?: number
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+          visits_created?: number
+        }
+        Update: {
+          agreements_scanned?: number
+          completed_at?: string | null
+          error_details?: Json | null
+          errors_count?: number
+          id?: string
+          jobs_created?: number
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+          visits_created?: number
+        }
+        Relationships: []
+      }
       service_visits: {
         Row: {
           actions_taken: string | null
           agreement_id: string | null
+          agreement_period: string | null
           asset_id: string | null
           completed_at: string | null
           created_at: string
@@ -1521,6 +1561,7 @@ export type Database = {
         Insert: {
           actions_taken?: string | null
           agreement_id?: string | null
+          agreement_period?: string | null
           asset_id?: string | null
           completed_at?: string | null
           created_at?: string
@@ -1539,6 +1580,7 @@ export type Database = {
         Update: {
           actions_taken?: string | null
           agreement_id?: string | null
+          agreement_period?: string | null
           asset_id?: string | null
           completed_at?: string | null
           created_at?: string
