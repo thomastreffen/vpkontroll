@@ -41,7 +41,8 @@ export function DocumentUploadSection({ documents, entityType, entityId, queryKe
         .upload(filePath, file, { upsert: false });
       if (storageErr) throw storageErr;
 
-      const fkCol = entityType === "job" ? "job_id" : "asset_id";
+      const fkMap = { job: "job_id", asset: "asset_id", warranty: "warranty_case_id" } as const;
+      const fkCol = fkMap[entityType];
       const { error: dbErr } = await supabase.from("documents").insert({
         tenant_id: tenantId,
         [fkCol]: entityId,
