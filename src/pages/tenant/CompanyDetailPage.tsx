@@ -30,6 +30,7 @@ export default function CompanyDetailPage() {
   const [siteDialog, setSiteDialog] = useState<{ open: boolean; site?: any }>({ open: false });
   const [assetDialog, setAssetDialog] = useState<{ open: boolean; asset?: any }>({ open: false });
   const [agreementDialog, setAgreementDialog] = useState<{ open: boolean; agreement?: any }>({ open: false });
+  const [warrantyDialog, setWarrantyDialog] = useState(false);
 
   if (company.isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
