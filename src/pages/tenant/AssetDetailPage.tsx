@@ -120,16 +120,21 @@ export default function AssetDetailPage() {
         </TabsContent>
 
         <TabsContent value="warranty" className="mt-4">
+          <div className="flex justify-end mb-3">
+            <Button size="sm" onClick={() => setWarrantyOpen(true)}><Plus className="h-3.5 w-3.5 mr-1" />Ny garantisak</Button>
+          </div>
           {!warrantyCases.data?.length ? <Empty text="Ingen garantisaker" /> : (
             <div className="grid gap-3">
               {warrantyCases.data.map(w => (
-                <Card key={w.id} className="p-4 flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-sm">{w.warranty_number}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-1">{w.issue_description}</p>
-                  </div>
-                  <Badge className={`text-[10px] ${WARRANTY_STATUS_COLORS[w.status] || ""}`}>{WARRANTY_STATUS_LABELS[w.status] || w.status}</Badge>
-                </Card>
+                <Link key={w.id} to={`/tenant/crm/warranty/${w.id}`}>
+                  <Card className="p-4 hover:shadow-md transition-shadow flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-sm">{w.warranty_number}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{w.issue_description}</p>
+                    </div>
+                    <Badge className={`text-[10px] ${WARRANTY_STATUS_COLORS[w.status] || ""}`}>{WARRANTY_STATUS_LABELS[w.status] || w.status}</Badge>
+                  </Card>
+                </Link>
               ))}
             </div>
           )}
