@@ -94,9 +94,11 @@ export type Database = {
       }
       cases: {
         Row: {
+          asset_id: string | null
           assigned_at: string | null
           assigned_to_user_id: string | null
           case_number: string
+          company_id: string | null
           created_at: string
           customer_email: string | null
           customer_name: string | null
@@ -104,20 +106,25 @@ export type Database = {
           deleted_by: string | null
           due_at: string | null
           id: string
+          job_id: string | null
           last_activity_at: string | null
           mailbox_address: string | null
           next_action: Database["public"]["Enums"]["case_next_action"]
           owner_user_id: string | null
           priority: Database["public"]["Enums"]["case_priority"]
+          site_id: string | null
           status: Database["public"]["Enums"]["case_status"]
           tenant_id: string
           title: string
           updated_at: string
+          warranty_case_id: string | null
         }
         Insert: {
+          asset_id?: string | null
           assigned_at?: string | null
           assigned_to_user_id?: string | null
           case_number: string
+          company_id?: string | null
           created_at?: string
           customer_email?: string | null
           customer_name?: string | null
@@ -125,20 +132,25 @@ export type Database = {
           deleted_by?: string | null
           due_at?: string | null
           id?: string
+          job_id?: string | null
           last_activity_at?: string | null
           mailbox_address?: string | null
           next_action?: Database["public"]["Enums"]["case_next_action"]
           owner_user_id?: string | null
           priority?: Database["public"]["Enums"]["case_priority"]
+          site_id?: string | null
           status?: Database["public"]["Enums"]["case_status"]
           tenant_id: string
           title?: string
           updated_at?: string
+          warranty_case_id?: string | null
         }
         Update: {
+          asset_id?: string | null
           assigned_at?: string | null
           assigned_to_user_id?: string | null
           case_number?: string
+          company_id?: string | null
           created_at?: string
           customer_email?: string | null
           customer_name?: string | null
@@ -146,23 +158,61 @@ export type Database = {
           deleted_by?: string | null
           due_at?: string | null
           id?: string
+          job_id?: string | null
           last_activity_at?: string | null
           mailbox_address?: string | null
           next_action?: Database["public"]["Enums"]["case_next_action"]
           owner_user_id?: string | null
           priority?: Database["public"]["Enums"]["case_priority"]
+          site_id?: string | null
           status?: Database["public"]["Enums"]["case_status"]
           tenant_id?: string
           title?: string
           updated_at?: string
+          warranty_case_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "cases_asset_fk"
+            columns: ["tenant_id", "asset_id"]
+            isOneToOne: false
+            referencedRelation: "hvac_assets"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "cases_company_fk"
+            columns: ["tenant_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "cases_job_fk"
+            columns: ["tenant_id", "job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "cases_site_fk"
+            columns: ["tenant_id", "site_id"]
+            isOneToOne: false
+            referencedRelation: "customer_sites"
+            referencedColumns: ["tenant_id", "id"]
+          },
           {
             foreignKeyName: "cases_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cases_warranty_fk"
+            columns: ["tenant_id", "warranty_case_id"]
+            isOneToOne: false
+            referencedRelation: "warranty_cases"
+            referencedColumns: ["tenant_id", "id"]
           },
         ]
       }
@@ -647,6 +697,9 @@ export type Database = {
           description: string | null
           end_time: string
           id: string
+          job_id: string | null
+          service_visit_id: string | null
+          site_id: string | null
           start_time: string
           status: Database["public"]["Enums"]["event_status"]
           tenant_id: string
@@ -662,6 +715,9 @@ export type Database = {
           description?: string | null
           end_time: string
           id?: string
+          job_id?: string | null
+          service_visit_id?: string | null
+          site_id?: string | null
           start_time: string
           status?: Database["public"]["Enums"]["event_status"]
           tenant_id: string
@@ -677,6 +733,9 @@ export type Database = {
           description?: string | null
           end_time?: string
           id?: string
+          job_id?: string | null
+          service_visit_id?: string | null
+          site_id?: string | null
           start_time?: string
           status?: Database["public"]["Enums"]["event_status"]
           tenant_id?: string
@@ -685,11 +744,32 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "events_job_fk"
+            columns: ["tenant_id", "job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "events_site_fk"
+            columns: ["tenant_id", "site_id"]
+            isOneToOne: false
+            referencedRelation: "customer_sites"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
             foreignKeyName: "events_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_visit_fk"
+            columns: ["tenant_id", "service_visit_id"]
+            isOneToOne: false
+            referencedRelation: "service_visits"
+            referencedColumns: ["tenant_id", "id"]
           },
         ]
       }
@@ -1002,6 +1082,327 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_lines: {
+        Row: {
+          description: string
+          discount_percent: number | null
+          id: string
+          line_total: number
+          quantity: number
+          quote_id: string
+          sort_order: number
+          tenant_id: string
+          unit: string | null
+          unit_price: number
+        }
+        Insert: {
+          description: string
+          discount_percent?: number | null
+          id?: string
+          line_total?: number
+          quantity?: number
+          quote_id: string
+          sort_order?: number
+          tenant_id: string
+          unit?: string | null
+          unit_price?: number
+        }
+        Update: {
+          description?: string
+          discount_percent?: number | null
+          id?: string
+          line_total?: number
+          quantity?: number
+          quote_id?: string
+          sort_order?: number
+          tenant_id?: string
+          unit?: string | null
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_lines_quote_fk"
+            columns: ["tenant_id", "quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "quote_lines_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotes: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          created_by: string | null
+          deal_id: string
+          deleted_at: string | null
+          discount_percent: number | null
+          id: string
+          notes: string | null
+          quote_number: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["quote_status"]
+          tenant_id: string
+          total_amount: number
+          updated_at: string
+          valid_until: string | null
+          vat_amount: number
+          version: number
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id: string
+          deleted_at?: string | null
+          discount_percent?: number | null
+          id?: string
+          notes?: string | null
+          quote_number: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["quote_status"]
+          tenant_id: string
+          total_amount?: number
+          updated_at?: string
+          valid_until?: string | null
+          vat_amount?: number
+          version?: number
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string
+          deleted_at?: string | null
+          discount_percent?: number | null
+          id?: string
+          notes?: string | null
+          quote_number?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["quote_status"]
+          tenant_id?: string
+          total_amount?: number
+          updated_at?: string
+          valid_until?: string | null
+          vat_amount?: number
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_deal_fk"
+            columns: ["tenant_id", "deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "quotes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_agreements: {
+        Row: {
+          agreement_number: string
+          annual_price: number | null
+          asset_id: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          end_date: string | null
+          id: string
+          interval: Database["public"]["Enums"]["agreement_interval"]
+          next_visit_due: string | null
+          notes: string | null
+          scope_description: string | null
+          site_id: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["agreement_status"]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          agreement_number: string
+          annual_price?: number | null
+          asset_id?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          end_date?: string | null
+          id?: string
+          interval?: Database["public"]["Enums"]["agreement_interval"]
+          next_visit_due?: string | null
+          notes?: string | null
+          scope_description?: string | null
+          site_id?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["agreement_status"]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          agreement_number?: string
+          annual_price?: number | null
+          asset_id?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          end_date?: string | null
+          id?: string
+          interval?: Database["public"]["Enums"]["agreement_interval"]
+          next_visit_due?: string | null
+          notes?: string | null
+          scope_description?: string | null
+          site_id?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["agreement_status"]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_agreements_asset_fk"
+            columns: ["tenant_id", "asset_id"]
+            isOneToOne: false
+            referencedRelation: "hvac_assets"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "service_agreements_company_fk"
+            columns: ["tenant_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "service_agreements_site_fk"
+            columns: ["tenant_id", "site_id"]
+            isOneToOne: false
+            referencedRelation: "customer_sites"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "service_agreements_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_visits: {
+        Row: {
+          actions_taken: string | null
+          agreement_id: string | null
+          asset_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          findings: string | null
+          id: string
+          job_id: string | null
+          next_visit_recommended: string | null
+          scheduled_date: string | null
+          site_id: string | null
+          status: Database["public"]["Enums"]["visit_status"]
+          technician_id: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          actions_taken?: string | null
+          agreement_id?: string | null
+          asset_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          findings?: string | null
+          id?: string
+          job_id?: string | null
+          next_visit_recommended?: string | null
+          scheduled_date?: string | null
+          site_id?: string | null
+          status?: Database["public"]["Enums"]["visit_status"]
+          technician_id?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          actions_taken?: string | null
+          agreement_id?: string | null
+          asset_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          findings?: string | null
+          id?: string
+          job_id?: string | null
+          next_visit_recommended?: string | null
+          scheduled_date?: string | null
+          site_id?: string | null
+          status?: Database["public"]["Enums"]["visit_status"]
+          technician_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_visits_agreement_fk"
+            columns: ["tenant_id", "agreement_id"]
+            isOneToOne: false
+            referencedRelation: "service_agreements"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "service_visits_asset_fk"
+            columns: ["tenant_id", "asset_id"]
+            isOneToOne: false
+            referencedRelation: "hvac_assets"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "service_visits_job_fk"
+            columns: ["tenant_id", "job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "service_visits_site_fk"
+            columns: ["tenant_id", "site_id"]
+            isOneToOne: false
+            referencedRelation: "customer_sites"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "service_visits_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_visits_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1354,6 +1755,99 @@ export type Database = {
         }
         Relationships: []
       }
+      warranty_cases: {
+        Row: {
+          asset_id: string | null
+          case_id: string | null
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          issue_description: string
+          job_id: string | null
+          manufacturer_ref: string | null
+          resolution: string | null
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["warranty_status"]
+          tenant_id: string
+          updated_at: string
+          warranty_number: string
+        }
+        Insert: {
+          asset_id?: string | null
+          case_id?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          issue_description: string
+          job_id?: string | null
+          manufacturer_ref?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["warranty_status"]
+          tenant_id: string
+          updated_at?: string
+          warranty_number: string
+        }
+        Update: {
+          asset_id?: string | null
+          case_id?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          issue_description?: string
+          job_id?: string | null
+          manufacturer_ref?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["warranty_status"]
+          tenant_id?: string
+          updated_at?: string
+          warranty_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warranty_cases_asset_fk"
+            columns: ["tenant_id", "asset_id"]
+            isOneToOne: false
+            referencedRelation: "hvac_assets"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "warranty_cases_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warranty_cases_company_fk"
+            columns: ["tenant_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "warranty_cases_job_fk"
+            columns: ["tenant_id", "job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "warranty_cases_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1380,6 +1874,13 @@ export type Database = {
         | "meeting"
         | "task"
         | "status_change"
+      agreement_interval:
+        | "monthly"
+        | "quarterly"
+        | "semi_annual"
+        | "annual"
+        | "biennial"
+      agreement_status: "active" | "paused" | "expired" | "cancelled"
       app_role: "master_admin" | "tenant_admin" | "user"
       asset_status:
         | "planned"
@@ -1439,8 +1940,22 @@ export type Database = {
         | "inspection"
         | "decommission"
       module_name: "postkontoret" | "ressursplanlegger" | "crm"
+      quote_status: "draft" | "sent" | "accepted" | "rejected" | "expired"
       site_type: "residential" | "commercial" | "industrial" | "cabin"
       tenant_status: "active" | "inactive" | "trial" | "suspended"
+      visit_status:
+        | "planned"
+        | "confirmed"
+        | "in_progress"
+        | "completed"
+        | "missed"
+        | "cancelled"
+      warranty_status:
+        | "open"
+        | "investigating"
+        | "approved"
+        | "rejected"
+        | "resolved"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1576,6 +2091,14 @@ export const Constants = {
         "task",
         "status_change",
       ],
+      agreement_interval: [
+        "monthly",
+        "quarterly",
+        "semi_annual",
+        "annual",
+        "biennial",
+      ],
+      agreement_status: ["active", "paused", "expired", "cancelled"],
       app_role: ["master_admin", "tenant_admin", "user"],
       asset_status: [
         "planned",
@@ -1642,8 +2165,24 @@ export const Constants = {
         "decommission",
       ],
       module_name: ["postkontoret", "ressursplanlegger", "crm"],
+      quote_status: ["draft", "sent", "accepted", "rejected", "expired"],
       site_type: ["residential", "commercial", "industrial", "cabin"],
       tenant_status: ["active", "inactive", "trial", "suspended"],
+      visit_status: [
+        "planned",
+        "confirmed",
+        "in_progress",
+        "completed",
+        "missed",
+        "cancelled",
+      ],
+      warranty_status: [
+        "open",
+        "investigating",
+        "approved",
+        "rejected",
+        "resolved",
+      ],
     },
   },
 } as const
