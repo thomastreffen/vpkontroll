@@ -257,7 +257,11 @@ export type Database = {
           country: string | null
           created_at: string
           created_by: string | null
+          customer_since: string | null
+          customer_type: Database["public"]["Enums"]["customer_type"]
+          deleted_at: string | null
           email: string | null
+          enova_registered: boolean
           id: string
           industry: string | null
           name: string
@@ -275,7 +279,11 @@ export type Database = {
           country?: string | null
           created_at?: string
           created_by?: string | null
+          customer_since?: string | null
+          customer_type?: Database["public"]["Enums"]["customer_type"]
+          deleted_at?: string | null
           email?: string | null
+          enova_registered?: boolean
           id?: string
           industry?: string | null
           name: string
@@ -293,7 +301,11 @@ export type Database = {
           country?: string | null
           created_at?: string
           created_by?: string | null
+          customer_since?: string | null
+          customer_type?: Database["public"]["Enums"]["customer_type"]
+          deleted_at?: string | null
           email?: string | null
+          enova_registered?: boolean
           id?: string
           industry?: string | null
           name?: string
@@ -322,6 +334,7 @@ export type Database = {
           company_id: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           email: string | null
           first_name: string
           id: string
@@ -341,6 +354,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           email?: string | null
           first_name: string
           id?: string
@@ -360,6 +374,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           email?: string | null
           first_name?: string
           id?: string
@@ -400,10 +415,15 @@ export type Database = {
           created_by: string | null
           currency: string | null
           description: string | null
+          energy_source: Database["public"]["Enums"]["energy_source"] | null
+          estimated_kw: number | null
           expected_close_date: string | null
           id: string
           lost_reason: string | null
           owner_user_id: string | null
+          site_id: string | null
+          site_visit_date: string | null
+          site_visit_notes: string | null
           stage: Database["public"]["Enums"]["deal_stage"]
           tenant_id: string
           title: string
@@ -419,10 +439,15 @@ export type Database = {
           created_by?: string | null
           currency?: string | null
           description?: string | null
+          energy_source?: Database["public"]["Enums"]["energy_source"] | null
+          estimated_kw?: number | null
           expected_close_date?: string | null
           id?: string
           lost_reason?: string | null
           owner_user_id?: string | null
+          site_id?: string | null
+          site_visit_date?: string | null
+          site_visit_notes?: string | null
           stage?: Database["public"]["Enums"]["deal_stage"]
           tenant_id: string
           title: string
@@ -438,10 +463,15 @@ export type Database = {
           created_by?: string | null
           currency?: string | null
           description?: string | null
+          energy_source?: Database["public"]["Enums"]["energy_source"] | null
+          estimated_kw?: number | null
           expected_close_date?: string | null
           id?: string
           lost_reason?: string | null
           owner_user_id?: string | null
+          site_id?: string | null
+          site_visit_date?: string | null
+          site_visit_notes?: string | null
           stage?: Database["public"]["Enums"]["deal_stage"]
           tenant_id?: string
           title?: string
@@ -471,7 +501,99 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "crm_deals_site_fk"
+            columns: ["tenant_id", "site_id"]
+            isOneToOne: false
+            referencedRelation: "customer_sites"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
             foreignKeyName: "crm_deals_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_sites: {
+        Row: {
+          access_info: string | null
+          address: string | null
+          city: string | null
+          company_id: string
+          country: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          name: string | null
+          notes: string | null
+          postal_code: string | null
+          primary_contact_id: string | null
+          site_type: Database["public"]["Enums"]["site_type"]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          access_info?: string | null
+          address?: string | null
+          city?: string | null
+          company_id: string
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name?: string | null
+          notes?: string | null
+          postal_code?: string | null
+          primary_contact_id?: string | null
+          site_type?: Database["public"]["Enums"]["site_type"]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          access_info?: string | null
+          address?: string | null
+          city?: string | null
+          company_id?: string
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name?: string | null
+          notes?: string | null
+          postal_code?: string | null
+          primary_contact_id?: string | null
+          site_type?: Database["public"]["Enums"]["site_type"]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_sites_company_fk"
+            columns: ["tenant_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "customer_sites_contact_fk"
+            columns: ["primary_contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_sites_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -564,6 +686,240 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hvac_assets: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          energy_source: Database["public"]["Enums"]["energy_source"]
+          id: string
+          indoor_unit_model: string | null
+          installed_at: string | null
+          manufacturer: string | null
+          model: string | null
+          nominal_kw: number | null
+          notes: string | null
+          outdoor_unit_location: string | null
+          refrigerant_kg: number | null
+          refrigerant_type: string | null
+          serial_number: string | null
+          site_id: string
+          status: Database["public"]["Enums"]["asset_status"]
+          tenant_id: string
+          updated_at: string
+          warranty_expires_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          energy_source?: Database["public"]["Enums"]["energy_source"]
+          id?: string
+          indoor_unit_model?: string | null
+          installed_at?: string | null
+          manufacturer?: string | null
+          model?: string | null
+          nominal_kw?: number | null
+          notes?: string | null
+          outdoor_unit_location?: string | null
+          refrigerant_kg?: number | null
+          refrigerant_type?: string | null
+          serial_number?: string | null
+          site_id: string
+          status?: Database["public"]["Enums"]["asset_status"]
+          tenant_id: string
+          updated_at?: string
+          warranty_expires_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          energy_source?: Database["public"]["Enums"]["energy_source"]
+          id?: string
+          indoor_unit_model?: string | null
+          installed_at?: string | null
+          manufacturer?: string | null
+          model?: string | null
+          nominal_kw?: number | null
+          notes?: string | null
+          outdoor_unit_location?: string | null
+          refrigerant_kg?: number | null
+          refrigerant_type?: string | null
+          serial_number?: string | null
+          site_id?: string
+          status?: Database["public"]["Enums"]["asset_status"]
+          tenant_id?: string
+          updated_at?: string
+          warranty_expires_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hvac_assets_site_fk"
+            columns: ["tenant_id", "site_id"]
+            isOneToOne: false
+            referencedRelation: "customer_sites"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "hvac_assets_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_technicians: {
+        Row: {
+          created_at: string
+          id: string
+          job_id: string
+          technician_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_id: string
+          technician_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_id?: string
+          technician_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_technicians_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_technicians_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          actual_end: string | null
+          actual_start: string | null
+          asset_id: string | null
+          company_id: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          estimated_hours: number | null
+          id: string
+          job_number: string
+          job_type: Database["public"]["Enums"]["job_type"]
+          notes: string | null
+          owner_user_id: string | null
+          priority: Database["public"]["Enums"]["case_priority"]
+          scheduled_end: string | null
+          scheduled_start: string | null
+          site_id: string | null
+          status: Database["public"]["Enums"]["job_status"]
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          actual_end?: string | null
+          actual_start?: string | null
+          asset_id?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          job_number: string
+          job_type?: Database["public"]["Enums"]["job_type"]
+          notes?: string | null
+          owner_user_id?: string | null
+          priority?: Database["public"]["Enums"]["case_priority"]
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          site_id?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          actual_end?: string | null
+          actual_start?: string | null
+          asset_id?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          job_number?: string
+          job_type?: Database["public"]["Enums"]["job_type"]
+          notes?: string | null
+          owner_user_id?: string | null
+          priority?: Database["public"]["Enums"]["case_priority"]
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          site_id?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_asset_fk"
+            columns: ["tenant_id", "asset_id"]
+            isOneToOne: false
+            referencedRelation: "hvac_assets"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "jobs_company_fk"
+            columns: ["tenant_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "jobs_contact_fk"
+            columns: ["tenant_id", "contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "jobs_site_fk"
+            columns: ["tenant_id", "site_id"]
+            isOneToOne: false
+            referencedRelation: "customer_sites"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "jobs_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1025,6 +1381,12 @@ export type Database = {
         | "task"
         | "status_change"
       app_role: "master_admin" | "tenant_admin" | "user"
+      asset_status:
+        | "planned"
+        | "installed"
+        | "operational"
+        | "needs_service"
+        | "decommissioned"
       case_next_action:
         | "call"
         | "quote"
@@ -1044,6 +1406,7 @@ export type Database = {
         | "archived"
         | "converted"
       credential_status: "connected" | "disconnected" | "error" | "pending"
+      customer_type: "private" | "business" | "housing_coop" | "public_sector"
       deal_stage:
         | "lead"
         | "qualified"
@@ -1052,9 +1415,31 @@ export type Database = {
         | "negotiation"
         | "won"
         | "lost"
+      energy_source:
+        | "air_air"
+        | "air_water"
+        | "ground_water"
+        | "ground_brine"
+        | "exhaust_air"
+        | "hybrid"
       event_status: "planned" | "in_progress" | "completed" | "cancelled"
       integration_provider: "microsoft" | "google"
+      job_status:
+        | "planned"
+        | "scheduled"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+        | "on_hold"
+      job_type:
+        | "installation"
+        | "service"
+        | "repair"
+        | "warranty"
+        | "inspection"
+        | "decommission"
       module_name: "postkontoret" | "ressursplanlegger" | "crm"
+      site_type: "residential" | "commercial" | "industrial" | "cabin"
       tenant_status: "active" | "inactive" | "trial" | "suspended"
     }
     CompositeTypes: {
@@ -1192,6 +1577,13 @@ export const Constants = {
         "status_change",
       ],
       app_role: ["master_admin", "tenant_admin", "user"],
+      asset_status: [
+        "planned",
+        "installed",
+        "operational",
+        "needs_service",
+        "decommissioned",
+      ],
       case_next_action: [
         "call",
         "quote",
@@ -1213,6 +1605,7 @@ export const Constants = {
         "converted",
       ],
       credential_status: ["connected", "disconnected", "error", "pending"],
+      customer_type: ["private", "business", "housing_coop", "public_sector"],
       deal_stage: [
         "lead",
         "qualified",
@@ -1222,9 +1615,34 @@ export const Constants = {
         "won",
         "lost",
       ],
+      energy_source: [
+        "air_air",
+        "air_water",
+        "ground_water",
+        "ground_brine",
+        "exhaust_air",
+        "hybrid",
+      ],
       event_status: ["planned", "in_progress", "completed", "cancelled"],
       integration_provider: ["microsoft", "google"],
+      job_status: [
+        "planned",
+        "scheduled",
+        "in_progress",
+        "completed",
+        "cancelled",
+        "on_hold",
+      ],
+      job_type: [
+        "installation",
+        "service",
+        "repair",
+        "warranty",
+        "inspection",
+        "decommission",
+      ],
       module_name: ["postkontoret", "ressursplanlegger", "crm"],
+      site_type: ["residential", "commercial", "industrial", "cabin"],
       tenant_status: ["active", "inactive", "trial", "suspended"],
     },
   },
