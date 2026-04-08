@@ -509,6 +509,39 @@ export default function DealDetailPage() {
               )}
             </>
           )}
+
+          {/* Serviceavtale – alltid synlig, disabled med forklaring hvis krav ikke er oppfylt */}
+          {(() => {
+            const canCreate = isWon && deal.company_id && deal.site_id;
+            const reasons: string[] = [];
+            if (!isWon) reasons.push("deal må være vunnet");
+            if (!deal.company_id) reasons.push("kunde må være tilknyttet");
+            if (!deal.site_id) reasons.push("anleggssted må være tilknyttet");
+            return (
+              <div className="relative group">
+                <Button
+                  variant={canCreate ? "default" : "outline"}
+                  size="sm"
+                  onClick={canCreate ? openCreateAgreement : undefined}
+                  disabled={!canCreate}
+                  className={`gap-1.5 ${!canCreate ? "opacity-60" : ""}`}
+                >
+                  <ScrollText className="h-3.5 w-3.5" />Opprett serviceavtale
+                </Button>
+                {!canCreate && (
+                  <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover:block z-50">
+                    <div className="bg-popover text-popover-foreground border rounded-md shadow-md px-3 py-2 text-xs max-w-[220px]">
+                      <p className="font-medium mb-1">Krever:</p>
+                      <ul className="list-disc pl-3.5 space-y-0.5">
+                        {reasons.map(r => <li key={r}>{r}</li>)}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           {!isClosed && deal.stage !== "lost" && (
             <Button variant="ghost" size="sm" onClick={() => changeStage("lost")} className="gap-1.5 text-destructive hover:text-destructive ml-auto">
               <XCircle className="h-3.5 w-3.5" />Marker tapt
@@ -522,11 +555,6 @@ export default function DealDetailPage() {
           {isWon && !linkedJob && (
             <Button size="sm" onClick={openCreateJob} className="gap-1.5">
               <Briefcase className="h-3.5 w-3.5" />Opprett jobb
-            </Button>
-          )}
-          {isWon && (
-            <Button variant="outline" size="sm" onClick={openCreateAgreement} className="gap-1.5">
-              <ScrollText className="h-3.5 w-3.5" />Opprett serviceavtale
             </Button>
           )}
         </div>

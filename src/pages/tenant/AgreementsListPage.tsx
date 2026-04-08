@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, FileText, Loader2, AlertTriangle, Clock, CheckCircle2 } from "lucide-react";
+import { Search, FileText, Loader2, AlertTriangle, Clock, CheckCircle2, ScrollText, Building2, MapPin, TrendingUp } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS, AGREEMENT_INTERVAL_LABELS, formatDate } from "@/lib/domain-labels";
 import { formatCurrency } from "@/lib/crm-labels";
@@ -103,12 +103,30 @@ export default function AgreementsListPage() {
         search || statusFilter !== "all" || dueFilter !== "all" ? (
           <div className="text-center py-20"><p className="text-sm text-muted-foreground">Ingen treff</p></div>
         ) : (
-          <EmptyState
-            icon={FileText}
-            title="Ingen serviceavtaler ennå"
-            description="Serviceavtaler opprettes fra en kundeside, anleggsside, eller fra en vunnet deal, og styrer automatisk generering av servicebesøk og jobber."
-            hint="Kunde → Anleggssted → Anlegg → Serviceavtale"
-          />
+          <div className="flex flex-col items-center justify-center py-20 px-6 text-center max-w-lg mx-auto">
+            <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+              <ScrollText className="h-7 w-7 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold tracking-tight mb-1">Ingen serviceavtaler ennå</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+              Serviceavtaler opprettes fra en kundeside, anleggsside eller fra en vunnet deal, og styrer automatisk generering av servicebesøk og jobber.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-md">
+              <button onClick={() => navigate("/tenant/crm/companies")} className="flex flex-col items-center gap-2 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors text-center">
+                <Building2 className="h-5 w-5 text-primary" />
+                <span className="text-xs font-medium">Gå til kunder</span>
+              </button>
+              <button onClick={() => navigate("/tenant/crm/deals")} className="flex flex-col items-center gap-2 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors text-center">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                <span className="text-xs font-medium">Gå til deals</span>
+              </button>
+              <button onClick={() => navigate("/tenant/crm/assets")} className="flex flex-col items-center gap-2 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors text-center">
+                <MapPin className="h-5 w-5 text-primary" />
+                <span className="text-xs font-medium">Gå til anlegg</span>
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground/70 mt-4 italic">Vanlig flyt: Kunde → Anleggssted → Deal → Serviceavtale</p>
+          </div>
         )
       ) : (
         <div className="border rounded-lg">
