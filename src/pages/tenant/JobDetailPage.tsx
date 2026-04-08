@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useJobDetail } from "@/hooks/useJobDetail";
+import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Info, Users, ClipboardCheck, FileText, Pencil } from "lucide-react";
+import { Loader2, ArrowLeft, Info, Users, ClipboardCheck, FileText, Pencil, CalendarDays, ExternalLink } from "lucide-react";
 import {
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
   DOCUMENT_CATEGORY_LABELS,
@@ -15,11 +17,22 @@ import { CASE_PRIORITY_LABELS, CASE_PRIORITY_COLOR } from "@/lib/case-labels";
 import { JobEditDialog } from "@/components/crud/JobEditDialog";
 import { DocumentUploadSection } from "@/components/crud/DocumentUploadSection";
 import { ChecklistSection } from "@/components/crud/ChecklistSection";
+import { ScheduleEventDialog } from "@/components/crud/ScheduleEventDialog";
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { job, company, contact, site, asset, technicians, checklists, documents } = useJobDetail(id);
+  const { tenantId } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [linkedEvent, setLinkedEvent] = useState<any>(null);
+
+  // Check if job already has a linked event
+  useEffect(() => {
+    if (!id || !tenantId) return;
+    supabase.from("events").select("id, start_time, end_time, status").eq("job_id", id).is("deleted_at", null).limit(1)
+      .then(({ data }) => { if (data && data.length > 0) setLinkedEvent(data[0]); });
+  }, [id, tenantId, scheduleOpen]);
 
   if (job.isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -46,6 +59,13 @@ export default function JobDetailPage() {
               {CASE_PRIORITY_LABELS[j.priority as keyof typeof CASE_PRIORITY_LABELS] || j.priority}
             </span>
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Pencil className="h-3 w-3 mr-1" />Rediger</Button>
+            {linkedEvent ? (
+              <Link to="/tenant/ressursplanlegger">
+                <Button variant="outline" size="sm" className="gap-1"><CalendarDays className="h-3 w-3" />Se i kalender<ExternalLink className="h-3 w-3" /></Button>
+              </Link>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setScheduleOpen(true)} className="gap-1"><CalendarDays className="h-3 w-3" />Planlegg</Button>
+            )}
           </div>
           <p className="text-lg mt-1">{j.title}</p>
           <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mt-2">
@@ -111,6 +131,17 @@ export default function JobDetailPage() {
       </Tabs>
 
       <JobEditDialog open={editOpen} onOpenChange={setEditOpen} job={j} />
+      <ScheduleEventDialog
+        open={scheduleOpen}
+        onOpenChange={setScheduleOpen}
+        jobId={j.id}
+        jobTitle={`${j.job_number} – ${j.title}`}
+        companyName={company.data?.name}
+        siteAddress={site.data ? `${site.data.address || ""}, ${site.data.city || ""}` : undefined}
+        siteId={j.site_id || undefined}
+        scheduledStart={j.scheduled_start}
+        scheduledEnd={j.scheduled_end}
+      />
     </div>
   );
 }

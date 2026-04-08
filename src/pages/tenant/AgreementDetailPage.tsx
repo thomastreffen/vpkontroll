@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAgreementDetail } from "@/hooks/useAgreementDetail";
 import { Card } from "@/components/ui/card";
@@ -5,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, Info, CalendarDays, Wrench } from "lucide-react";
+import { ScheduleEventDialog } from "@/components/crud/ScheduleEventDialog";
 import {
   AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS,
   AGREEMENT_INTERVAL_LABELS,
@@ -17,6 +19,7 @@ import { formatCurrency } from "@/lib/crm-labels";
 export default function AgreementDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { agreement, company, visits, jobs } = useAgreementDetail(id);
+  const [scheduleVisit, setScheduleVisit] = useState<any>(null);
 
   if (agreement.isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -86,7 +89,14 @@ export default function AgreementDetailPage() {
                       {v.completed_at && ` · Fullført: ${formatDate(v.completed_at)}`}
                     </p>
                   </div>
-                  <Badge variant="outline" className="text-[10px]">{VISIT_STATUS_LABELS[v.status] || v.status}</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px]">{VISIT_STATUS_LABELS[v.status] || v.status}</Badge>
+                    {v.status === "planned" && (
+                      <Button variant="outline" size="sm" className="gap-1" onClick={() => setScheduleVisit(v)}>
+                        <CalendarDays className="h-3 w-3" />Planlegg
+                      </Button>
+                    )}
+                  </div>
                 </Card>
               ))}
             </div>
@@ -111,6 +121,17 @@ export default function AgreementDetailPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {scheduleVisit && (
+        <ScheduleEventDialog
+          open={!!scheduleVisit}
+          onOpenChange={(o) => { if (!o) setScheduleVisit(null); }}
+          serviceVisitId={scheduleVisit.id}
+          visitDate={scheduleVisit.scheduled_date}
+          jobTitle={`Servicebesøk – ${a.agreement_number}`}
+          companyName={company.data?.name}
+        />
+      )}
     </div>
   );
 }
