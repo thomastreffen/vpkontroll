@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAgreementDetail } from "@/hooks/useAgreementDetail";
 import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,18 +15,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   Loader2, ArrowLeft, Info, CalendarDays, Wrench, Building2, MapPin,
-  Zap, Plus, CheckCircle2, Clock, AlertTriangle, ArrowRight, Settings2,
+  Zap, Plus, CheckCircle2, Clock, AlertTriangle, Settings2, Pencil,
+  RefreshCw, ArrowRight,
 } from "lucide-react";
 import { ScheduleEventDialog } from "@/components/crud/ScheduleEventDialog";
+import { AgreementFormDialog } from "@/components/crud/AgreementFormDialog";
 import {
   AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS,
   AGREEMENT_INTERVAL_LABELS,
   VISIT_STATUS_LABELS,
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
-  ENERGY_SOURCE_LABELS,
   formatDate, formatDateTime,
 } from "@/lib/domain-labels";
 import { formatCurrency } from "@/lib/crm-labels";
+import { addMonths, addYears, format, isBefore, isAfter, startOfToday } from "date-fns";
 
 /* ─── Due status helpers ──────────────────────────────────────── */
 function getDueStatus(nextDue: string | null): { label: string; color: string; icon: typeof CheckCircle2 } {
@@ -36,16 +39,66 @@ function getDueStatus(nextDue: string | null): { label: string; color: string; i
   return { label: `Om ${days} dager`, color: "text-emerald-600", icon: CheckCircle2 };
 }
 
+/* ─── Project future visits ────────────────────────────────────── */
+function projectFutureVisits(
+  interval: string,
+  nextVisitDue: string | null,
+  startDate: string,
+  endDate: string | null,
+  existingVisitDates: Set<string>,
+  maxProjections: number = 6,
+): string[] {
+  const stepMonths = interval === "quarterly" ? 3 : interval === "semi_annual" ? 6 : 12;
+  const anchor = nextVisitDue ? new Date(nextVisitDue) : new Date(startDate);
+  const today = startOfToday();
+  const limit = endDate ? new Date(endDate) : addYears(today, 3);
+  const projected: string[] = [];
+  let cursor = anchor;
+
+  // Walk forward from anchor
+  for (let i = 0; i < 50 && projected.length < maxProjections; i++) {
+    const dateStr = format(cursor, "yyyy-MM-dd");
+    if (isAfter(cursor, limit)) break;
+    if (isAfter(cursor, today) && !existingVisitDates.has(dateStr)) {
+      projected.push(dateStr);
+    }
+    cursor = addMonths(cursor, stepMonths);
+  }
+  return projected;
+}
+
 export default function AgreementDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { tenantId, user } = useAuth();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { agreement, company, site, asset, visits, jobs, generationRuns } = useAgreementDetail(id);
   const [scheduleVisit, setScheduleVisit] = useState<any>(null);
   const [extraVisitOpen, setExtraVisitOpen] = useState(false);
   const [extraVisitDate, setExtraVisitDate] = useState("");
   const [extraVisitNotes, setExtraVisitNotes] = useState("");
   const [creatingVisit, setCreatingVisit] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [renewOpen, setRenewOpen] = useState(false);
+  const [renewMonths, setRenewMonths] = useState("12");
+  const [renewing, setRenewing] = useState(false);
+
+  // Fetch sites/assets for edit dialog
+  const [editSites, setEditSites] = useState<any[]>([]);
+  const [editAssets, setEditAssets] = useState<any[]>([]);
+
+  const openEdit = async () => {
+    if (!agreement.data) return;
+    // Load sites and assets for the company
+    const companyId = agreement.data.company_id;
+    const [sitesRes, assetsRes] = await Promise.all([
+      supabase.from("customer_sites").select("id, name, address").eq("company_id", companyId).is("deleted_at", null),
+      supabase.from("hvac_assets").select("id, manufacturer, model, site_id").eq("tenant_id", tenantId!).is("deleted_at", null),
+    ]);
+    setEditSites(sitesRes.data || []);
+    setEditAssets(assetsRes.data || []);
+    setEditOpen(true);
+  };
 
   const createExtraVisit = async () => {
     if (!id || !tenantId || !extraVisitDate) return;
@@ -70,6 +123,33 @@ export default function AgreementDetailPage() {
     visits.refetch();
   };
 
+  const renewAgreement = async () => {
+    if (!agreement.data || !id) return;
+    setRenewing(true);
+    const a = agreement.data;
+    const months = parseInt(renewMonths) || 12;
+    const currentEnd = a.end_date ? new Date(a.end_date) : new Date();
+    const base = isBefore(currentEnd, new Date()) ? new Date() : currentEnd;
+    const newEnd = addMonths(base, months);
+
+    // Calculate next_visit_due from new end or interval
+    const stepMonths = a.interval === "quarterly" ? 3 : a.interval === "semi_annual" ? 6 : 12;
+    const nextDue = a.next_visit_due && isAfter(new Date(a.next_visit_due), new Date())
+      ? a.next_visit_due
+      : format(addMonths(base, stepMonths), "yyyy-MM-dd");
+
+    const { error } = await supabase.from("service_agreements").update({
+      end_date: format(newEnd, "yyyy-MM-dd"),
+      next_visit_due: nextDue,
+      status: "active" as any,
+    }).eq("id", id);
+    setRenewing(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Avtale forlenget til ${format(newEnd, "dd.MM.yyyy")}`);
+    setRenewOpen(false);
+    qc.invalidateQueries({ queryKey: ["agreement", id] });
+  };
+
   if (agreement.isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
@@ -89,6 +169,10 @@ export default function AgreementDetailPage() {
   const inProgressVisits = allVisits.filter(v => v.status === "in_progress");
   const otherVisits = allVisits.filter(v => !["completed", "planned", "confirmed", "in_progress"].includes(v.status));
 
+  // Project future visits
+  const existingDates = new Set(allVisits.map(v => v.scheduled_date).filter(Boolean));
+  const projectedDates = projectFutureVisits(a.interval, a.next_visit_due, a.start_date, a.end_date, existingDates);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -106,6 +190,14 @@ export default function AgreementDetailPage() {
             <span>{AGREEMENT_INTERVAL_LABELS[a.interval] || a.interval}</span>
             {a.annual_price && <span>{formatCurrency(a.annual_price as number)}/år</span>}
           </div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={openEdit} className="gap-1.5">
+            <Pencil className="h-3.5 w-3.5" />Rediger
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setRenewOpen(true)} className="gap-1.5">
+            <RefreshCw className="h-3.5 w-3.5" />Forny
+          </Button>
         </div>
       </div>
 
@@ -178,45 +270,62 @@ export default function AgreementDetailPage() {
 
         {/* Timeline tab */}
         <TabsContent value="timeline" className="mt-4">
-          {allVisits.length === 0 ? (
-            <Card className="p-8 text-center">
-              <CalendarDays className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground mb-3">Ingen servicebesøk generert ennå</p>
-              <p className="text-xs text-muted-foreground">Servicebesøk genereres automatisk basert på intervall, eller kan opprettes manuelt.</p>
-            </Card>
-          ) : (
-            <div className="relative pl-6 space-y-4">
-              <div className="absolute left-2.5 top-2 bottom-2 w-px bg-border" />
+          <div className="relative pl-6 space-y-4">
+            <div className="absolute left-2.5 top-2 bottom-2 w-px bg-border" />
 
-              {/* In progress */}
-              {inProgressVisits.map(v => (
-                <TimelineItem key={v.id} visit={v} type="active" onSchedule={() => setScheduleVisit(v)} />
-              ))}
+            {/* In progress */}
+            {inProgressVisits.map(v => (
+              <TimelineItem key={v.id} visit={v} type="active" onSchedule={() => setScheduleVisit(v)} />
+            ))}
 
-              {/* Planned / upcoming */}
-              {plannedVisits.map(v => (
-                <TimelineItem key={v.id} visit={v} type="upcoming" onSchedule={() => setScheduleVisit(v)} />
-              ))}
+            {/* Planned / upcoming */}
+            {plannedVisits.map(v => (
+              <TimelineItem key={v.id} visit={v} type="upcoming" onSchedule={() => setScheduleVisit(v)} />
+            ))}
 
-              {/* Completed */}
-              {completedVisits.length > 0 && (
+            {/* Projected future visits */}
+            {projectedDates.length > 0 && (
+              <>
                 <div className="relative">
-                  <div className="absolute -left-6 top-1 w-5 h-5 rounded-full bg-muted flex items-center justify-center">
-                    <CheckCircle2 className="h-3 w-3 text-muted-foreground" />
+                  <div className="absolute -left-6 top-1 w-5 h-5 rounded-full bg-muted/50 border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
+                    <ArrowRight className="h-2.5 w-2.5 text-muted-foreground/50" />
                   </div>
-                  <p className="ml-2 text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Fullførte besøk ({completedVisits.length})</p>
+                  <p className="ml-2 text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                    Forventede fremtidige besøk
+                  </p>
                 </div>
-              )}
-              {completedVisits.map(v => (
-                <TimelineItem key={v.id} visit={v} type="completed" />
-              ))}
+                {projectedDates.map(date => (
+                  <ProjectedVisitItem key={date} date={date} interval={a.interval} />
+                ))}
+              </>
+            )}
 
-              {/* Other (missed, cancelled) */}
-              {otherVisits.map(v => (
-                <TimelineItem key={v.id} visit={v} type="other" />
-              ))}
-            </div>
-          )}
+            {/* Completed */}
+            {completedVisits.length > 0 && (
+              <div className="relative">
+                <div className="absolute -left-6 top-1 w-5 h-5 rounded-full bg-muted flex items-center justify-center">
+                  <CheckCircle2 className="h-3 w-3 text-muted-foreground" />
+                </div>
+                <p className="ml-2 text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Fullførte besøk ({completedVisits.length})</p>
+              </div>
+            )}
+            {completedVisits.map(v => (
+              <TimelineItem key={v.id} visit={v} type="completed" />
+            ))}
+
+            {/* Other (missed, cancelled) */}
+            {otherVisits.map(v => (
+              <TimelineItem key={v.id} visit={v} type="other" />
+            ))}
+
+            {allVisits.length === 0 && projectedDates.length === 0 && (
+              <Card className="ml-2 p-8 text-center">
+                <CalendarDays className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground mb-3">Ingen servicebesøk ennå</p>
+                <p className="text-xs text-muted-foreground">Servicebesøk genereres automatisk basert på intervall, eller kan opprettes manuelt.</p>
+              </Card>
+            )}
+          </div>
         </TabsContent>
 
         {/* Jobs tab */}
@@ -324,6 +433,54 @@ export default function AgreementDetailPage() {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      {/* Edit agreement sheet */}
+      <AgreementFormDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        companyId={a.company_id}
+        agreement={a}
+        sites={editSites}
+        assets={editAssets}
+      />
+
+      {/* Renew agreement sheet */}
+      <Sheet open={renewOpen} onOpenChange={setRenewOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md">
+          <SheetHeader><SheetTitle>Forny serviceavtale</SheetTitle></SheetHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Forleng avtalen med en ny periode. Sluttdato beregnes fra {a.end_date ? "nåværende sluttdato" : "dagens dato"}.
+            </p>
+            <Card className="p-3 bg-muted/30">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <Field label="Nåværende start" value={formatDate(a.start_date)} />
+                <Field label="Nåværende slutt" value={formatDate(a.end_date) || "Løpende"} />
+                <Field label="Intervall" value={AGREEMENT_INTERVAL_LABELS[a.interval] || a.interval} />
+                <Field label="Status" value={AGREEMENT_STATUS_LABELS[a.status] || a.status} />
+              </div>
+            </Card>
+            <div className="space-y-1.5">
+              <Label>Forleng med (måneder)</Label>
+              <Input type="number" min="1" max="60" value={renewMonths} onChange={e => setRenewMonths(e.target.value)} />
+            </div>
+            {renewMonths && (
+              <p className="text-xs text-muted-foreground">
+                Ny sluttdato blir: <span className="font-medium text-foreground">
+                  {format(addMonths(a.end_date ? new Date(a.end_date) : new Date(), parseInt(renewMonths) || 12), "dd.MM.yyyy")}
+                </span>
+              </p>
+            )}
+          </div>
+          <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setRenewOpen(false)}>Avbryt</Button>
+            <Button onClick={renewAgreement} disabled={renewing || !renewMonths} className="gap-1.5">
+              {renewing && <Loader2 className="h-4 w-4 animate-spin" />}
+              <RefreshCw className="h-3.5 w-3.5" />Forny avtale
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
@@ -358,6 +515,26 @@ function TimelineItem({ visit, type, onSchedule }: { visit: any; type: "active" 
           )}
         </div>
       </Card>
+    </div>
+  );
+}
+
+/* ─── Projected visit item (visual only) ──────────────────────── */
+function ProjectedVisitItem({ date, interval }: { date: string; interval: string }) {
+  return (
+    <div className="relative">
+      <div className="absolute -left-6 top-1 w-5 h-5 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
+        <CalendarDays className="h-2.5 w-2.5 text-muted-foreground/40" />
+      </div>
+      <div className="ml-2 p-3 rounded-lg border border-dashed border-muted-foreground/20 bg-muted/10">
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-muted-foreground">{formatDate(date)}</p>
+          <Badge variant="outline" className="text-[10px] border-dashed text-muted-foreground/60">Forventet</Badge>
+        </div>
+        <p className="text-xs text-muted-foreground/60 mt-0.5">
+          Projisert basert på {AGREEMENT_INTERVAL_LABELS[interval as keyof typeof AGREEMENT_INTERVAL_LABELS]?.toLowerCase() || interval} intervall
+        </p>
+      </div>
     </div>
   );
 }
