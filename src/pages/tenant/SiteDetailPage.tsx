@@ -5,20 +5,23 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Building2, MapPin, Thermometer, Wrench, ShieldCheck, AlertTriangle, Pencil, User } from "lucide-react";
+import { Loader2, ArrowLeft, Building2, MapPin, Thermometer, Wrench, ShieldCheck, AlertTriangle, Pencil, User, Plus } from "lucide-react";
 import {
   ENERGY_SOURCE_LABELS, ASSET_STATUS_LABELS, ASSET_STATUS_COLORS,
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
-  AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS, AGREEMENT_INTERVAL_LABELS,
+  AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS,
+  formatIntervalLabel,
   WARRANTY_STATUS_LABELS, WARRANTY_STATUS_COLORS,
   SITE_TYPE_LABELS, formatDate,
 } from "@/lib/domain-labels";
 import { SiteFormDialog } from "@/components/crud/SiteFormDialog";
+import { AgreementFormDialog } from "@/components/crud/AgreementFormDialog";
 
 export default function SiteDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { site, company, primaryContact, assets, jobs, agreements, warrantyCases } = useSiteDetail(id);
   const [editOpen, setEditOpen] = useState(false);
+  const [agreementOpen, setAgreementOpen] = useState(false);
 
   if (site.isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
