@@ -31,6 +31,7 @@ export default function AgreementsListPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dueFilter, setDueFilter] = useState<DueFilter>("all");
+  const [createOpen, setCreateOpen] = useState(false);
 
   const fetch = useCallback(async () => {
     if (!tenantId) return;
