@@ -97,6 +97,20 @@ export const VISIT_STATUS_LABELS: Record<string, string> = {
   cancelled: "Kansellert",
 };
 
+export const CUSTOMER_TYPE_LABELS: Record<string, string> = {
+  private: "Privatkunde",
+  business: "Bedriftskunde",
+  housing_coop: "Borettslag",
+  public_sector: "Offentlig",
+};
+
+export const CUSTOMER_TYPE_COLORS: Record<string, string> = {
+  private: "bg-blue-500/10 text-blue-600",
+  business: "bg-violet-500/10 text-violet-600",
+  housing_coop: "bg-amber-500/10 text-amber-600",
+  public_sector: "bg-emerald-500/10 text-emerald-600",
+};
+
 export const SITE_TYPE_LABELS: Record<string, string> = {
   residential: "Bolig",
   commercial: "Næring",

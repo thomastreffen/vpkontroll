@@ -29,8 +29,8 @@ const navSections: { label: string; items: NavItem[] }[] = [
   {
     label: "CRM",
     items: [
-      { label: "Kontakter", href: "/tenant/crm/contacts", icon: Contact, module: "crm" },
-      { label: "Bedrifter", href: "/tenant/crm/companies", icon: Building2, module: "crm" },
+      { label: "Kontaktpersoner", href: "/tenant/crm/contacts", icon: Contact, module: "crm" },
+      { label: "Kunder", href: "/tenant/crm/companies", icon: Building2, module: "crm" },
       { label: "Deals", href: "/tenant/crm/deals", icon: TrendingUp, module: "crm" },
       { label: "Jobber", href: "/tenant/crm/jobs", icon: Briefcase, module: "crm" },
       { label: "Anlegg", href: "/tenant/crm/assets", icon: Cpu, module: "crm" },

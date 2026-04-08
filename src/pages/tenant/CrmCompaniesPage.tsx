@@ -121,11 +121,11 @@ export default function CrmCompaniesPage() {
         ) : (
           <EmptyState
             icon={Building2}
-            title="Ingen bedrifter ennå"
-            description="Start med å legge til din første bedrift. Bedriften er utgangspunktet for kontakter, anlegg, deals og jobber."
-            actionLabel="Ny bedrift"
+            title="Ingen kunder ennå"
+            description="Start med å legge til din første kunde – enten privatkunde eller bedrift. Kunden er utgangspunktet for kontaktpersoner, anlegg, deals og jobber."
+            actionLabel="Ny kunde"
             onAction={openNew}
-            hint="Bedrift → Kontakt → Anleggssted → Anlegg → Deal → Jobb"
+            hint="Kunde → Kontaktperson → Anleggssted → Anlegg → Deal → Jobb"
           />
         )
       ) : (
