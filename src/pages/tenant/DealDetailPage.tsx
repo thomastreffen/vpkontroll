@@ -223,7 +223,7 @@ export default function DealDetailPage() {
       {/* Info cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="p-4">
-          <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" />Bedrift</p>
+          <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" />Kunde</p>
           {company ? (
             <Link to={`/tenant/crm/companies/${company.id}`} className="text-sm font-medium hover:underline">{company.name}</Link>
           ) : <span className="text-sm text-muted-foreground">Ikke tilknyttet</span>}
@@ -340,7 +340,7 @@ export default function DealDetailPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Bedrift</Label>
+                <Label>Kunde</Label>
                 <Select value={form.company_id} onValueChange={v => setForm({ ...form, company_id: v })}>
                   <SelectTrigger><SelectValue placeholder="Velg" /></SelectTrigger>
                   <SelectContent>{companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
@@ -443,8 +443,8 @@ export default function DealDetailPage() {
             {/* Show what will be linked */}
             <div className="rounded-md bg-muted/50 p-3 space-y-1 text-xs text-muted-foreground">
               <p className="font-medium text-foreground text-sm mb-1">Følgende kobles automatisk:</p>
-              {company && <p>Bedrift: {company.name}</p>}
-              {contact && <p>Kontakt: {contact.first_name} {contact.last_name || ""}</p>}
+              {company && <p>Kunde: {company.name}</p>}
+              {contact && <p>Kontaktperson: {contact.first_name} {contact.last_name || ""}</p>}
               {site && <p>Sted: {site.name || site.address}</p>}
               <p>Deal: {deal.title}</p>
             </div>

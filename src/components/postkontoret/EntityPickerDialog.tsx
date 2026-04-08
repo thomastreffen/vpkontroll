@@ -23,7 +23,7 @@ interface EntityPickerDialogProps {
 }
 
 const ENTITY_LABELS: Record<EntityType, string> = {
-  company: "Velg bedrift",
+  company: "Velg kunde",
   site: "Velg anlegg/site",
   asset: "Velg varmepumpe",
   job: "Velg jobb",

@@ -19,7 +19,7 @@ interface Props {
 
 const CUSTOMER_TYPES = [
   { value: "private", label: "Privat" },
-  { value: "business", label: "Bedrift" },
+  { value: "business", label: "Bedriftskunde" },
   { value: "housing_coop", label: "Borettslag" },
   { value: "public_sector", label: "Offentlig" },
 ];

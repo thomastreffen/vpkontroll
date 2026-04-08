@@ -69,7 +69,7 @@ export default function JobsListPage() {
           <EmptyState
             icon={Briefcase}
             title="Ingen jobber ennå"
-            description="Jobber opprettes fra en deal når salget er vunnet, eller direkte fra en garantisak. Du kan også opprette en jobb manuelt fra en bedriftsside."
+            description="Jobber opprettes fra en deal når salget er vunnet, eller direkte fra en garantisak. Du kan også opprette en jobb manuelt fra en kundeside."
             hint="Deal → Jobb, eller Garantisak → Jobb"
           />
         )
@@ -82,7 +82,7 @@ export default function JobsListPage() {
                 <TableHead>Tittel</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Bedrift</TableHead>
+                <TableHead>Kunde</TableHead>
                 <TableHead>Anlegg</TableHead>
                 <TableHead>Planlagt start</TableHead>
               </TableRow>

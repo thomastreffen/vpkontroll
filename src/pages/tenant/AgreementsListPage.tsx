@@ -69,8 +69,8 @@ export default function AgreementsListPage() {
           <EmptyState
             icon={FileText}
             title="Ingen serviceavtaler ennå"
-            description="Serviceavtaler opprettes fra en bedrifts- eller anleggsside, og styrer automatisk generering av servicebesøk og jobber."
-            hint="Bedrift → Anleggssted → Anlegg → Serviceavtale"
+            description="Serviceavtaler opprettes fra en kundeside eller anleggsside, og styrer automatisk generering av servicebesøk og jobber."
+            hint="Kunde → Anleggssted → Anlegg → Serviceavtale"
           />
         )
       ) : (
@@ -81,7 +81,7 @@ export default function AgreementsListPage() {
                 <TableHead>Avtalenr</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Intervall</TableHead>
-                <TableHead>Bedrift</TableHead>
+                <TableHead>Kunde</TableHead>
                 <TableHead>Anlegg</TableHead>
                 <TableHead>Neste besøk</TableHead>
                 <TableHead>Start</TableHead>

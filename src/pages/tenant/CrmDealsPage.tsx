@@ -173,10 +173,10 @@ export default function CrmDealsPage() {
         <EmptyState
           icon={TrendingUp}
           title="Ingen deals ennå"
-          description="Deals representerer salgsmuligheter. Opprett en deal fra en bedriftsside eller legg til en ny her for å starte salgsprosessen."
+          description="Deals representerer salgsmuligheter. Opprett en deal fra en kundeside eller legg til en ny her for å starte salgsprosessen."
           actionLabel="Ny deal"
           onAction={() => openNew()}
-          hint="Bedrift → Deal → Tilbud → Jobb"
+          hint="Kunde → Deal → Tilbud → Jobb"
         />
       ) : view === "pipeline" ? (
         <div className="flex gap-3 overflow-x-auto pb-4">
@@ -227,7 +227,7 @@ export default function CrmDealsPage() {
               <thead>
                 <tr className="border-b bg-muted/30">
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Deal</th>
-                  <th className="text-left py-3 px-4 font-medium text-muted-foreground hidden md:table-cell">Bedrift</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground hidden md:table-cell">Kunde</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Fase</th>
                   <th className="text-right py-3 px-4 font-medium text-muted-foreground">Verdi</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground hidden lg:table-cell">Forventet</th>
@@ -327,9 +327,9 @@ export default function CrmDealsPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Bedrift</Label>
+                <Label>Kunde</Label>
                 <Select value={form.company_id} onValueChange={(v) => setForm({ ...form, company_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Velg bedrift" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Velg kunde" /></SelectTrigger>
                   <SelectContent>
                     {companies.map((co) => (
                       <SelectItem key={co.id} value={co.id}>{co.name}</SelectItem>

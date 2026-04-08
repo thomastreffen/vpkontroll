@@ -52,7 +52,7 @@ export default function TenantDashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Oversikt over din bedrift</p>
+        <p className="text-muted-foreground mt-1">Oversikt over din virksomhet</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
