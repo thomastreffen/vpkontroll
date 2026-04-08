@@ -26,7 +26,7 @@ export default function ContactDetailPage() {
   }
 
   if (!contact.data) {
-    return <div className="text-center py-20 text-muted-foreground">Kontakt ikke funnet</div>;
+    return <div className="text-center py-20 text-muted-foreground">Kontaktperson ikke funnet</div>;
   }
 
   const c = contact.data;

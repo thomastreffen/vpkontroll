@@ -77,7 +77,7 @@ export function CompanyEditDialog({ open, onOpenChange, company, onSaved }: Prop
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader><SheetTitle>Rediger bedrift</SheetTitle></SheetHeader>
+        <SheetHeader><SheetTitle>Rediger kunde</SheetTitle></SheetHeader>
         <div className="space-y-4 py-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5 col-span-2">

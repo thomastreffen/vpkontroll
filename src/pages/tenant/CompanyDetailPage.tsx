@@ -39,7 +39,7 @@ export default function CompanyDetailPage() {
   }
 
   if (!company.data) {
-    return <div className="text-center py-20 text-muted-foreground">Bedrift ikke funnet</div>;
+    return <div className="text-center py-20 text-muted-foreground">Kunde ikke funnet</div>;
   }
 
   const c = company.data;

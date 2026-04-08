@@ -174,14 +174,27 @@ export default function CrmCompaniesPage() {
       <Sheet open={dialogOpen} onOpenChange={setDialogOpen}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>{editCompany ? "Rediger bedrift" : "Ny bedrift"}</SheetTitle>
+            <SheetTitle>{editCompany ? "Rediger kunde" : "Ny kunde"}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Bedriftsnavn *</Label>
+                <Label>Navn *</Label>
                 <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
+              <div className="space-y-1.5">
+                <Label>Kundetype</Label>
+                <Select value={form.customer_type} onValueChange={(v) => setForm({ ...form, customer_type: v })}>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(CUSTOMER_TYPE_LABELS).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Org.nummer</Label>
                 <Input value={form.org_number} onChange={(e) => setForm({ ...form, org_number: e.target.value })} placeholder="999 999 999" />
