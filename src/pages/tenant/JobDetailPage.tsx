@@ -154,8 +154,10 @@ export default function JobDetailPage() {
   const openFormSheet = useCallback(() => {
     if (hasEffectiveForm) {
       setFormValues(effectiveFormData!.values || {});
+      setFormSignoff((effectiveFormData as any)?.signoff || { ...DEFAULT_SIGNOFF });
     } else {
       setFormValues({});
+      setFormSignoff({ ...DEFAULT_SIGNOFF });
     }
     setMarkCompleted(false);
     setFormSheetOpen(true);
