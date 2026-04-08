@@ -51,6 +51,15 @@ export function useJobDetail(jobId: string | undefined) {
     enabled: !!job.data?.asset_id,
   });
 
+  const deal = useQuery({
+    queryKey: ["job-deal", job.data?.deal_id],
+    queryFn: async () => {
+      const { data } = await supabase.from("crm_deals").select("*").eq("id", job.data!.deal_id!).single();
+      return data;
+    },
+    enabled: !!job.data?.deal_id,
+  });
+
   const technicians = useQuery({
     queryKey: ["job-technicians", jobId],
     queryFn: async () => {
@@ -84,5 +93,5 @@ export function useJobDetail(jobId: string | undefined) {
     enabled: !!jobId && !!tenantId,
   });
 
-  return { job, company, contact, site, asset, technicians, checklists, documents };
+  return { job, company, contact, site, asset, deal, technicians, checklists, documents };
 }

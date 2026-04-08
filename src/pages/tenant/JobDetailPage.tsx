@@ -21,7 +21,7 @@ import { ScheduleEventDialog } from "@/components/crud/ScheduleEventDialog";
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { job, company, contact, site, asset, technicians, checklists, documents } = useJobDetail(id);
+  const { job, company, contact, site, asset, deal, technicians, checklists, documents } = useJobDetail(id);
   const { tenantId } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
@@ -73,6 +73,7 @@ export default function JobDetailPage() {
             {contact.data && <span>{contact.data.first_name} {contact.data.last_name || ""}</span>}
             {site.data && <span>{site.data.address}, {site.data.city}</span>}
             {asset.data && <Link to={`/tenant/crm/assets/${asset.data.id}`} className="text-primary hover:underline">{asset.data.manufacturer} {asset.data.model || ""}</Link>}
+            {deal.data && <Link to={`/tenant/crm/deals/${deal.data.id}`} className="text-primary hover:underline flex items-center gap-1"><ExternalLink className="h-3 w-3" />Deal: {deal.data.title}</Link>}
           </div>
         </div>
       </div>
