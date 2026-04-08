@@ -622,13 +622,33 @@ export default function AgreementDetailPage() {
                 const rd = visitDetailOpen.report_data as ServiceReportData | null;
                 const hasDynamicData = rd && rd.schema_version === 1 && (rd as any).template_id;
                 if (hasDynamicData && templateFields.data) {
+                  const signoffData = (rd as any)?.signoff as SignoffData | undefined;
                   return (
-                    <div>
+                    <div className="space-y-4">
                       <p className="text-xs font-medium text-muted-foreground mb-3">Utfylt skjema</p>
                       <DynamicFormRenderer
                         fields={templateFields.data}
                         values={(rd as any).values || {}}
                         readonly
+                      />
+                      {signoffData && <FormSignoffSection signoff={signoffData} onChange={() => {}} readonly />}
+                      <FormPdfActions
+                        fields={templateFields.data}
+                        values={(rd as any).values || {}}
+                        context={{
+                          title: "Servicerapport",
+                          templateName: templateFields.data?.[0] ? "Servicemal" : "",
+                          customerName: company.data?.name,
+                          address: site.data ? [site.data.address, site.data.city].filter(Boolean).join(", ") : undefined,
+                          siteName: site.data?.name || undefined,
+                          date: formatDate(visitDetailOpen.scheduled_date),
+                          agreementNumber: a.agreement_number,
+                        }}
+                        signoff={signoffData}
+                        entityType="service_visit"
+                        entityId={visitDetailOpen.id}
+                        categoryLabel="Servicerapport PDF"
+                        onPdfGenerated={() => visits.refetch()}
                       />
                     </div>
                   );
