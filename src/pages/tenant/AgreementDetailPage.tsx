@@ -89,7 +89,14 @@ export default function AgreementDetailPage() {
                       {v.completed_at && ` · Fullført: ${formatDate(v.completed_at)}`}
                     </p>
                   </div>
-                  <Badge variant="outline" className="text-[10px]">{VISIT_STATUS_LABELS[v.status] || v.status}</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px]">{VISIT_STATUS_LABELS[v.status] || v.status}</Badge>
+                    {v.status === "planned" && (
+                      <Button variant="outline" size="sm" className="gap-1" onClick={() => setScheduleVisit(v)}>
+                        <CalendarDays className="h-3 w-3" />Planlegg
+                      </Button>
+                    )}
+                  </div>
                 </Card>
               ))}
             </div>
