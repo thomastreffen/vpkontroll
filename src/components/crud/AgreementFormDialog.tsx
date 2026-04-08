@@ -77,10 +77,11 @@ export function AgreementFormDialog({ open, onOpenChange, companyId, agreement, 
       }
     },
     onSuccess: () => {
-      toast.success(isEdit ? "Avtale oppdatert" : "Avtale opprettet");
       qc.invalidateQueries({ queryKey: ["company-agreements", companyId] });
+      qc.invalidateQueries({ queryKey: ["site-agreements"] });
       qc.invalidateQueries({ queryKey: ["agreement"] });
       onOpenChange(false);
+      toast.success(isEdit ? "Avtale oppdatert" : "Avtale opprettet");
     },
     onError: (e: any) => toast.error(e.message),
   });
