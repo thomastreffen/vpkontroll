@@ -13,6 +13,7 @@ import FieldPalette from "@/components/templates/FieldPalette";
 import FieldCanvas, { type TemplateField } from "@/components/templates/FieldCanvas";
 import FieldSettingsPanel from "@/components/templates/FieldSettingsPanel";
 import { getPresetSections, CATEGORY_TO_CONTEXT } from "@/lib/template-presets";
+import { setAsDefault, clearDefault } from "@/hooks/useDefaultTemplate";
 
 function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").substring(0, 40);
