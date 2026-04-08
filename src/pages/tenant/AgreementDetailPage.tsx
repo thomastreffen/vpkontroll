@@ -746,9 +746,10 @@ function TimelineItem({ visit, type, onSchedule, onDetail }: { visit: any; type:
               <div className="flex items-center gap-2 mb-0.5">
                 <p className="font-medium text-sm">{formatDate(visit.scheduled_date)}</p>
                 <Badge variant="outline" className="text-[10px]">{VISIT_STATUS_LABELS[visit.status] || visit.status}</Badge>
-                {visit.report_data?.schema_version === 1 && (
+              {visit.report_data?.schema_version === 1 && (
                   <Badge variant="secondary" className="text-[10px] gap-1">
-                    <ClipboardCheck className="h-2.5 w-2.5" />Rapport
+                    <ClipboardCheck className="h-2.5 w-2.5" />
+                    {(visit.report_data as any)?.template_id ? "Skjema" : "Rapport"}
                   </Badge>
                 )}
               </div>
