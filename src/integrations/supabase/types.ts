@@ -1091,6 +1091,7 @@ export type Database = {
           contact_id: string | null
           created_at: string
           created_by: string | null
+          deal_id: string | null
           deleted_at: string | null
           description: string | null
           estimated_hours: number | null
@@ -1116,6 +1117,7 @@ export type Database = {
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          deal_id?: string | null
           deleted_at?: string | null
           description?: string | null
           estimated_hours?: number | null
@@ -1141,6 +1143,7 @@ export type Database = {
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          deal_id?: string | null
           deleted_at?: string | null
           description?: string | null
           estimated_hours?: number | null
@@ -1179,6 +1182,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "crm_contacts"
             referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "jobs_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "jobs_site_fk"
