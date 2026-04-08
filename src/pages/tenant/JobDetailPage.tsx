@@ -22,7 +22,17 @@ import { ScheduleEventDialog } from "@/components/crud/ScheduleEventDialog";
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { job, company, contact, site, asset, technicians, checklists, documents } = useJobDetail(id);
+  const { tenantId } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [linkedEvent, setLinkedEvent] = useState<any>(null);
+
+  // Check if job already has a linked event
+  useEffect(() => {
+    if (!id || !tenantId) return;
+    supabase.from("events").select("id, start_time, end_time, status").eq("job_id", id).is("deleted_at", null).limit(1)
+      .then(({ data }) => { if (data && data.length > 0) setLinkedEvent(data[0]); });
+  }, [id, tenantId, scheduleOpen]);
 
   if (job.isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
