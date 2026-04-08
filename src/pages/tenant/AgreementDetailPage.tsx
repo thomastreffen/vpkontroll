@@ -481,17 +481,35 @@ export default function AgreementDetailPage() {
                 {(() => {
                   const rd = visitDetailOpen.report_data as ServiceReportData | null;
                   const hasReport = rd && rd.schema_version === 1;
-                  if (reportMode === "edit") return null;
+                  const hasDynamicData = rd && rd.schema_version === 1 && (rd as any).template_id;
+                  if (reportMode === "edit" || dynamicFormMode === "edit") return null;
                   return (
-                    <Button
-                      size="sm"
-                      variant={hasReport ? "outline" : "default"}
-                      className="gap-1.5"
-                      onClick={() => setReportMode("edit")}
-                    >
-                      <ClipboardCheck className="h-3.5 w-3.5" />
-                      {hasReport ? "Rediger rapport" : "Fyll ut servicerapport"}
-                    </Button>
+                    <div className="flex gap-1.5">
+                      {hasTemplate && (
+                        <Button
+                          size="sm"
+                          variant={hasDynamicData ? "outline" : "default"}
+                          className="gap-1.5"
+                          onClick={() => {
+                            const vals = hasDynamicData ? ((rd as any).values || {}) : {};
+                            setDynamicFormValues(vals);
+                            setDynamicFormMode("edit");
+                          }}
+                        >
+                          <ClipboardList className="h-3.5 w-3.5" />
+                          {hasDynamicData ? "Rediger skjema" : "Fyll ut skjema"}
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant={hasReport && !hasDynamicData ? "outline" : "ghost"}
+                        className="gap-1.5"
+                        onClick={() => setReportMode("edit")}
+                      >
+                        <ClipboardCheck className="h-3.5 w-3.5" />
+                        {hasReport ? "Rediger rapport" : "Servicerapport"}
+                      </Button>
+                    </div>
                   );
                 })()}
               </div>
