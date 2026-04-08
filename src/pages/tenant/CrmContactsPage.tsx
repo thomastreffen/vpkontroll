@@ -122,11 +122,11 @@ export default function CrmContactsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Kontakter</h1>
-          <p className="text-sm text-muted-foreground mt-1">{contacts.length} kontakter totalt</p>
+          <h1 className="text-2xl font-bold tracking-tight">Kontaktpersoner</h1>
+          <p className="text-sm text-muted-foreground mt-1">{contacts.length} kontaktpersoner totalt</p>
         </div>
         <Button onClick={openNew} className="gap-2">
-          <Plus className="h-4 w-4" /> Ny kontakt
+          <Plus className="h-4 w-4" /> Ny kontaktperson
         </Button>
       </div>
 
