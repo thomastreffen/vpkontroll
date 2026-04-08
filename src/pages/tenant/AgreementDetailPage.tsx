@@ -491,16 +491,22 @@ export default function AgreementDetailPage() {
                       technicianName: user?.email || "",
                     });
                   })()}
-                  onSave={async (reportData) => {
-                    const { error } = await supabase.from("service_visits").update({
+                  visitStatus={visitDetailOpen.status}
+                  onSave={async (reportData, markCompleted) => {
+                    const updatePayload: any = {
                       report_data: reportData as any,
                       findings: reportData.findings_summary || visitDetailOpen.findings,
                       actions_taken: reportData.actions_taken_summary || visitDetailOpen.actions_taken,
-                    }).eq("id", visitDetailOpen.id);
+                    };
+                    if (markCompleted && visitDetailOpen.status !== "completed") {
+                      updatePayload.status = "completed";
+                      updatePayload.completed_at = new Date().toISOString();
+                    }
+                    const { error } = await supabase.from("service_visits").update(updatePayload).eq("id", visitDetailOpen.id);
                     if (error) { toast.error("Kunne ikke lagre rapport"); return; }
-                    toast.success("Servicerapport lagret");
+                    toast.success(markCompleted ? "Rapport lagret og besøk markert som fullført" : "Servicerapport lagret");
                     setReportMode("view");
-                    setVisitDetailOpen({ ...visitDetailOpen, report_data: reportData, findings: reportData.findings_summary, actions_taken: reportData.actions_taken_summary });
+                    setVisitDetailOpen({ ...visitDetailOpen, ...updatePayload, report_data: reportData });
                     visits.refetch();
                   }}
                   onCancel={() => setReportMode(null)}
