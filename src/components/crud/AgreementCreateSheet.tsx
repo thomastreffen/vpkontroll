@@ -405,9 +405,16 @@ export default function AgreementCreateSheet({ open, onOpenChange, onCreated }: 
             <SelectTrigger><SelectValue placeholder="Ingen mal valgt" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="none">Ingen mal</SelectItem>
-              {templates.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+              {templates.map((t: any) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {t.name}{t.is_default ? " ★" : ""}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
+          {selectedTemplateId && selectedTemplateId !== "none" && (
+            <p className="text-[11px] text-muted-foreground">Valgt mal brukes som standard skjema for servicebesøk</p>
+          )}
         </div>
       </div>
 
