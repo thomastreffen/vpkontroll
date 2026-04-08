@@ -562,11 +562,6 @@ export default function JobDetailPage() {
                 <FormSignoffSection signoff={formSignoff} onChange={setFormSignoff} />
               </>
             ) : (
-                fields={templateFields.data}
-                values={formValues}
-                onChange={(key, val) => setFormValues(prev => ({ ...prev, [key]: val }))}
-              />
-            ) : (
               <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
             )}
           </div>
