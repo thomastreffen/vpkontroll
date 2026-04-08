@@ -41,7 +41,7 @@ export function DocumentUploadSection({ documents, entityType, entityId, queryKe
         .upload(filePath, file, { upsert: false });
       if (storageErr) throw storageErr;
 
-      const fkMap = { job: "job_id", asset: "asset_id", warranty: "warranty_case_id" } as const;
+      const fkMap: Record<string, string> = { job: "job_id", asset: "asset_id", warranty: "warranty_case_id", agreement: "agreement_id", service_visit: "service_visit_id" };
       const fkCol = fkMap[entityType];
       const docPayload: any = {
         tenant_id: tenantId,
