@@ -16,7 +16,7 @@ type DocCategory = Database["public"]["Enums"]["document_category"];
 interface DocumentUploadSectionProps {
   documents: any[] | undefined;
   /** Which entity this is for */
-  entityType: "job" | "asset" | "warranty" | "agreement" | "service_visit";
+  entityType: "job" | "asset" | "warranty" | "agreement" | "service_visit" | "deal";
   entityId: string;
   /** react-query key to invalidate */
   queryKey: string[];
