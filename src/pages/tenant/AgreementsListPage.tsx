@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, FileText, Loader2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS, AGREEMENT_INTERVAL_LABELS, formatDate } from "@/lib/domain-labels";
 
 export default function AgreementsListPage() {
@@ -62,10 +63,16 @@ export default function AgreementsListPage() {
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20">
-          <FileText className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-sm text-muted-foreground">{search || statusFilter !== "all" ? "Ingen treff" : "Ingen serviceavtaler ennå"}</p>
-        </div>
+        search || statusFilter !== "all" ? (
+          <div className="text-center py-20"><p className="text-sm text-muted-foreground">Ingen treff</p></div>
+        ) : (
+          <EmptyState
+            icon={FileText}
+            title="Ingen serviceavtaler ennå"
+            description="Serviceavtaler opprettes fra en bedrifts- eller anleggsside, og styrer automatisk generering av servicebesøk og jobber."
+            hint="Bedrift → Anleggssted → Anlegg → Serviceavtale"
+          />
+        )
       ) : (
         <div className="border rounded-lg">
           <Table>

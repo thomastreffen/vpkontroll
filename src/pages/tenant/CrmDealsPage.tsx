@@ -18,6 +18,7 @@ import {
   Plus, TrendingUp, Loader2, DollarSign, Calendar, User, Building2,
   GripVertical, List, LayoutGrid,
 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   DEAL_STAGE_LABELS, DEAL_STAGE_ORDER, DEAL_STAGE_BG,
   PIPELINE_STAGES, formatCurrency, type DealStage,
@@ -168,7 +169,16 @@ export default function CrmDealsPage() {
         </div>
       </div>
 
-      {view === "pipeline" ? (
+      {deals.length === 0 ? (
+        <EmptyState
+          icon={TrendingUp}
+          title="Ingen deals ennå"
+          description="Deals representerer salgsmuligheter. Opprett en deal fra en bedriftsside eller legg til en ny her for å starte salgsprosessen."
+          actionLabel="Ny deal"
+          onAction={() => openNew()}
+          hint="Bedrift → Deal → Tilbud → Jobb"
+        />
+      ) : view === "pipeline" ? (
         <div className="flex gap-3 overflow-x-auto pb-4">
           {PIPELINE_STAGES.map((stage) => {
             const ds = stageDeals(stage);

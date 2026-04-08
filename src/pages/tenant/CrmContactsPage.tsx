@@ -16,6 +16,7 @@ import {
   Plus, Search, Phone, Mail, Building2, MoreHorizontal,
   User, MapPin, Loader2,
 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type Contact = {
   id: string; tenant_id: string; company_id: string | null;
@@ -137,10 +138,18 @@ export default function CrmContactsPage() {
       {loading ? (
         <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20">
-          <User className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-sm text-muted-foreground">{search ? "Ingen treff" : "Ingen kontakter lagt til ennå"}</p>
-        </div>
+        search ? (
+          <div className="text-center py-20"><p className="text-sm text-muted-foreground">Ingen treff på «{search}»</p></div>
+        ) : (
+          <EmptyState
+            icon={User}
+            title="Ingen kontakter ennå"
+            description="Legg til kontaktpersoner for å knytte dem til bedrifter, deals og jobber. Du kan også opprette kontakter direkte fra en bedriftsside."
+            actionLabel="Ny kontakt"
+            onAction={openNew}
+            hint="Tips: Opprett bedriften først, så legger du til kontakter derfra."
+          />
+        )
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">

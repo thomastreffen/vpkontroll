@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Plus, Search, Building2, MoreHorizontal, Globe, Phone, Mail, Loader2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 type Company = {
@@ -114,10 +115,18 @@ export default function CrmCompaniesPage() {
       {loading ? (
         <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20">
-          <Building2 className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-sm text-muted-foreground">{search ? "Ingen treff" : "Ingen bedrifter lagt til ennå"}</p>
-        </div>
+        search ? (
+          <div className="text-center py-20"><p className="text-sm text-muted-foreground">Ingen treff på «{search}»</p></div>
+        ) : (
+          <EmptyState
+            icon={Building2}
+            title="Ingen bedrifter ennå"
+            description="Start med å legge til din første bedrift. Bedriften er utgangspunktet for kontakter, anlegg, deals og jobber."
+            actionLabel="Ny bedrift"
+            onAction={openNew}
+            hint="Bedrift → Kontakt → Anleggssted → Anlegg → Deal → Jobb"
+          />
+        )
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((c) => (

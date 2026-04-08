@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, ShieldAlert, Loader2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { WARRANTY_STATUS_LABELS, WARRANTY_STATUS_COLORS, formatDate } from "@/lib/domain-labels";
 
 export default function WarrantyListPage() {
@@ -62,10 +63,16 @@ export default function WarrantyListPage() {
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20">
-          <ShieldAlert className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-sm text-muted-foreground">{search || statusFilter !== "all" ? "Ingen treff" : "Ingen garantisaker ennå"}</p>
-        </div>
+        search || statusFilter !== "all" ? (
+          <div className="text-center py-20"><p className="text-sm text-muted-foreground">Ingen treff</p></div>
+        ) : (
+          <EmptyState
+            icon={ShieldAlert}
+            title="Ingen garantisaker ennå"
+            description="Garantisaker opprettes fra et anlegg eller en innkommende henvendelse i Postkontoret. De kan kobles til jobb for utbedring."
+            hint="Anlegg → Garantisak, eller Postkontoret → Garantisak"
+          />
+        )
       ) : (
         <div className="border rounded-lg">
           <Table>
