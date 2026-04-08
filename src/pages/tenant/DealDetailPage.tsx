@@ -1,16 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, ArrowLeft, Building2, Contact, MapPin, Zap, Calendar, FileText, TrendingUp, Pencil, MessageSquare } from "lucide-react";
+import { Loader2, ArrowLeft, Building2, Contact, MapPin, Zap, Calendar, FileText, TrendingUp, Pencil, MessageSquare, Briefcase, Plus, ArrowRight } from "lucide-react";
 import {
   DEAL_STAGE_LABELS, DEAL_STAGE_COLORS, DEAL_STAGE_ORDER, formatCurrency, type DealStage,
 } from "@/lib/crm-labels";
-import { ENERGY_SOURCE_LABELS, formatDate, formatDateTime } from "@/lib/domain-labels";
+import { ENERGY_SOURCE_LABELS, JOB_TYPE_LABELS, formatDate, formatDateTime } from "@/lib/domain-labels";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,18 +18,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
+const JOB_TYPES = ["installation", "service", "repair", "warranty", "inspection", "decommission"];
+
 export default function DealDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { tenantId, user } = useAuth();
+  const navigate = useNavigate();
   const [deal, setDeal] = useState<any>(null);
   const [company, setCompany] = useState<any>(null);
   const [contact, setContact] = useState<any>(null);
   const [site, setSite] = useState<any>(null);
   const [quotes, setQuotes] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
+  const [linkedJob, setLinkedJob] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
+  const [jobDialogOpen, setJobDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [creatingJob, setCreatingJob] = useState(false);
 
   const [companies, setCompanies] = useState<any[]>([]);
   const [contacts, setContacts] = useState<any[]>([]);
@@ -39,6 +45,10 @@ export default function DealDetailPage() {
     title: "", stage: "lead" as DealStage, value: "", company_id: "", contact_id: "",
     site_id: "", expected_close_date: "", description: "", energy_source: "",
     estimated_kw: "", site_visit_date: "", site_visit_notes: "",
+  });
+
+  const [jobForm, setJobForm] = useState({
+    title: "", job_type: "installation", description: "", priority: "normal",
   });
 
   const fetchDeal = useCallback(async () => {
@@ -59,6 +69,7 @@ export default function DealDetailPage() {
     fetches.push(
       async () => { const { data } = await supabase.from("quotes").select("*").eq("deal_id", id!).is("deleted_at", null).order("version", { ascending: false }); setQuotes(data || []); },
       async () => { const { data } = await supabase.from("crm_activities").select("*").eq("deal_id", id!).order("created_at", { ascending: false }); setActivities(data || []); },
+      async () => { const { data } = await supabase.from("jobs").select("*").eq("deal_id" as any, id!).is("deleted_at", null).limit(1); setLinkedJob(data?.[0] || null); },
     );
 
     await Promise.all(fetches.map(f => f()));
@@ -69,7 +80,6 @@ export default function DealDetailPage() {
 
   const openEdit = async () => {
     if (!deal) return;
-    // Fetch lookup data for selects
     const [{ data: cos }, { data: cts }, { data: sts }] = await Promise.all([
       supabase.from("crm_companies").select("id, name").eq("tenant_id", deal.tenant_id).is("deleted_at", null).order("name"),
       supabase.from("crm_contacts").select("id, first_name, last_name").eq("tenant_id", deal.tenant_id).is("deleted_at", null).order("first_name"),
@@ -112,6 +122,45 @@ export default function DealDetailPage() {
     fetchDeal();
   };
 
+  const openCreateJob = () => {
+    if (!deal) return;
+    const descParts: string[] = [];
+    if (deal.description) descParts.push(deal.description);
+    if (deal.energy_source) descParts.push(`Energikilde: ${ENERGY_SOURCE_LABELS[deal.energy_source] || deal.energy_source}`);
+    if (deal.estimated_kw) descParts.push(`Estimert kapasitet: ${deal.estimated_kw} kW`);
+
+    setJobForm({
+      title: `Installasjon – ${deal.title}`,
+      job_type: "installation",
+      description: descParts.join("\n"),
+      priority: "normal",
+    });
+    setJobDialogOpen(true);
+  };
+
+  const createJob = async () => {
+    if (!deal || !tenantId || !jobForm.title.trim()) return;
+    setCreatingJob(true);
+    const { data, error } = await supabase.from("jobs").insert({
+      tenant_id: tenantId,
+      title: jobForm.title.trim(),
+      job_type: jobForm.job_type,
+      description: jobForm.description || null,
+      priority: jobForm.priority,
+      company_id: deal.company_id || null,
+      contact_id: deal.contact_id || null,
+      site_id: deal.site_id || null,
+      deal_id: deal.id,
+      created_by: user?.id,
+      job_number: "TEMP",
+    } as any).select().single();
+    setCreatingJob(false);
+    if (error) { toast.error("Kunne ikke opprette jobb: " + error.message); return; }
+    toast.success(`Jobb ${data.job_number} opprettet`);
+    setJobDialogOpen(false);
+    setLinkedJob(data);
+  };
+
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   if (!deal) return <div className="text-center py-20 text-muted-foreground">Deal ikke funnet</div>;
 
@@ -134,22 +183,51 @@ export default function DealDetailPage() {
             {deal.expected_close_date && <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />Forventet: {formatDate(deal.expected_close_date)}</span>}
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={openEdit} className="gap-1.5">
-          <Pencil className="h-3.5 w-3.5" />Rediger
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={openEdit} className="gap-1.5">
+            <Pencil className="h-3.5 w-3.5" />Rediger
+          </Button>
+        </div>
       </div>
+
+      {/* Linked job banner */}
+      {linkedJob ? (
+        <Card className="p-4 border-primary/30 bg-primary/5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Briefcase className="h-5 w-5 text-primary" />
+              <div>
+                <p className="text-sm font-medium">Jobb opprettet: {linkedJob.job_number}</p>
+                <p className="text-xs text-muted-foreground">{linkedJob.title}</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" asChild className="gap-1.5">
+              <Link to={`/tenant/crm/jobs/${linkedJob.id}`}>Se jobb <ArrowRight className="h-3.5 w-3.5" /></Link>
+            </Button>
+          </div>
+        </Card>
+      ) : (
+        <Card className="p-4 border-dashed">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Briefcase className="h-5 w-5 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Ingen jobb opprettet fra denne dealen ennå</p>
+            </div>
+            <Button size="sm" onClick={openCreateJob} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" />Opprett jobb
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* Info cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Company */}
         <Card className="p-4">
           <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" />Bedrift</p>
           {company ? (
             <Link to={`/tenant/crm/companies/${company.id}`} className="text-sm font-medium hover:underline">{company.name}</Link>
           ) : <span className="text-sm text-muted-foreground">Ikke tilknyttet</span>}
         </Card>
-
-        {/* Contact */}
         <Card className="p-4">
           <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5"><Contact className="h-3.5 w-3.5" />Kontakt</p>
           {contact ? (
@@ -157,8 +235,6 @@ export default function DealDetailPage() {
           ) : <span className="text-sm text-muted-foreground">Ikke tilknyttet</span>}
           {contact?.email && <p className="text-xs text-muted-foreground mt-0.5">{contact.email}</p>}
         </Card>
-
-        {/* Site */}
         <Card className="p-4">
           <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />Anleggssted</p>
           {site ? (
@@ -168,8 +244,6 @@ export default function DealDetailPage() {
             </div>
           ) : <span className="text-sm text-muted-foreground">Ikke tilknyttet</span>}
         </Card>
-
-        {/* Energy / technical */}
         {(deal.energy_source || deal.estimated_kw) && (
           <Card className="p-4">
             <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5"><Zap className="h-3.5 w-3.5" />Teknisk</p>
@@ -179,8 +253,6 @@ export default function DealDetailPage() {
             </div>
           </Card>
         )}
-
-        {/* Site visit */}
         {(deal.site_visit_date || deal.site_visit_notes) && (
           <Card className="p-4 md:col-span-2">
             <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" />Befaring</p>
@@ -199,13 +271,12 @@ export default function DealDetailPage() {
         </Card>
       )}
 
-      {/* Tabs: Quotes, Activities */}
+      {/* Tabs */}
       <Tabs defaultValue="quotes">
         <TabsList>
           <TabsTrigger value="quotes" className="gap-1.5"><FileText className="h-3.5 w-3.5" />Tilbud ({quotes.length})</TabsTrigger>
           <TabsTrigger value="activities" className="gap-1.5"><MessageSquare className="h-3.5 w-3.5" />Aktiviteter ({activities.length})</TabsTrigger>
         </TabsList>
-
         <TabsContent value="quotes" className="mt-4">
           {quotes.length === 0 ? (
             <div className="text-center py-10 text-sm text-muted-foreground">Ingen tilbud knyttet til denne dealen</div>
@@ -225,7 +296,6 @@ export default function DealDetailPage() {
             </div>
           )}
         </TabsContent>
-
         <TabsContent value="activities" className="mt-4">
           {activities.length === 0 ? (
             <div className="text-center py-10 text-sm text-muted-foreground">Ingen aktiviteter</div>
@@ -246,7 +316,7 @@ export default function DealDetailPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Edit dialog */}
+      {/* Edit deal dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Rediger deal</DialogTitle></DialogHeader>
@@ -329,6 +399,61 @@ export default function DealDetailPage() {
             <Button variant="outline" onClick={() => setEditOpen(false)}>Avbryt</Button>
             <Button onClick={save} disabled={saving || !form.title.trim()}>
               {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Lagre
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create job dialog */}
+      <Dialog open={jobDialogOpen} onOpenChange={setJobDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Opprett jobb fra deal</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Jobbtittel *</Label>
+              <Input value={jobForm.title} onChange={e => setJobForm({ ...jobForm, title: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Jobbtype</Label>
+                <Select value={jobForm.job_type} onValueChange={v => setJobForm({ ...jobForm, job_type: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {JOB_TYPES.map(t => <SelectItem key={t} value={t}>{JOB_TYPE_LABELS[t] || t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Prioritet</Label>
+                <Select value={jobForm.priority} onValueChange={v => setJobForm({ ...jobForm, priority: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Lav</SelectItem>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="high">Høy</SelectItem>
+                    <SelectItem value="urgent">Haster</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Beskrivelse</Label>
+              <Textarea value={jobForm.description} onChange={e => setJobForm({ ...jobForm, description: e.target.value })} rows={4} />
+            </div>
+            {/* Show what will be linked */}
+            <div className="rounded-md bg-muted/50 p-3 space-y-1 text-xs text-muted-foreground">
+              <p className="font-medium text-foreground text-sm mb-1">Følgende kobles automatisk:</p>
+              {company && <p>Bedrift: {company.name}</p>}
+              {contact && <p>Kontakt: {contact.first_name} {contact.last_name || ""}</p>}
+              {site && <p>Sted: {site.name || site.address}</p>}
+              <p>Deal: {deal.title}</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setJobDialogOpen(false)}>Avbryt</Button>
+            <Button onClick={createJob} disabled={creatingJob || !jobForm.title.trim()} className="gap-1.5">
+              {creatingJob && <Loader2 className="h-4 w-4 animate-spin" />}
+              Opprett jobb
             </Button>
           </DialogFooter>
         </DialogContent>
