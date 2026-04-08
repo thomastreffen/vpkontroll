@@ -89,6 +89,7 @@ export default function DealDetailPage() {
   const [creatingAgreement, setCreatingAgreement] = useState(false);
   const [agreementForm, setAgreementForm] = useState({
     interval: "annual", start_date: "", annual_price: "", scope_description: "",
+    custom_interval_months: "12",
   });
 
   // Assets for agreement
