@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Building2, MapPin, Zap, Loader2 } from "lucide-react";
+import { Building2, MapPin, Zap, Loader2, Star } from "lucide-react";
 import { AGREEMENT_INTERVAL_LABELS, AGREEMENT_STATUS_LABELS } from "@/lib/domain-labels";
 
 interface AgreementFormDialogProps {
@@ -30,7 +30,7 @@ interface AgreementFormDialogProps {
 const EMPTY = {
   interval: "annual", start_date: "", end_date: "", annual_price: "",
   scope_description: "", notes: "", status: "active", site_id: "", asset_id: "",
-  company_id: "", custom_interval_months: "12",
+  company_id: "", custom_interval_months: "12", service_template_id: "",
 };
 
 export function AgreementFormDialog({
@@ -86,6 +86,21 @@ export function AgreementFormDialog({
   const availableSites = externalSites || sitesQuery.data || [];
   const availableAssets = externalAssets || assetsQuery.data || [];
 
+  // Fetch service templates
+  const templatesQuery = useQuery({
+    queryKey: ["service-templates-for-agreement", tenantId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("service_templates" as any)
+        .select("id, name, is_default, use_context")
+        .eq("tenant_id", tenantId!)
+        .eq("is_active", true)
+        .order("name");
+      return (data as any[]) || [];
+    },
+    enabled: open && !!tenantId,
+  });
+
   useEffect(() => {
     if (agreement) {
       setForm({
@@ -100,6 +115,7 @@ export function AgreementFormDialog({
         asset_id: agreement.asset_id || "",
         company_id: agreement.company_id || "",
         custom_interval_months: agreement.custom_interval_months?.toString() || "12",
+        service_template_id: agreement.service_template_id || "",
       });
     } else {
       setForm({
@@ -125,6 +141,7 @@ export function AgreementFormDialog({
         asset_id: form.asset_id || null,
         next_visit_due: form.start_date || null,
         custom_interval_months: form.interval === "custom" ? parseInt(form.custom_interval_months) || null : null,
+        service_template_id: form.service_template_id || null,
       };
       if (isEdit) {
         const { error } = await supabase.from("service_agreements").update(payload).eq("id", agreement.id);
@@ -280,6 +297,22 @@ export function AgreementFormDialog({
                 <SelectContent>
                   {availableAssets.map(a => (
                     <SelectItem key={a.id} value={a.id}>{a.manufacturer} {a.model || ""}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Service template */}
+          {(templatesQuery.data?.length ?? 0) > 0 && (
+            <div>
+              <Label>Servicemal</Label>
+              <Select value={form.service_template_id} onValueChange={v => set("service_template_id", v === "none" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="Ingen mal valgt" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Ingen mal</SelectItem>
+                  {templatesQuery.data!.map((t: any) => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}{t.is_default ? " ★" : ""}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

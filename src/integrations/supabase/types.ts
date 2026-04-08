@@ -1648,6 +1648,7 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean
+          is_default: boolean
           name: string
           template_key: string | null
           tenant_id: string
@@ -1661,6 +1662,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          is_default?: boolean
           name: string
           template_key?: string | null
           tenant_id: string
@@ -1674,6 +1676,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          is_default?: boolean
           name?: string
           template_key?: string | null
           tenant_id?: string

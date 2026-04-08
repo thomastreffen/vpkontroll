@@ -106,16 +106,24 @@ export default function AgreementCreateSheet({ open, onOpenChange, onCreated }: 
 
   useEffect(() => { if (step === "site" && selectedSite) fetchAssets(); }, [step, selectedSite, fetchAssets]);
 
-  // Load templates
+  // Load templates with default detection
   useEffect(() => {
     if (!tenantId || !open) return;
     supabase
       .from("service_templates" as any)
-      .select("id, name")
+      .select("id, name, is_default, use_context")
       .eq("tenant_id", tenantId)
       .eq("is_active", true)
       .order("name")
-      .then(({ data }) => setTemplates(data || []));
+      .then(({ data }) => {
+        const all = (data || []) as any[];
+        setTemplates(all);
+        // Auto-select default service_visit template
+        if (!selectedTemplateId) {
+          const def = all.find(t => t.is_default && t.use_context === "service_visit");
+          if (def) setSelectedTemplateId(def.id);
+        }
+      });
   }, [tenantId, open]);
 
   // Reset on close
@@ -397,9 +405,16 @@ export default function AgreementCreateSheet({ open, onOpenChange, onCreated }: 
             <SelectTrigger><SelectValue placeholder="Ingen mal valgt" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="none">Ingen mal</SelectItem>
-              {templates.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+              {templates.map((t: any) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {t.name}{t.is_default ? " ★" : ""}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
+          {selectedTemplateId && selectedTemplateId !== "none" && (
+            <p className="text-[11px] text-muted-foreground">Valgt mal brukes som standard skjema for servicebesøk</p>
+          )}
         </div>
       </div>
 

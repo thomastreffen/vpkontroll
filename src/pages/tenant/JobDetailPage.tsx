@@ -83,7 +83,9 @@ export default function JobDetailPage() {
   // Auto-select first template for installation jobs if none set
   useEffect(() => {
     if (jobData?.job_type === "installation" && !effectiveTemplateId && installationTemplates.data?.length) {
-      setSelectedTemplateId(installationTemplates.data[0].id);
+      // Prefer default template
+      const def = installationTemplates.data.find((t: any) => t.is_default);
+      setSelectedTemplateId(def ? def.id : installationTemplates.data[0].id);
     }
   }, [jobData?.job_type, effectiveTemplateId, installationTemplates.data]);
 

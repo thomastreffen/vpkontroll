@@ -13,6 +13,7 @@ import FieldPalette from "@/components/templates/FieldPalette";
 import FieldCanvas, { type TemplateField } from "@/components/templates/FieldCanvas";
 import FieldSettingsPanel from "@/components/templates/FieldSettingsPanel";
 import { getPresetSections, CATEGORY_TO_CONTEXT } from "@/lib/template-presets";
+import { setAsDefault, clearDefault } from "@/hooks/useDefaultTemplate";
 
 function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").substring(0, 40);
@@ -58,6 +59,7 @@ export default function TemplateBuilderPage() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
   const [hasAppliedPreset, setHasAppliedPreset] = useState(false);
+  const [isDefault, setIsDefault] = useState(false);
 
   // Load existing template
   useEffect(() => {
@@ -75,6 +77,7 @@ export default function TemplateBuilderPage() {
       setCategory(t.category || "service");
       setTemplateKey(t.template_key || "");
       setUseContext(t.use_context || "");
+      setIsDefault(t.is_default || false);
       setHasAppliedPreset(true);
 
       const { data: fieldData } = await supabase
@@ -259,6 +262,19 @@ export default function TemplateBuilderPage() {
     }
   };
 
+  const handleToggleDefault = async () => {
+    if (!tenantId || !id || !useContext) return;
+    if (isDefault) {
+      await clearDefault(id);
+      setIsDefault(false);
+      toast.success("Standardmal fjernet");
+    } else {
+      await setAsDefault(id, useContext, tenantId);
+      setIsDefault(true);
+      toast.success("Satt som standard");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -285,6 +301,8 @@ export default function TemplateBuilderPage() {
         isEdit={isEdit}
         previewMode={previewMode}
         onTogglePreview={() => { setPreviewMode(p => !p); setSelectedIndex(null); }}
+        isDefault={isDefault}
+        onToggleDefault={isEdit ? handleToggleDefault : undefined}
       />
 
       <div className="flex flex-1 min-h-0">
