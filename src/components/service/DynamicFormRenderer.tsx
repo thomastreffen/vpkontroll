@@ -23,7 +23,7 @@ export interface TemplateField {
 interface DynamicFormRendererProps {
   fields: TemplateField[];
   values: Record<string, any>;
-  onChange: (key: string, value: any) => void;
+  onChange?: (key: string, value: any) => void;
   readonly?: boolean;
 }
 

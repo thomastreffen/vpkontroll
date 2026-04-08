@@ -76,7 +76,7 @@ export default function JobDetailPage() {
 
   // Determine effective template id
   const jobData = job.data;
-  const existingFormData = jobData?.form_data as FormDataPayload | null;
+  const existingFormData = jobData?.form_data as unknown as FormDataPayload | null;
   const hasExistingForm = existingFormData && existingFormData.schema_version === 1 && existingFormData.template_id;
   const effectiveTemplateId = selectedTemplateId || (hasExistingForm ? existingFormData.template_id : ((jobData as any)?.installation_template_id || null));
 
