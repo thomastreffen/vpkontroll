@@ -223,7 +223,7 @@ export default function DealDetailPage() {
       {/* Info cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="p-4">
-          <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" />Bedrift</p>
+          <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" />Kunde</p>
           {company ? (
             <Link to={`/tenant/crm/companies/${company.id}`} className="text-sm font-medium hover:underline">{company.name}</Link>
           ) : <span className="text-sm text-muted-foreground">Ikke tilknyttet</span>}
