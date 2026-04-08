@@ -616,6 +616,15 @@ export default function DealDetailPage() {
               <ArrowRight className="h-3.5 w-3.5" />{stageNext.label}
             </Button>
           )}
+          {/* Stage-specific befaring CTA */}
+          {!isClosed && (deal.stage === "site_visit" || deal.stage === "qualified") && effectiveInspectionTemplateId && !hasInspectionForm && (
+            <Button size="sm" variant="default" className="gap-1.5" onClick={() => {
+              setInspectionFormValues({});
+              setInspectionFormOpen(true);
+            }}>
+              <ClipboardList className="h-3.5 w-3.5" />Fyll ut befaringsskjema
+            </Button>
+          )}
           {!isClosed && (
             <>
               <Button variant="outline" size="sm" onClick={openCreateQuote} className="gap-1.5">
