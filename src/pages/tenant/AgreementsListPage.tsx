@@ -186,6 +186,8 @@ export default function AgreementsListPage() {
           </Table>
         </div>
       )}
+
+      <AgreementCreateSheet open={createOpen} onOpenChange={setCreateOpen} onCreated={fetch} />
     </div>
   );
 }
