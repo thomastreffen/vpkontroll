@@ -23,7 +23,7 @@ import {
   PIPELINE_STAGES, formatCurrency, type DealStage, ACTIVITY_TYPE_LABELS,
   QUOTE_STATUS_LABELS, QUOTE_STATUS_COLORS,
 } from "@/lib/crm-labels";
-import { ENERGY_SOURCE_LABELS, JOB_TYPE_LABELS, formatDate, formatDateTime } from "@/lib/domain-labels";
+import { ENERGY_SOURCE_LABELS, JOB_TYPE_LABELS, AGREEMENT_INTERVAL_LABELS, formatDate, formatDateTime } from "@/lib/domain-labels";
 
 const JOB_TYPES = ["installation", "service", "repair", "warranty", "inspection", "decommission"];
 
