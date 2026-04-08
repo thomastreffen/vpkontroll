@@ -468,7 +468,7 @@ export default function AgreementDetailPage() {
       </Sheet>
 
       {/* Visit detail sheet */}
-      <Sheet open={!!visitDetailOpen} onOpenChange={o => { if (!o) { setVisitDetailOpen(null); setReportMode(null); } }}>
+      <Sheet open={!!visitDetailOpen} onOpenChange={o => { if (!o) { setVisitDetailOpen(null); setReportMode(null); setDynamicFormMode(null); } }}>
         <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
           <SheetHeader><SheetTitle>Besøksdetaljer</SheetTitle></SheetHeader>
           {visitDetailOpen && (
