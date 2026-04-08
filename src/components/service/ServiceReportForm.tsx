@@ -21,9 +21,10 @@ interface Props {
   visitStatus?: string;
 }
 
-export function ServiceReportForm({ initialData, onSave, onCancel }: Props) {
+export function ServiceReportForm({ initialData, onSave, onCancel, visitStatus }: Props) {
   const [data, setData] = useState<ServiceReportData>({ ...initialData });
   const [saving, setSaving] = useState(false);
+  const [markCompleted, setMarkCompleted] = useState(visitStatus !== "completed");
 
   const update = <K extends keyof ServiceReportData>(key: K, value: ServiceReportData[K]) =>
     setData(prev => ({ ...prev, [key]: value }));
