@@ -116,6 +116,22 @@ export default function DealDetailPage() {
       async () => { const { data } = await supabase.from("quotes").select("*").eq("deal_id", id!).is("deleted_at", null).order("version", { ascending: false }); setQuotes(data || []); },
       async () => { const { data } = await supabase.from("crm_activities").select("*").eq("deal_id", id!).order("created_at", { ascending: false }); setActivities(data || []); },
       async () => { const { data } = await (supabase.from("jobs").select("*") as any).eq("deal_id", id!).is("deleted_at", null).limit(1); setLinkedJob(data?.[0] || null); },
+      async () => {
+        // Check if agreement exists linked via job from this deal
+        const { data: jobs } = await (supabase.from("jobs").select("id") as any).eq("deal_id", id!).is("deleted_at", null);
+        if (jobs && jobs.length > 0) {
+          const { data: ag } = await supabase.from("service_agreements").select("id, agreement_number, status").eq("company_id", d.company_id!).is("deleted_at", null).limit(1);
+          setLinkedAgreement(ag?.[0] || null);
+        } else {
+          // Also check direct company match
+          if (d.company_id) {
+            const { data: ag } = await supabase.from("service_agreements").select("id, agreement_number, status").eq("company_id", d.company_id).is("deleted_at", null).limit(1);
+            setLinkedAgreement(ag?.[0] || null);
+          } else {
+            setLinkedAgreement(null);
+          }
+        }
+      },
     );
 
     await Promise.all(fetches.map(f => f()));
