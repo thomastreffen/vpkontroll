@@ -157,7 +157,6 @@ export default function DealDetailPage() {
     : hasInspectionForm
       ? (Object.keys(inspectionData?.values || {}).length > 0 ? "filled" : "started")
       : "not_started";
-  const [linkSaving, setLinkSaving] = useState(false);
 
   /* ─── Data fetching ─────────────────────────────────────────── */
   const fetchDeal = useCallback(async () => {
