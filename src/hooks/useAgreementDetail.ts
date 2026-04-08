@@ -79,5 +79,17 @@ export function useAgreementDetail(agreementId: string | undefined) {
     enabled: !!tenantId,
   });
 
-  return { agreement, company, site, asset, visits, jobs, generationRuns };
+  const documents = useQuery({
+    queryKey: ["agreement-documents", agreementId],
+    queryFn: async () => {
+      const { data } = await supabase.from("documents").select("*")
+        .eq("agreement_id" as any, agreementId!)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+    enabled: !!agreementId && !!tenantId,
+  });
+
+  return { agreement, company, site, asset, visits, jobs, generationRuns, documents };
 }
