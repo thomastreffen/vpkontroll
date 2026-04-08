@@ -98,6 +98,23 @@ export default function AgreementDetailPage() {
   const [editSites, setEditSites] = useState<any[]>([]);
   const [editAssets, setEditAssets] = useState<any[]>([]);
 
+  // Fetch template fields if agreement has a service_template_id
+  const serviceTemplateId = agreement.data?.service_template_id;
+  const templateFields = useQuery({
+    queryKey: ["template-fields", serviceTemplateId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("service_template_fields")
+        .select("*")
+        .eq("template_id", serviceTemplateId!)
+        .order("sort_order");
+      return (data as unknown as TemplateField[]) || [];
+    },
+    enabled: !!serviceTemplateId,
+  });
+
+  const hasTemplate = !!serviceTemplateId && !!templateFields.data?.length;
+
   const openEdit = async () => {
     if (!agreement.data) return;
     const companyId = agreement.data.company_id;
