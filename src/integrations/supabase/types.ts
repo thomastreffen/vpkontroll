@@ -1567,9 +1567,14 @@ export type Database = {
       service_template_fields: {
         Row: {
           created_at: string
+          default_value: Json | null
+          field_key: string | null
           field_type: string
+          help_text: string | null
           id: string
+          is_required: boolean
           label: string
+          options: Json | null
           sort_order: number
           template_id: string
           tenant_id: string
@@ -1577,9 +1582,14 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          default_value?: Json | null
+          field_key?: string | null
           field_type?: string
+          help_text?: string | null
           id?: string
+          is_required?: boolean
           label: string
+          options?: Json | null
           sort_order?: number
           template_id: string
           tenant_id: string
@@ -1587,9 +1597,14 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          default_value?: Json | null
+          field_key?: string | null
           field_type?: string
+          help_text?: string | null
           id?: string
+          is_required?: boolean
           label?: string
+          options?: Json | null
           sort_order?: number
           template_id?: string
           tenant_id?: string
@@ -1614,32 +1629,38 @@ export type Database = {
       }
       service_templates: {
         Row: {
+          category: string
           created_at: string
           created_by: string | null
           description: string | null
           id: string
           is_active: boolean
           name: string
+          template_key: string | null
           tenant_id: string
           updated_at: string
         }
         Insert: {
+          category?: string
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
           is_active?: boolean
           name: string
+          template_key?: string | null
           tenant_id: string
           updated_at?: string
         }
         Update: {
+          category?: string
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
           is_active?: boolean
           name?: string
+          template_key?: string | null
           tenant_id?: string
           updated_at?: string
         }
