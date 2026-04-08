@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Loader2, ArrowLeft, Info, Users, ClipboardCheck, FileText, Pencil, CalendarDays, ExternalLink, X, Save, ClipboardList } from "lucide-react";
@@ -51,6 +52,7 @@ export default function JobDetailPage() {
   const [formValues, setFormValues] = useState<Record<string, any>>({});
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [savingForm, setSavingForm] = useState(false);
+  const [markCompleted, setMarkCompleted] = useState(false);
 
   useEffect(() => {
     if (!id || !tenantId) return;
@@ -58,36 +60,68 @@ export default function JobDetailPage() {
       .then(({ data }) => { if (data && data.length > 0) setLinkedEvent(data[0]); });
   }, [id, tenantId, scheduleOpen]);
 
-  // Fetch installation templates
-  const installationTemplates = useQuery({
-    queryKey: ["installation-templates", tenantId],
+  const jobData = job.data;
+  const isServiceJob = jobData?.job_type === "service";
+  const isInstallationJob = jobData?.job_type === "installation";
+
+  // Fetch linked service_visit for service jobs
+  const linkedVisit = useQuery({
+    queryKey: ["job-linked-visit", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("service_visits")
+        .select("*, agreement:service_agreements(id, agreement_number, service_template_id)")
+        .eq("job_id", id!)
+        .limit(1);
+      return (data as any[])?.[0] || null;
+    },
+    enabled: !!id && !!tenantId && isServiceJob,
+  });
+
+  // Determine the category of templates to fetch
+  const templateCategory = isServiceJob ? "service" : "installation";
+
+  // Fetch templates for the relevant category
+  const categoryTemplates = useQuery({
+    queryKey: ["category-templates", tenantId, templateCategory],
     queryFn: async () => {
       const { data } = await supabase
         .from("service_templates")
-        .select("id, name, template_key, category, is_active")
+        .select("id, name, template_key, category, is_active, is_default, use_context")
         .eq("tenant_id", tenantId!)
-        .eq("category", "installation")
+        .eq("category", templateCategory)
         .eq("is_active", true)
         .order("name");
       return (data as any[]) || [];
     },
-    enabled: !!tenantId,
+    enabled: !!tenantId && (isServiceJob || isInstallationJob),
   });
 
   // Determine effective template id
-  const jobData = job.data;
   const existingFormData = jobData?.form_data as unknown as FormDataPayload | null;
   const hasExistingForm = existingFormData && existingFormData.schema_version === 1 && existingFormData.template_id;
-  const effectiveTemplateId = selectedTemplateId || (hasExistingForm ? existingFormData.template_id : ((jobData as any)?.installation_template_id || null));
 
-  // Auto-select first template for installation jobs if none set
+  // For service jobs with linked visit, check if visit has report_data
+  const visitReportData = linkedVisit.data?.report_data as FormDataPayload | null;
+  const visitHasReport = visitReportData && visitReportData.schema_version === 1 && visitReportData.template_id;
+
+  // For service jobs: template comes from agreement → visit → default
+  // For installation jobs: template comes from job → default
+  const serviceTemplateFromAgreement = linkedVisit.data?.agreement?.service_template_id;
+
+  const effectiveTemplateId = selectedTemplateId
+    || (hasExistingForm ? existingFormData.template_id : null)
+    || (visitHasReport ? visitReportData.template_id : null)
+    || (isServiceJob ? serviceTemplateFromAgreement : null)
+    || ((jobData as any)?.installation_template_id || null);
+
+  // Auto-select default template if none set
   useEffect(() => {
-    if (jobData?.job_type === "installation" && !effectiveTemplateId && installationTemplates.data?.length) {
-      // Prefer default template
-      const def = installationTemplates.data.find((t: any) => t.is_default);
-      setSelectedTemplateId(def ? def.id : installationTemplates.data[0].id);
+    if (!effectiveTemplateId && categoryTemplates.data?.length) {
+      const def = categoryTemplates.data.find((t: any) => t.is_default);
+      if (def) setSelectedTemplateId(def.id);
     }
-  }, [jobData?.job_type, effectiveTemplateId, installationTemplates.data]);
+  }, [effectiveTemplateId, categoryTemplates.data]);
 
   // Fetch template fields for the effective template
   const templateFields = useQuery({
@@ -103,37 +137,61 @@ export default function JobDetailPage() {
     enabled: !!effectiveTemplateId,
   });
 
-  // Show Skjema tab for installation jobs or jobs with form_data
-  const showFormTab = jobData?.job_type === "installation" || (hasExistingForm);
+  // Show Skjema tab for installation, service jobs, or jobs with form_data
+  const showFormTab = isInstallationJob || isServiceJob || !!hasExistingForm;
+
+  // For service jobs: form data lives on service_visit.report_data
+  // For installation jobs: form data lives on jobs.form_data
+  const effectiveFormData = isServiceJob && visitHasReport
+    ? visitReportData
+    : hasExistingForm ? existingFormData : null;
+  const hasEffectiveForm = !!effectiveFormData;
 
   const openFormSheet = useCallback(() => {
-    if (hasExistingForm) {
-      setFormValues(existingFormData.values || {});
+    if (hasEffectiveForm) {
+      setFormValues(effectiveFormData!.values || {});
     } else {
       setFormValues({});
     }
+    setMarkCompleted(false);
     setFormSheetOpen(true);
-  }, [hasExistingForm, existingFormData]);
+  }, [hasEffectiveForm, effectiveFormData]);
 
   const saveFormData = async () => {
     if (!id || !effectiveTemplateId) return;
     setSavingForm(true);
-    const template = installationTemplates.data?.find((t: any) => t.id === effectiveTemplateId);
+    const template = categoryTemplates.data?.find((t: any) => t.id === effectiveTemplateId);
     const payload: FormDataPayload = {
       schema_version: 1,
       template_id: effectiveTemplateId,
       template_key: template?.template_key || "",
       values: formValues,
     };
-    const { error } = await supabase.from("jobs").update({
-      form_data: payload as any,
-      installation_template_id: effectiveTemplateId,
-    }).eq("id", id);
+
+    if (isServiceJob && linkedVisit.data) {
+      // Save to service_visit.report_data
+      const updatePayload: any = { report_data: payload as any };
+      if (markCompleted && linkedVisit.data.status !== "completed") {
+        updatePayload.status = "completed";
+        updatePayload.completed_at = new Date().toISOString();
+      }
+      const { error } = await supabase.from("service_visits").update(updatePayload).eq("id", linkedVisit.data.id);
+      if (error) { toast.error(error.message); setSavingForm(false); return; }
+      toast.success(markCompleted ? "Skjema lagret og besøk fullført" : "Serviceskjema lagret");
+      linkedVisit.refetch();
+    } else {
+      // Save to jobs.form_data
+      const { error } = await supabase.from("jobs").update({
+        form_data: payload as any,
+        installation_template_id: effectiveTemplateId,
+      }).eq("id", id);
+      if (error) { toast.error(error.message); setSavingForm(false); return; }
+      toast.success("Skjema lagret");
+      qc.invalidateQueries({ queryKey: ["job", id] });
+    }
+
     setSavingForm(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Skjema lagret");
     setFormSheetOpen(false);
-    qc.invalidateQueries({ queryKey: ["job", id] });
   };
 
   const startEditing = () => {
@@ -186,6 +244,12 @@ export default function JobDetailPage() {
 
   const j = jobData;
 
+  const formTabLabel = isServiceJob ? "Serviceskjema" : "Skjema";
+  const formSheetTitle = isServiceJob
+    ? (hasEffectiveForm ? "Rediger serviceskjema" : "Fyll ut serviceskjema")
+    : (hasEffectiveForm ? "Rediger installasjonsskjema" : "Fyll ut installasjonsskjema");
+  const templateLabel = isServiceJob ? "servicemal" : "installasjonsmal";
+
   return (
     <div className="space-y-6">
       <div className="flex items-start gap-4">
@@ -237,9 +301,24 @@ export default function JobDetailPage() {
             {site.data && <span>{site.data.address}, {site.data.city}</span>}
             {asset.data && <Link to={`/tenant/crm/assets/${asset.data.id}`} className="text-primary hover:underline">{asset.data.manufacturer} {asset.data.model || ""}</Link>}
             {deal.data && <Link to={`/tenant/crm/deals/${deal.data.id}`} className="text-primary hover:underline flex items-center gap-1"><ExternalLink className="h-3 w-3" />Deal: {deal.data.title}</Link>}
+            {isServiceJob && linkedVisit.data?.agreement && (
+              <Link to={`/tenant/crm/agreements/${linkedVisit.data.agreement.id}`} className="text-primary hover:underline flex items-center gap-1">
+                <ClipboardList className="h-3 w-3" />Avtale: {linkedVisit.data.agreement.agreement_number}
+              </Link>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Service job without linked visit info */}
+      {isServiceJob && !linkedVisit.isLoading && !linkedVisit.data && (
+        <Card className="p-4 border-amber-500/30 bg-amber-500/5">
+          <p className="text-sm font-medium text-amber-700">Servicejobb uten avtale</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Denne servicejobben er ikke koblet til et servicebesøk eller en serviceavtale. Skjemadata lagres direkte på jobben.
+          </p>
+        </Card>
+      )}
 
       <Tabs defaultValue="info">
         <TabsList className="flex-wrap h-auto gap-1">
@@ -249,8 +328,8 @@ export default function JobDetailPage() {
           <TabsTrigger value="documents" className="gap-1.5"><FileText className="h-3.5 w-3.5" />Dokumenter ({documents.data?.length ?? 0})</TabsTrigger>
           {showFormTab && (
             <TabsTrigger value="form" className="gap-1.5">
-              <ClipboardList className="h-3.5 w-3.5" />Skjema
-              {hasExistingForm && <Badge variant="secondary" className="text-[9px] ml-1 px-1 py-0">Utfylt</Badge>}
+              <ClipboardList className="h-3.5 w-3.5" />{formTabLabel}
+              {hasEffectiveForm && <Badge variant="secondary" className="text-[9px] ml-1 px-1 py-0">Utfylt</Badge>}
             </TabsTrigger>
           )}
         </TabsList>
@@ -351,30 +430,35 @@ export default function JobDetailPage() {
           <TabsContent value="form" className="mt-4">
             <Card className="p-5">
               {/* Template selector */}
-              {!hasExistingForm && (installationTemplates.data?.length ?? 0) > 1 && (
+              {!hasEffectiveForm && (categoryTemplates.data?.length ?? 0) > 1 && (
                 <div className="mb-4">
-                  <Label className="text-xs text-muted-foreground mb-1.5 block">Velg installasjonsmal</Label>
+                  <Label className="text-xs text-muted-foreground mb-1.5 block">Velg {templateLabel}</Label>
                   <Select
                     value={effectiveTemplateId || ""}
                     onValueChange={(v) => setSelectedTemplateId(v)}
                   >
                     <SelectTrigger className="w-[280px]"><SelectValue placeholder="Velg mal..." /></SelectTrigger>
                     <SelectContent>
-                      {(installationTemplates.data || []).map((t: any) => (
-                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                      {(categoryTemplates.data || []).map((t: any) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.name}{t.is_default ? " ★" : ""}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               )}
 
-              {hasExistingForm && templateFields.data ? (
+              {hasEffectiveForm && templateFields.data ? (
                 <>
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <p className="text-sm font-medium">Utfylt skjema</p>
+                      <p className="text-sm font-medium">Utfylt {isServiceJob ? "serviceskjema" : "skjema"}</p>
                       <p className="text-xs text-muted-foreground">
-                        Mal: {installationTemplates.data?.find((t: any) => t.id === existingFormData.template_id)?.name || existingFormData.template_key || "Ukjent"}
+                        Mal: {categoryTemplates.data?.find((t: any) => t.id === effectiveFormData!.template_id)?.name || effectiveFormData!.template_key || "Ukjent"}
+                        {isServiceJob && linkedVisit.data && (
+                          <span className="ml-2">· Lagret på servicebesøk</span>
+                        )}
                       </p>
                     </div>
                     <Button variant="outline" size="sm" onClick={openFormSheet} className="gap-1.5">
@@ -383,27 +467,27 @@ export default function JobDetailPage() {
                   </div>
                   <DynamicFormRenderer
                     fields={templateFields.data}
-                    values={existingFormData.values || {}}
+                    values={effectiveFormData!.values || {}}
                     readonly
                   />
                 </>
               ) : effectiveTemplateId ? (
                 <div className="text-center py-8">
                   <ClipboardList className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-sm font-medium mb-1">Installasjonsskjema</p>
+                  <p className="text-sm font-medium mb-1">{isServiceJob ? "Serviceskjema" : "Installasjonsskjema"}</p>
                   <p className="text-xs text-muted-foreground mb-4">
-                    {installationTemplates.data?.find((t: any) => t.id === effectiveTemplateId)?.name || "Valgt mal"}
+                    {categoryTemplates.data?.find((t: any) => t.id === effectiveTemplateId)?.name || "Valgt mal"}
                   </p>
                   <Button onClick={openFormSheet} className="gap-1.5">
-                    <ClipboardList className="h-4 w-4" />Fyll ut installasjonsskjema
+                    <ClipboardList className="h-4 w-4" />Fyll ut {isServiceJob ? "serviceskjema" : "installasjonsskjema"}
                   </Button>
                 </div>
               ) : (
                 <div className="text-center py-8">
                   <ClipboardList className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground mb-1">Ingen installasjonsmal tilgjengelig</p>
+                  <p className="text-sm text-muted-foreground mb-1">Ingen {templateLabel} tilgjengelig</p>
                   <p className="text-xs text-muted-foreground">
-                    Opprett en mal under <span className="font-medium">Skjemaer og maler</span> med kategori "Installasjon" for å bruke denne funksjonen.
+                    Opprett en mal under <Link to="/tenant/templates" className="text-primary hover:underline font-medium">Skjemaer og maler</Link> med kategori "{isServiceJob ? "Service" : "Installasjon"}" for å bruke denne funksjonen.
                   </p>
                 </div>
               )}
@@ -428,9 +512,7 @@ export default function JobDetailPage() {
       <Sheet open={formSheetOpen} onOpenChange={setFormSheetOpen}>
         <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>
-              {hasExistingForm ? "Rediger installasjonsskjema" : "Fyll ut installasjonsskjema"}
-            </SheetTitle>
+            <SheetTitle>{formSheetTitle}</SheetTitle>
           </SheetHeader>
           <div className="py-4">
             {templateFields.data ? (
@@ -443,13 +525,21 @@ export default function JobDetailPage() {
               <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
             )}
           </div>
-          <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => setFormSheetOpen(false)}>Avbryt</Button>
-            <Button onClick={saveFormData} disabled={savingForm} className="gap-1.5">
-              {savingForm && <Loader2 className="h-4 w-4 animate-spin" />}
-              <Save className="h-4 w-4" />Lagre skjema
-            </Button>
-          </SheetFooter>
+          <div className="space-y-3 pt-2 border-t">
+            {isServiceJob && linkedVisit.data && linkedVisit.data.status !== "completed" && (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox checked={markCompleted} onCheckedChange={(c) => setMarkCompleted(!!c)} />
+                <span className="text-sm font-medium">Markér servicebesøket som fullført</span>
+              </label>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setFormSheetOpen(false)}>Avbryt</Button>
+              <Button onClick={saveFormData} disabled={savingForm} className="gap-1.5">
+                {savingForm && <Loader2 className="h-4 w-4 animate-spin" />}
+                <Save className="h-4 w-4" />Lagre skjema
+              </Button>
+            </div>
+          </div>
         </SheetContent>
       </Sheet>
     </div>

@@ -803,3 +803,52 @@ function Field({ label, value }: { label: string; value: string | null | undefin
     </div>
   );
 }
+
+/* ─── Service template selector ──────────────────────────────── */
+function ServiceTemplateSelector({ tenantId, currentTemplateId, agreementId, onChanged }: {
+  tenantId: string; currentTemplateId: string | null; agreementId: string; onChanged: () => void;
+}) {
+  const [changing, setChanging] = useState(false);
+  const templates = useQuery({
+    queryKey: ["service-templates-for-selector", tenantId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("service_templates")
+        .select("id, name, is_default, use_context")
+        .eq("tenant_id", tenantId)
+        .eq("is_active", true)
+        .in("category", ["service"])
+        .order("name");
+      return (data as any[]) || [];
+    },
+    enabled: !!tenantId,
+  });
+
+  const handleChange = async (templateId: string) => {
+    setChanging(true);
+    const val = templateId === "__none__" ? null : templateId;
+    await supabase.from("service_agreements").update({ service_template_id: val }).eq("id", agreementId);
+    setChanging(false);
+    toast.success(val ? "Servicemal oppdatert" : "Servicemal fjernet");
+    onChanged();
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <Select value={currentTemplateId || "__none__"} onValueChange={handleChange} disabled={changing}>
+        <SelectTrigger className="w-[200px] h-8 text-xs">
+          <SelectValue placeholder="Velg mal..." />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__none__">Ingen mal</SelectItem>
+          {(templates.data || []).map((t: any) => (
+            <SelectItem key={t.id} value={t.id}>{t.name}{t.is_default ? " ★" : ""}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {(!templates.data?.length) && (
+        <Link to="/tenant/templates" className="text-xs text-primary hover:underline">Opprett mal</Link>
+      )}
+    </div>
+  );
+}
