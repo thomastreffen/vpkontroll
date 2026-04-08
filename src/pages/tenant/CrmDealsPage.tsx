@@ -18,6 +18,7 @@ import {
   Plus, TrendingUp, Loader2, DollarSign, Calendar, User, Building2,
   GripVertical, List, LayoutGrid,
 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   DEAL_STAGE_LABELS, DEAL_STAGE_ORDER, DEAL_STAGE_BG,
   PIPELINE_STAGES, formatCurrency, type DealStage,
