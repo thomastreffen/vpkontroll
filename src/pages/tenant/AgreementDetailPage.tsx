@@ -27,6 +27,9 @@ import { ServiceReportView } from "@/components/service/ServiceReportView";
 import { createDefaultReport, ServiceReportData } from "@/lib/service-report-schema";
 import { ENERGY_SOURCE_LABELS } from "@/lib/domain-labels";
 import { DynamicFormRenderer, type TemplateField } from "@/components/service/DynamicFormRenderer";
+import { FormSignoffSection, DEFAULT_SIGNOFF } from "@/components/forms/FormSignoffSection";
+import { FormPdfActions } from "@/components/forms/FormPdfActions";
+import type { SignoffData } from "@/lib/form-pdf";
 import {
   AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS,
   AGREEMENT_INTERVAL_LABELS,
@@ -95,6 +98,7 @@ export default function AgreementDetailPage() {
   const [dynamicFormMode, setDynamicFormMode] = useState<"view" | "edit" | null>(null);
   const [dynamicFormValues, setDynamicFormValues] = useState<Record<string, any>>({});
   const [savingDynamicForm, setSavingDynamicForm] = useState(false);
+  const [visitSignoff, setVisitSignoff] = useState<SignoffData>(DEFAULT_SIGNOFF);
   // Fetch sites/assets for edit dialog
   const [editSites, setEditSites] = useState<any[]>([]);
   const [editAssets, setEditAssets] = useState<any[]>([]);
@@ -516,9 +520,10 @@ export default function AgreementDetailPage() {
                           size="sm"
                           variant={hasDynamicData ? "outline" : "default"}
                           className="gap-1.5"
-                          onClick={() => {
+                         onClick={() => {
                             const vals = hasDynamicData ? ((rd as any).values || {}) : {};
                             setDynamicFormValues(vals);
+                            setVisitSignoff((rd as any)?.signoff || { ...DEFAULT_SIGNOFF });
                             setDynamicFormMode("edit");
                           }}
                         >
@@ -541,12 +546,13 @@ export default function AgreementDetailPage() {
               </div>
 
               {dynamicFormMode === "edit" && templateFields.data ? (
-                <div className="space-y-4">
+              <div className="space-y-4">
                   <DynamicFormRenderer
                     fields={templateFields.data}
                     values={dynamicFormValues}
                     onChange={(key, val) => setDynamicFormValues(prev => ({ ...prev, [key]: val }))}
                   />
+                  <FormSignoffSection signoff={visitSignoff} onChange={setVisitSignoff} />
                   <div className="flex justify-end gap-2 pt-2 border-t">
                     <Button variant="outline" onClick={() => setDynamicFormMode(null)}>Avbryt</Button>
                     <Button
@@ -557,6 +563,7 @@ export default function AgreementDetailPage() {
                           template_id: serviceTemplateId,
                           template_key: "",
                           values: dynamicFormValues,
+                          signoff: visitSignoff,
                         };
                         const { error } = await supabase.from("service_visits").update({
                           report_data: payload as any,
@@ -616,13 +623,33 @@ export default function AgreementDetailPage() {
                 const rd = visitDetailOpen.report_data as ServiceReportData | null;
                 const hasDynamicData = rd && rd.schema_version === 1 && (rd as any).template_id;
                 if (hasDynamicData && templateFields.data) {
+                  const signoffData = (rd as any)?.signoff as SignoffData | undefined;
                   return (
-                    <div>
+                    <div className="space-y-4">
                       <p className="text-xs font-medium text-muted-foreground mb-3">Utfylt skjema</p>
                       <DynamicFormRenderer
                         fields={templateFields.data}
                         values={(rd as any).values || {}}
                         readonly
+                      />
+                      {signoffData && <FormSignoffSection signoff={signoffData} onChange={() => {}} readonly />}
+                      <FormPdfActions
+                        fields={templateFields.data}
+                        values={(rd as any).values || {}}
+                        context={{
+                          title: "Servicerapport",
+                          templateName: templateFields.data?.[0] ? "Servicemal" : "",
+                          customerName: company.data?.name,
+                          address: site.data ? [site.data.address, site.data.city].filter(Boolean).join(", ") : undefined,
+                          siteName: site.data?.name || undefined,
+                          date: formatDate(visitDetailOpen.scheduled_date),
+                          agreementNumber: a.agreement_number,
+                        }}
+                        signoff={signoffData}
+                        entityType="service_visit"
+                        entityId={visitDetailOpen.id}
+                        categoryLabel="Servicerapport PDF"
+                        onPdfGenerated={() => visits.refetch()}
                       />
                     </div>
                   );

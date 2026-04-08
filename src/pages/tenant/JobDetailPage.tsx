@@ -24,6 +24,9 @@ import { DocumentUploadSection } from "@/components/crud/DocumentUploadSection";
 import { ChecklistSection } from "@/components/crud/ChecklistSection";
 import { ScheduleEventDialog } from "@/components/crud/ScheduleEventDialog";
 import { DynamicFormRenderer, type TemplateField } from "@/components/service/DynamicFormRenderer";
+import { FormSignoffSection, DEFAULT_SIGNOFF } from "@/components/forms/FormSignoffSection";
+import { FormPdfActions } from "@/components/forms/FormPdfActions";
+import type { SignoffData } from "@/lib/form-pdf";
 import { toast } from "sonner";
 
 /* ─── Form data structure ──────────────────────────────────────── */
@@ -53,6 +56,7 @@ export default function JobDetailPage() {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [savingForm, setSavingForm] = useState(false);
   const [markCompleted, setMarkCompleted] = useState(false);
+  const [formSignoff, setFormSignoff] = useState<SignoffData>({ ...DEFAULT_SIGNOFF });
 
   useEffect(() => {
     if (!id || !tenantId) return;
@@ -150,8 +154,10 @@ export default function JobDetailPage() {
   const openFormSheet = useCallback(() => {
     if (hasEffectiveForm) {
       setFormValues(effectiveFormData!.values || {});
+      setFormSignoff((effectiveFormData as any)?.signoff || { ...DEFAULT_SIGNOFF });
     } else {
       setFormValues({});
+      setFormSignoff({ ...DEFAULT_SIGNOFF });
     }
     setMarkCompleted(false);
     setFormSheetOpen(true);
@@ -161,11 +167,12 @@ export default function JobDetailPage() {
     if (!id || !effectiveTemplateId) return;
     setSavingForm(true);
     const template = categoryTemplates.data?.find((t: any) => t.id === effectiveTemplateId);
-    const payload: FormDataPayload = {
+    const payload: any = {
       schema_version: 1,
       template_id: effectiveTemplateId,
       template_key: template?.template_key || "",
       values: formValues,
+      signoff: formSignoff,
     };
 
     if (isServiceJob && linkedVisit.data) {
@@ -478,6 +485,28 @@ export default function JobDetailPage() {
                     values={effectiveFormData!.values || {}}
                     readonly
                   />
+                  {(effectiveFormData as any)?.signoff && (
+                    <FormSignoffSection signoff={(effectiveFormData as any).signoff} onChange={() => {}} readonly />
+                  )}
+                  <div className="mt-4">
+                    <FormPdfActions
+                      fields={templateFields.data}
+                      values={effectiveFormData!.values || {}}
+                      context={{
+                        title: isServiceJob ? "Servicerapport" : "Installasjonsrapport",
+                        templateName: categoryTemplates.data?.find((t: any) => t.id === effectiveFormData!.template_id)?.name || "",
+                        customerName: company.data?.name,
+                        address: site.data ? [site.data.address, site.data.city].filter(Boolean).join(", ") : undefined,
+                        jobNumber: j.job_number,
+                        date: formatDate(j.created_at),
+                      }}
+                      signoff={(effectiveFormData as any)?.signoff}
+                      entityType={isServiceJob && linkedVisit.data ? "service_visit" : "job"}
+                      entityId={isServiceJob && linkedVisit.data ? linkedVisit.data.id : id!}
+                      categoryLabel={isServiceJob ? "Servicerapport PDF" : "Installasjonsrapport PDF"}
+                      onPdfGenerated={() => qc.invalidateQueries({ queryKey: ["job-documents", id!] })}
+                    />
+                  </div>
                 </>
               ) : effectiveTemplateId ? (
                 <div className="text-center py-8">
@@ -524,11 +553,14 @@ export default function JobDetailPage() {
           </SheetHeader>
           <div className="py-4">
             {templateFields.data ? (
-              <DynamicFormRenderer
-                fields={templateFields.data}
-                values={formValues}
-                onChange={(key, val) => setFormValues(prev => ({ ...prev, [key]: val }))}
-              />
+              <>
+                <DynamicFormRenderer
+                  fields={templateFields.data}
+                  values={formValues}
+                  onChange={(key, val) => setFormValues(prev => ({ ...prev, [key]: val }))}
+                />
+                <FormSignoffSection signoff={formSignoff} onChange={setFormSignoff} />
+              </>
             ) : (
               <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
             )}

@@ -16,7 +16,7 @@ type DocCategory = Database["public"]["Enums"]["document_category"];
 interface DocumentUploadSectionProps {
   documents: any[] | undefined;
   /** Which entity this is for */
-  entityType: "job" | "asset" | "warranty" | "agreement" | "service_visit";
+  entityType: "job" | "asset" | "warranty" | "agreement" | "service_visit" | "deal";
   entityId: string;
   /** react-query key to invalidate */
   queryKey: string[];
@@ -41,7 +41,7 @@ export function DocumentUploadSection({ documents, entityType, entityId, queryKe
         .upload(filePath, file, { upsert: false });
       if (storageErr) throw storageErr;
 
-      const fkMap: Record<string, string> = { job: "job_id", asset: "asset_id", warranty: "warranty_case_id", agreement: "agreement_id", service_visit: "service_visit_id" };
+      const fkMap: Record<string, string> = { job: "job_id", asset: "asset_id", warranty: "warranty_case_id", agreement: "agreement_id", service_visit: "service_visit_id", deal: "deal_id" };
       const fkCol = fkMap[entityType];
       const docPayload: any = {
         tenant_id: tenantId,

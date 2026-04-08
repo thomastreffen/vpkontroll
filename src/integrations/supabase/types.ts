@@ -721,6 +721,7 @@ export type Database = {
           asset_id: string | null
           category: Database["public"]["Enums"]["document_category"]
           created_at: string
+          deal_id: string | null
           deleted_at: string | null
           description: string | null
           file_name: string
@@ -739,6 +740,7 @@ export type Database = {
           asset_id?: string | null
           category?: Database["public"]["Enums"]["document_category"]
           created_at?: string
+          deal_id?: string | null
           deleted_at?: string | null
           description?: string | null
           file_name: string
@@ -757,6 +759,7 @@ export type Database = {
           asset_id?: string | null
           category?: Database["public"]["Enums"]["document_category"]
           created_at?: string
+          deal_id?: string | null
           deleted_at?: string | null
           description?: string | null
           file_name?: string
