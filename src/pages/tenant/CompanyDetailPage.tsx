@@ -205,7 +205,7 @@ export default function CompanyDetailPage() {
                     <div>
                       <p className="font-medium text-sm">{a.agreement_number}</p>
                       <p className="text-xs text-muted-foreground">
-                        {AGREEMENT_INTERVAL_LABELS[a.interval] || a.interval} · Neste: {formatDate(a.next_visit_due)}
+                        {formatIntervalLabel(a.interval, (a as any).custom_interval_months)} · Neste: {formatDate(a.next_visit_due)}
                       </p>
                     </div>
                     <Badge className={`text-[10px] ${AGREEMENT_STATUS_COLORS[a.status] || ""}`}>
