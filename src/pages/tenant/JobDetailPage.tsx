@@ -59,6 +59,13 @@ export default function JobDetailPage() {
               {CASE_PRIORITY_LABELS[j.priority as keyof typeof CASE_PRIORITY_LABELS] || j.priority}
             </span>
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Pencil className="h-3 w-3 mr-1" />Rediger</Button>
+            {linkedEvent ? (
+              <Link to="/tenant/ressursplanlegger">
+                <Button variant="outline" size="sm" className="gap-1"><CalendarDays className="h-3 w-3" />Se i kalender<ExternalLink className="h-3 w-3" /></Button>
+              </Link>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setScheduleOpen(true)} className="gap-1"><CalendarDays className="h-3 w-3" />Planlegg</Button>
+            )}
           </div>
           <p className="text-lg mt-1">{j.title}</p>
           <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mt-2">
