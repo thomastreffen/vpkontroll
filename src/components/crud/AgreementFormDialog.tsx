@@ -30,7 +30,7 @@ interface AgreementFormDialogProps {
 const EMPTY = {
   interval: "annual", start_date: "", end_date: "", annual_price: "",
   scope_description: "", notes: "", status: "active", site_id: "", asset_id: "",
-  company_id: "", custom_interval_months: "12",
+  company_id: "", custom_interval_months: "12", service_template_id: "",
 };
 
 export function AgreementFormDialog({
