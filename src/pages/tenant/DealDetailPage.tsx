@@ -173,6 +173,67 @@ export default function DealDetailPage() {
     fetchDeal();
   };
 
+  /* ─── Link entity to deal ───────────────────────────────────── */
+  const linkEntityToDeal = async (field: string, value: string) => {
+    if (!deal) return;
+    setLinkSaving(true);
+    const { error } = await supabase.from("crm_deals").update({ [field]: value } as any).eq("id", deal.id);
+    setLinkSaving(false);
+    if (error) { toast.error("Kunne ikke koble til deal"); return; }
+    toast.success("Tilknyttet deal");
+    fetchDeal();
+  };
+
+  const handlePickerSelect = (type: "company" | "contact" | "site", entityId: string) => {
+    const fieldMap = { company: "company_id", contact: "contact_id", site: "site_id" };
+    linkEntityToDeal(fieldMap[type], entityId);
+  };
+
+  const createAndLinkCompany = async () => {
+    if (!tenantId || !newCompanyForm.name.trim()) return;
+    setLinkSaving(true);
+    const { data, error } = await supabase.from("crm_companies").insert({
+      tenant_id: tenantId, name: newCompanyForm.name.trim(),
+      customer_type: newCompanyForm.customer_type as any,
+      phone: newCompanyForm.phone || null, email: newCompanyForm.email || null,
+      created_by: user?.id,
+    }).select("id").single();
+    if (error || !data) { setLinkSaving(false); toast.error("Kunne ikke opprette kunde"); return; }
+    await linkEntityToDeal("company_id", data.id);
+    setCreateCompanyOpen(false);
+    setNewCompanyForm({ name: "", customer_type: "private", phone: "", email: "" });
+  };
+
+  const createAndLinkContact = async () => {
+    if (!tenantId || !newContactForm.first_name.trim()) return;
+    setLinkSaving(true);
+    const { data, error } = await supabase.from("crm_contacts").insert({
+      tenant_id: tenantId, first_name: newContactForm.first_name.trim(),
+      last_name: newContactForm.last_name || null,
+      email: newContactForm.email || null, phone: newContactForm.phone || null,
+      company_id: deal?.company_id || null, created_by: user?.id,
+    }).select("id").single();
+    if (error || !data) { setLinkSaving(false); toast.error("Kunne ikke opprette kontakt"); return; }
+    await linkEntityToDeal("contact_id", data.id);
+    setCreateContactOpen(false);
+    setNewContactForm({ first_name: "", last_name: "", email: "", phone: "" });
+  };
+
+  const createAndLinkSite = async () => {
+    if (!tenantId || !deal?.company_id || !newSiteForm.address.trim()) return;
+    setLinkSaving(true);
+    const { data, error } = await supabase.from("customer_sites").insert({
+      tenant_id: tenantId, company_id: deal.company_id,
+      name: newSiteForm.name || null, address: newSiteForm.address.trim(),
+      postal_code: newSiteForm.postal_code || null, city: newSiteForm.city || null,
+      site_type: newSiteForm.site_type as any, created_by: user?.id,
+    }).select("id").single();
+    if (error || !data) { setLinkSaving(false); toast.error("Kunne ikke opprette anleggssted"); return; }
+    await linkEntityToDeal("site_id", data.id);
+    setCreateSiteOpen(false);
+    setNewSiteForm({ name: "", address: "", postal_code: "", city: "", site_type: "residential" });
+  };
+
   /* ─── Edit deal ─────────────────────────────────────────────── */
   const openEdit = async () => {
     if (!deal) return;
