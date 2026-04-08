@@ -106,16 +106,24 @@ export default function AgreementCreateSheet({ open, onOpenChange, onCreated }: 
 
   useEffect(() => { if (step === "site" && selectedSite) fetchAssets(); }, [step, selectedSite, fetchAssets]);
 
-  // Load templates
+  // Load templates with default detection
   useEffect(() => {
     if (!tenantId || !open) return;
     supabase
       .from("service_templates" as any)
-      .select("id, name")
+      .select("id, name, is_default, use_context")
       .eq("tenant_id", tenantId)
       .eq("is_active", true)
       .order("name")
-      .then(({ data }) => setTemplates(data || []));
+      .then(({ data }) => {
+        const all = (data || []) as any[];
+        setTemplates(all);
+        // Auto-select default service_visit template
+        if (!selectedTemplateId) {
+          const def = all.find(t => t.is_default && t.use_context === "service_visit");
+          if (def) setSelectedTemplateId(def.id);
+        }
+      });
   }, [tenantId, open]);
 
   // Reset on close
