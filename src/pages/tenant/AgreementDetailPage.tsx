@@ -98,6 +98,7 @@ export default function AgreementDetailPage() {
   const [dynamicFormMode, setDynamicFormMode] = useState<"view" | "edit" | null>(null);
   const [dynamicFormValues, setDynamicFormValues] = useState<Record<string, any>>({});
   const [savingDynamicForm, setSavingDynamicForm] = useState(false);
+  const [visitSignoff, setVisitSignoff] = useState<SignoffData>(DEFAULT_SIGNOFF);
   // Fetch sites/assets for edit dialog
   const [editSites, setEditSites] = useState<any[]>([]);
   const [editAssets, setEditAssets] = useState<any[]>([]);
