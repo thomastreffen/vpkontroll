@@ -27,6 +27,9 @@ import { ServiceReportView } from "@/components/service/ServiceReportView";
 import { createDefaultReport, ServiceReportData } from "@/lib/service-report-schema";
 import { ENERGY_SOURCE_LABELS } from "@/lib/domain-labels";
 import { DynamicFormRenderer, type TemplateField } from "@/components/service/DynamicFormRenderer";
+import { FormSignoffSection, DEFAULT_SIGNOFF } from "@/components/forms/FormSignoffSection";
+import { FormPdfActions } from "@/components/forms/FormPdfActions";
+import type { SignoffData } from "@/lib/form-pdf";
 import {
   AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS,
   AGREEMENT_INTERVAL_LABELS,
