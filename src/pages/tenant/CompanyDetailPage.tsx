@@ -12,6 +12,7 @@ import {
 } from "@/lib/crm-labels";
 import {
   ENERGY_SOURCE_LABELS, ASSET_STATUS_LABELS, ASSET_STATUS_COLORS,
+  CUSTOMER_TYPE_LABELS, CUSTOMER_TYPE_COLORS,
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
   AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS, AGREEMENT_INTERVAL_LABELS,
   WARRANTY_STATUS_LABELS, WARRANTY_STATUS_COLORS,
@@ -39,7 +40,7 @@ export default function CompanyDetailPage() {
   }
 
   if (!company.data) {
-    return <div className="text-center py-20 text-muted-foreground">Bedrift ikke funnet</div>;
+    return <div className="text-center py-20 text-muted-foreground">Kunde ikke funnet</div>;
   }
 
   const c = company.data;
@@ -58,7 +59,12 @@ export default function CompanyDetailPage() {
             </Avatar>
             <div>
               <h1 className="text-2xl font-bold">{c.name}</h1>
-              <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
+                {c.customer_type && (
+                  <Badge className={`text-[10px] ${CUSTOMER_TYPE_COLORS[c.customer_type] || ""}`}>
+                    {CUSTOMER_TYPE_LABELS[c.customer_type] || c.customer_type}
+                  </Badge>
+                )}
                 {c.org_number && <span>Org: {c.org_number}</span>}
                 {c.industry && <span className="capitalize">{c.industry}</span>}
                 {c.city && <span>{c.postal_code} {c.city}</span>}

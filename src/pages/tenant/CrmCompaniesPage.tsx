@@ -7,11 +7,14 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Plus, Search, Building2, MoreHorizontal, Globe, Phone, Mail, Loader2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { CUSTOMER_TYPE_LABELS, CUSTOMER_TYPE_COLORS } from "@/lib/domain-labels";
 
 type Company = {
   id: string; tenant_id: string; name: string; org_number: string | null;
@@ -32,7 +35,7 @@ export default function CrmCompaniesPage() {
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
-    name: "", org_number: "", industry: "varmepumpe", website: "", phone: "",
+    name: "", org_number: "", industry: "varmepumpe", customer_type: "private", website: "", phone: "",
     email: "", address: "", city: "", postal_code: "", notes: "",
   });
 
@@ -48,7 +51,7 @@ export default function CrmCompaniesPage() {
 
   const openNew = () => {
     setEditCompany(null);
-    setForm({ name: "", org_number: "", industry: "varmepumpe", website: "", phone: "", email: "", address: "", city: "", postal_code: "", notes: "" });
+    setForm({ name: "", org_number: "", industry: "varmepumpe", customer_type: "private", website: "", phone: "", email: "", address: "", city: "", postal_code: "", notes: "" });
     setDialogOpen(true);
   };
 
@@ -56,6 +59,7 @@ export default function CrmCompaniesPage() {
     setEditCompany(c);
     setForm({
       name: c.name, org_number: c.org_number || "", industry: c.industry || "",
+      customer_type: (c as any).customer_type || "private",
       website: c.website || "", phone: c.phone || "", email: c.email || "",
       address: c.address || "", city: c.city || "", postal_code: c.postal_code || "", notes: c.notes || "",
     });
@@ -69,6 +73,7 @@ export default function CrmCompaniesPage() {
       const payload = {
         tenant_id: tenantId, name: form.name.trim(),
         org_number: form.org_number || null, industry: form.industry || null,
+        customer_type: form.customer_type as any,
         website: form.website || null, phone: form.phone || null,
         email: form.email || null, address: form.address || null,
         city: form.city || null, postal_code: form.postal_code || null,
@@ -76,11 +81,11 @@ export default function CrmCompaniesPage() {
       };
       if (editCompany) {
         await supabase.from("crm_companies").update(payload as any).eq("id", editCompany.id);
-        toast.success("Bedrift oppdatert");
+        toast.success("Kunde oppdatert");
       } else {
         const { data: created } = await supabase.from("crm_companies").insert({ ...payload, created_by: user?.id } as any).select("id").single();
-        toast.success("Bedrift opprettet", {
-          action: created ? { label: "Åpne bedrift", onClick: () => navigate(`/tenant/crm/companies/${created.id}`) } : undefined,
+        toast.success("Kunde opprettet", {
+          action: created ? { label: "Åpne kunde", onClick: () => navigate(`/tenant/crm/companies/${created.id}`) } : undefined,
         });
       }
       setDialogOpen(false);
@@ -99,17 +104,17 @@ export default function CrmCompaniesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Bedrifter</h1>
-          <p className="text-sm text-muted-foreground mt-1">{companies.length} bedrifter totalt</p>
+          <h1 className="text-2xl font-bold tracking-tight">Kunder</h1>
+          <p className="text-sm text-muted-foreground mt-1">{companies.length} kunder totalt</p>
         </div>
         <Button onClick={openNew} className="gap-2">
-          <Plus className="h-4 w-4" /> Ny bedrift
+          <Plus className="h-4 w-4" /> Ny kunde
         </Button>
       </div>
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Søk bedrifter..." className="pl-9" />
+        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Søk kunder..." className="pl-9" />
       </div>
 
       {loading ? (
@@ -120,11 +125,11 @@ export default function CrmCompaniesPage() {
         ) : (
           <EmptyState
             icon={Building2}
-            title="Ingen bedrifter ennå"
-            description="Start med å legge til din første bedrift. Bedriften er utgangspunktet for kontakter, anlegg, deals og jobber."
-            actionLabel="Ny bedrift"
+            title="Ingen kunder ennå"
+            description="Start med å legge til din første kunde – enten privatkunde eller bedrift. Kunden er utgangspunktet for kontaktpersoner, anlegg, deals og jobber."
+            actionLabel="Ny kunde"
             onAction={openNew}
-            hint="Bedrift → Kontakt → Anleggssted → Anlegg → Deal → Jobb"
+            hint="Kunde → Kontaktperson → Anleggssted → Anlegg → Deal → Jobb"
           />
         )
       ) : (
@@ -139,7 +144,14 @@ export default function CrmCompaniesPage() {
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold truncate">{c.name}</p>
-                  {c.industry && <p className="text-xs text-muted-foreground capitalize">{c.industry}</p>}
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    {(c as any).customer_type && (
+                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${CUSTOMER_TYPE_COLORS[(c as any).customer_type] || ""}`}>
+                        {CUSTOMER_TYPE_LABELS[(c as any).customer_type] || (c as any).customer_type}
+                      </Badge>
+                    )}
+                    {c.industry && <span className="text-xs text-muted-foreground capitalize">{c.industry}</span>}
+                  </div>
                   <div className="flex flex-col gap-1 mt-2">
                     {c.email && (
                       <span className="text-xs text-muted-foreground flex items-center gap-1.5">
@@ -165,14 +177,27 @@ export default function CrmCompaniesPage() {
       <Sheet open={dialogOpen} onOpenChange={setDialogOpen}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>{editCompany ? "Rediger bedrift" : "Ny bedrift"}</SheetTitle>
+            <SheetTitle>{editCompany ? "Rediger kunde" : "Ny kunde"}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Bedriftsnavn *</Label>
+                <Label>Navn *</Label>
                 <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
+              <div className="space-y-1.5">
+                <Label>Kundetype</Label>
+                <Select value={form.customer_type} onValueChange={(v) => setForm({ ...form, customer_type: v })}>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(CUSTOMER_TYPE_LABELS).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Org.nummer</Label>
                 <Input value={form.org_number} onChange={(e) => setForm({ ...form, org_number: e.target.value })} placeholder="999 999 999" />

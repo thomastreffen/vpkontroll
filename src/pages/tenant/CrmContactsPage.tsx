@@ -122,17 +122,17 @@ export default function CrmContactsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Kontakter</h1>
-          <p className="text-sm text-muted-foreground mt-1">{contacts.length} kontakter totalt</p>
+          <h1 className="text-2xl font-bold tracking-tight">Kontaktpersoner</h1>
+          <p className="text-sm text-muted-foreground mt-1">{contacts.length} kontaktpersoner totalt</p>
         </div>
         <Button onClick={openNew} className="gap-2">
-          <Plus className="h-4 w-4" /> Ny kontakt
+          <Plus className="h-4 w-4" /> Ny kontaktperson
         </Button>
       </div>
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Søk kontakter..." className="pl-9" />
+        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Søk kontaktpersoner..." className="pl-9" />
       </div>
 
       {loading ? (
@@ -143,11 +143,11 @@ export default function CrmContactsPage() {
         ) : (
           <EmptyState
             icon={User}
-            title="Ingen kontakter ennå"
-            description="Legg til kontaktpersoner for å knytte dem til bedrifter, deals og jobber. Du kan også opprette kontakter direkte fra en bedriftsside."
-            actionLabel="Ny kontakt"
+            title="Ingen kontaktpersoner ennå"
+            description="Legg til kontaktpersoner for å knytte dem til kunder, deals og jobber. Du kan også opprette kontaktpersoner direkte fra en kundeside."
+            actionLabel="Ny kontaktperson"
             onAction={openNew}
-            hint="Tips: Opprett bedriften først, så legger du til kontakter derfra."
+            hint="Tips: Opprett kunden først, så legger du til kontaktpersoner derfra."
           />
         )
       ) : (
@@ -202,7 +202,7 @@ export default function CrmContactsPage() {
       <Sheet open={dialogOpen} onOpenChange={setDialogOpen}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>{editContact ? "Rediger kontakt" : "Ny kontakt"}</SheetTitle>
+            <SheetTitle>{editContact ? "Rediger kontaktperson" : "Ny kontaktperson"}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-3">
