@@ -485,6 +485,28 @@ export default function JobDetailPage() {
                     values={effectiveFormData!.values || {}}
                     readonly
                   />
+                  {(effectiveFormData as any)?.signoff && (
+                    <FormSignoffSection signoff={(effectiveFormData as any).signoff} onChange={() => {}} readonly />
+                  )}
+                  <div className="mt-4">
+                    <FormPdfActions
+                      fields={templateFields.data}
+                      values={effectiveFormData!.values || {}}
+                      context={{
+                        title: isServiceJob ? "Servicerapport" : "Installasjonsrapport",
+                        templateName: categoryTemplates.data?.find((t: any) => t.id === effectiveFormData!.template_id)?.name || "",
+                        customerName: company.data?.name,
+                        address: site.data ? [site.data.address, site.data.city].filter(Boolean).join(", ") : undefined,
+                        jobNumber: j.job_number,
+                        date: formatDate(j.created_at),
+                      }}
+                      signoff={(effectiveFormData as any)?.signoff}
+                      entityType={isServiceJob && linkedVisit.data ? "service_visit" : "job"}
+                      entityId={isServiceJob && linkedVisit.data ? linkedVisit.data.id : id!}
+                      categoryLabel={isServiceJob ? "Servicerapport PDF" : "Installasjonsrapport PDF"}
+                      onPdfGenerated={() => qc.invalidateQueries({ queryKey: ["job-documents", id!] })}
+                    />
+                  </div>
                 </>
               ) : effectiveTemplateId ? (
                 <div className="text-center py-8">
