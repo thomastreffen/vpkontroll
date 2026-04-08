@@ -24,6 +24,9 @@ import { DocumentUploadSection } from "@/components/crud/DocumentUploadSection";
 import { ChecklistSection } from "@/components/crud/ChecklistSection";
 import { ScheduleEventDialog } from "@/components/crud/ScheduleEventDialog";
 import { DynamicFormRenderer, type TemplateField } from "@/components/service/DynamicFormRenderer";
+import { FormSignoffSection, DEFAULT_SIGNOFF } from "@/components/forms/FormSignoffSection";
+import { FormPdfActions } from "@/components/forms/FormPdfActions";
+import type { SignoffData } from "@/lib/form-pdf";
 import { toast } from "sonner";
 
 /* ─── Form data structure ──────────────────────────────────────── */
