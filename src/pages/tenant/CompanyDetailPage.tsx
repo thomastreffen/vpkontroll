@@ -166,15 +166,17 @@ export default function CompanyDetailPage() {
           {deals.data?.length === 0 ? <EmptyState text="Ingen deals" /> : (
             <div className="grid gap-3">
               {deals.data?.map(d => (
-                <Card key={d.id} className="p-4 flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-sm">{d.title}</p>
-                    <p className="text-xs text-muted-foreground">{formatCurrency(d.value as number | null)} · {formatDate(d.expected_close_date)}</p>
-                  </div>
-                  <Badge className={`text-[10px] ${DEAL_STAGE_COLORS[d.stage as keyof typeof DEAL_STAGE_COLORS] || ""}`}>
-                    {DEAL_STAGE_LABELS[d.stage as keyof typeof DEAL_STAGE_LABELS] || d.stage}
-                  </Badge>
-                </Card>
+                <Link key={d.id} to={`/tenant/crm/deals/${d.id}`}>
+                  <Card className="p-4 flex items-center justify-between hover:shadow-md transition-shadow">
+                    <div>
+                      <p className="font-medium text-sm">{d.title}</p>
+                      <p className="text-xs text-muted-foreground">{formatCurrency(d.value as number | null)} · {formatDate(d.expected_close_date)}</p>
+                    </div>
+                    <Badge className={`text-[10px] ${DEAL_STAGE_COLORS[d.stage as keyof typeof DEAL_STAGE_COLORS] || ""}`}>
+                      {DEAL_STAGE_LABELS[d.stage as keyof typeof DEAL_STAGE_LABELS] || d.stage}
+                    </Badge>
+                  </Card>
+                </Link>
               ))}
             </div>
           )}
