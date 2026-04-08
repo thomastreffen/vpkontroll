@@ -303,6 +303,22 @@ export function AgreementFormDialog({
             </div>
           )}
 
+          {/* Service template */}
+          {(templatesQuery.data?.length ?? 0) > 0 && (
+            <div>
+              <Label>Servicemal</Label>
+              <Select value={form.service_template_id} onValueChange={v => set("service_template_id", v === "none" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="Ingen mal valgt" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Ingen mal</SelectItem>
+                  {templatesQuery.data!.map((t: any) => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}{t.is_default ? " ★" : ""}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div><Label>Omfang</Label><Textarea value={form.scope_description} onChange={e => set("scope_description", e.target.value)} rows={2} placeholder="Hva dekkes av avtalen..." /></div>
           <div><Label>Notater</Label><Textarea value={form.notes} onChange={e => set("notes", e.target.value)} rows={2} /></div>
         </div>
