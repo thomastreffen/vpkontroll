@@ -16,13 +16,15 @@ import { format } from "date-fns";
 
 interface Props {
   initialData: ServiceReportData;
-  onSave: (data: ServiceReportData) => Promise<void>;
+  onSave: (data: ServiceReportData, markCompleted: boolean) => Promise<void>;
   onCancel: () => void;
+  visitStatus?: string;
 }
 
-export function ServiceReportForm({ initialData, onSave, onCancel }: Props) {
+export function ServiceReportForm({ initialData, onSave, onCancel, visitStatus }: Props) {
   const [data, setData] = useState<ServiceReportData>({ ...initialData });
   const [saving, setSaving] = useState(false);
+  const [markCompleted, setMarkCompleted] = useState(visitStatus !== "completed");
 
   const update = <K extends keyof ServiceReportData>(key: K, value: ServiceReportData[K]) =>
     setData(prev => ({ ...prev, [key]: value }));
@@ -42,7 +44,7 @@ export function ServiceReportForm({ initialData, onSave, onCancel }: Props) {
     setSaving(true);
     try {
       const saveData = { ...data, completed_date: data.completed_date || format(new Date(), "yyyy-MM-dd") };
-      await onSave(saveData);
+      await onSave(saveData, markCompleted);
     } finally {
       setSaving(false);
     }
@@ -212,13 +214,21 @@ export function ServiceReportForm({ initialData, onSave, onCancel }: Props) {
         </div>
       </section>
 
-      {/* Actions */}
-      <div className="flex justify-end gap-2 pt-2 border-t">
-        <Button variant="outline" onClick={onCancel}>Avbryt</Button>
-        <Button onClick={handleSave} disabled={saving} className="gap-1.5">
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Lagre rapport
-        </Button>
+      {/* Mark completed + Actions */}
+      <div className="space-y-3 pt-2 border-t">
+        {visitStatus !== "completed" && (
+          <label className="flex items-center gap-2 cursor-pointer">
+            <Checkbox checked={markCompleted} onCheckedChange={(c) => setMarkCompleted(!!c)} />
+            <span className="text-sm font-medium">Markér servicebesøket som fullført</span>
+          </label>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={onCancel}>Avbryt</Button>
+          <Button onClick={handleSave} disabled={saving} className="gap-1.5">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Lagre rapport
+          </Button>
+        </div>
       </div>
     </div>
   );

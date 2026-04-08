@@ -491,16 +491,22 @@ export default function AgreementDetailPage() {
                       technicianName: user?.email || "",
                     });
                   })()}
-                  onSave={async (reportData) => {
-                    const { error } = await supabase.from("service_visits").update({
+                  visitStatus={visitDetailOpen.status}
+                  onSave={async (reportData, markCompleted) => {
+                    const updatePayload: any = {
                       report_data: reportData as any,
                       findings: reportData.findings_summary || visitDetailOpen.findings,
                       actions_taken: reportData.actions_taken_summary || visitDetailOpen.actions_taken,
-                    }).eq("id", visitDetailOpen.id);
+                    };
+                    if (markCompleted && visitDetailOpen.status !== "completed") {
+                      updatePayload.status = "completed";
+                      updatePayload.completed_at = new Date().toISOString();
+                    }
+                    const { error } = await supabase.from("service_visits").update(updatePayload).eq("id", visitDetailOpen.id);
                     if (error) { toast.error("Kunne ikke lagre rapport"); return; }
-                    toast.success("Servicerapport lagret");
+                    toast.success(markCompleted ? "Rapport lagret og besøk markert som fullført" : "Servicerapport lagret");
                     setReportMode("view");
-                    setVisitDetailOpen({ ...visitDetailOpen, report_data: reportData, findings: reportData.findings_summary, actions_taken: reportData.actions_taken_summary });
+                    setVisitDetailOpen({ ...visitDetailOpen, ...updatePayload, report_data: reportData });
                     visits.refetch();
                   }}
                   onCancel={() => setReportMode(null)}
@@ -623,11 +629,16 @@ function TimelineItem({ visit, type, onSchedule, onDetail }: { visit: any; type:
       </div>
       <Card className="ml-2 p-4">
         <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-0.5">
-              <p className="font-medium text-sm">{formatDate(visit.scheduled_date)}</p>
-              <Badge variant="outline" className="text-[10px]">{VISIT_STATUS_LABELS[visit.status] || visit.status}</Badge>
-            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <p className="font-medium text-sm">{formatDate(visit.scheduled_date)}</p>
+                <Badge variant="outline" className="text-[10px]">{VISIT_STATUS_LABELS[visit.status] || visit.status}</Badge>
+                {visit.report_data?.schema_version === 1 && (
+                  <Badge variant="secondary" className="text-[10px] gap-1">
+                    <ClipboardCheck className="h-2.5 w-2.5" />Rapport
+                  </Badge>
+                )}
+              </div>
             {visit.findings && <p className="text-xs text-muted-foreground mt-1">{visit.findings.substring(0, 100)}{visit.findings.length > 100 ? "..." : ""}</p>}
             {visit.completed_at && <p className="text-xs text-muted-foreground">Fullført: {formatDate(visit.completed_at)}</p>}
             {visit.actions_taken && <p className="text-xs text-muted-foreground mt-0.5">Tiltak: {visit.actions_taken.substring(0, 80)}</p>}
