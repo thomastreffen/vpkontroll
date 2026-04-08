@@ -369,6 +369,60 @@ export default function DealDetailPage() {
     fetchDeal();
   };
 
+  /* ─── Create agreement from deal ────────────────────────────── */
+  const openCreateAgreement = async () => {
+    if (!deal) return;
+    // Fetch assets for the site if available
+    if (deal.site_id && tenantId) {
+      const { data } = await supabase.from("hvac_assets").select("id, manufacturer, model, serial_number").eq("site_id", deal.site_id).eq("tenant_id", tenantId).is("deleted_at", null);
+      setDealAssets(data || []);
+    } else {
+      setDealAssets([]);
+    }
+    setSelectedAssetId("");
+    const today = new Date().toISOString().slice(0, 10);
+    setAgreementForm({
+      interval: "annual",
+      start_date: today,
+      annual_price: "",
+      scope_description: deal.energy_source ? `Serviceavtale for ${ENERGY_SOURCE_LABELS[deal.energy_source] || deal.energy_source}${deal.estimated_kw ? ` (${deal.estimated_kw} kW)` : ""}` : "",
+    });
+    setAgreementSheetOpen(true);
+  };
+
+  const createAgreement = async () => {
+    if (!deal || !tenantId || !agreementForm.start_date) return;
+    if (!deal.company_id) { toast.error("Deal mangler kunde – kan ikke opprette avtale"); return; }
+    setCreatingAgreement(true);
+    const { data, error } = await supabase.from("service_agreements").insert({
+      tenant_id: tenantId,
+      company_id: deal.company_id,
+      site_id: deal.site_id || null,
+      asset_id: selectedAssetId || null,
+      agreement_number: "TEMP",
+      interval: agreementForm.interval,
+      start_date: agreementForm.start_date,
+      annual_price: agreementForm.annual_price ? parseFloat(agreementForm.annual_price) : null,
+      scope_description: agreementForm.scope_description || null,
+      next_visit_due: agreementForm.start_date,
+      created_by: user?.id,
+    } as any).select().single();
+    setCreatingAgreement(false);
+    if (error) { toast.error("Kunne ikke opprette avtale: " + error.message); return; }
+    // Log activity
+    await supabase.from("crm_activities").insert({
+      tenant_id: tenantId, deal_id: deal.id, company_id: deal.company_id,
+      type: "task", subject: `Serviceavtale ${data.agreement_number} opprettet`,
+      created_by: user?.id,
+    } as any);
+    toast.success(`Serviceavtale ${data.agreement_number} opprettet`, {
+      action: { label: "Gå til avtale", onClick: () => navigate(`/tenant/crm/agreements/${data.id}`) },
+    });
+    setAgreementSheetOpen(false);
+    setLinkedAgreement(data);
+    fetchDeal();
+  };
+
   /* ─── Render ────────────────────────────────────────────────── */
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   if (!deal) return <div className="text-center py-20 text-muted-foreground">Deal ikke funnet</div>;
