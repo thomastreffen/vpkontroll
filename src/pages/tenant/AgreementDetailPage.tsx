@@ -19,6 +19,7 @@ import { formatCurrency } from "@/lib/crm-labels";
 export default function AgreementDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { agreement, company, visits, jobs } = useAgreementDetail(id);
+  const [scheduleVisit, setScheduleVisit] = useState<any>(null);
 
   if (agreement.isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
