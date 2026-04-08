@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,7 @@ import { toast } from "sonner";
 import {
   Loader2, ArrowLeft, Building2, Contact, MapPin, Zap, Calendar, FileText,
   TrendingUp, Pencil, MessageSquare, Briefcase, Plus, ArrowRight, CheckCircle2,
-  XCircle, Eye, Send, ChevronRight, ClipboardList, Phone, Mail, ScrollText, Search,
+  XCircle, Eye, Send, ChevronRight, ClipboardList, Phone, Mail, ScrollText, Search, Save,
 } from "lucide-react";
 import {
   DEAL_STAGE_LABELS, DEAL_STAGE_COLORS, DEAL_STAGE_ORDER, DEAL_STAGE_BG,
@@ -25,6 +26,7 @@ import {
 } from "@/lib/crm-labels";
 import { ENERGY_SOURCE_LABELS, JOB_TYPE_LABELS, AGREEMENT_INTERVAL_LABELS, SITE_TYPE_LABELS, formatDate, formatDateTime } from "@/lib/domain-labels";
 import { EntityPickerDialog } from "@/components/postkontoret/EntityPickerDialog";
+import { DynamicFormRenderer, type TemplateField } from "@/components/service/DynamicFormRenderer";
 
 const JOB_TYPES = ["installation", "service", "repair", "warranty", "inspection", "decommission"];
 
