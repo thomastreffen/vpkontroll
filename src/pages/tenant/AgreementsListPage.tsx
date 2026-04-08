@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, FileText, Loader2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS, AGREEMENT_INTERVAL_LABELS, formatDate } from "@/lib/domain-labels";
 
 export default function AgreementsListPage() {

@@ -16,6 +16,7 @@ import {
   Plus, Search, Phone, Mail, Building2, MoreHorizontal,
   User, MapPin, Loader2,
 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type Contact = {
   id: string; tenant_id: string; company_id: string | null;

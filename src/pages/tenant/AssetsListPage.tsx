@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Cpu, Loader2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ASSET_STATUS_LABELS, ASSET_STATUS_COLORS, ENERGY_SOURCE_LABELS, formatDate } from "@/lib/domain-labels";
 
 export default function AssetsListPage() {

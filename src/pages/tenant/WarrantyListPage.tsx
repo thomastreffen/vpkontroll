@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, ShieldAlert, Loader2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { WARRANTY_STATUS_LABELS, WARRANTY_STATUS_COLORS, formatDate } from "@/lib/domain-labels";
 
 export default function WarrantyListPage() {

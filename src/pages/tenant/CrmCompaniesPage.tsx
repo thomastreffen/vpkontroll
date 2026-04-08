@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Plus, Search, Building2, MoreHorizontal, Globe, Phone, Mail, Loader2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 type Company = {

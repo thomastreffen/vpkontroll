@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Briefcase, Loader2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS, formatDate } from "@/lib/domain-labels";
 
 export default function JobsListPage() {
