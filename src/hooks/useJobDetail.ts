@@ -93,5 +93,5 @@ export function useJobDetail(jobId: string | undefined) {
     enabled: !!jobId && !!tenantId,
   });
 
-  return { job, company, contact, site, asset, technicians, checklists, documents };
+  return { job, company, contact, site, asset, deal, technicians, checklists, documents };
 }

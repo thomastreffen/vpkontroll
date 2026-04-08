@@ -73,6 +73,7 @@ export default function JobDetailPage() {
             {contact.data && <span>{contact.data.first_name} {contact.data.last_name || ""}</span>}
             {site.data && <span>{site.data.address}, {site.data.city}</span>}
             {asset.data && <Link to={`/tenant/crm/assets/${asset.data.id}`} className="text-primary hover:underline">{asset.data.manufacturer} {asset.data.model || ""}</Link>}
+            {deal.data && <Link to={`/tenant/crm/deals/${deal.data.id}`} className="text-primary hover:underline flex items-center gap-1"><ExternalLink className="h-3 w-3" />Deal: {deal.data.title}</Link>}
           </div>
         </div>
       </div>
