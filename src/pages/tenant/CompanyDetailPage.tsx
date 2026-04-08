@@ -91,17 +91,19 @@ export default function CompanyDetailPage() {
         <TabsContent value="contacts" className="mt-4">
           {contacts.data?.length === 0 ? <EmptyState text="Ingen kontakter" /> : (
             <div className="grid gap-3">
-              {contacts.data?.map(ct => (
-                <Card key={ct.id} className="p-4 flex items-center gap-4">
-                  <Avatar className="h-9 w-9"><AvatarFallback className="text-xs bg-muted">{ct.first_name[0]}{ct.last_name?.[0] || ""}</AvatarFallback></Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm">{ct.first_name} {ct.last_name || ""}</p>
-                    {ct.title && <p className="text-xs text-muted-foreground">{ct.title}</p>}
-                  </div>
-                  {ct.email && <span className="text-xs text-muted-foreground">{ct.email}</span>}
-                  {ct.phone && <span className="text-xs text-muted-foreground">{ct.phone}</span>}
-                  {ct.is_primary_contact && <Badge variant="secondary" className="text-[10px]">Primær</Badge>}
-                </Card>
+                {contacts.data?.map(ct => (
+                <Link key={ct.id} to={`/tenant/crm/contacts/${ct.id}`}>
+                  <Card className="p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
+                    <Avatar className="h-9 w-9"><AvatarFallback className="text-xs bg-muted">{ct.first_name[0]}{ct.last_name?.[0] || ""}</AvatarFallback></Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm">{ct.first_name} {ct.last_name || ""}</p>
+                      {ct.title && <p className="text-xs text-muted-foreground">{ct.title}</p>}
+                    </div>
+                    {ct.email && <span className="text-xs text-muted-foreground">{ct.email}</span>}
+                    {ct.phone && <span className="text-xs text-muted-foreground">{ct.phone}</span>}
+                    {ct.is_primary_contact && <Badge variant="secondary" className="text-[10px]">Primær</Badge>}
+                  </Card>
+                </Link>
               ))}
             </div>
           )}
