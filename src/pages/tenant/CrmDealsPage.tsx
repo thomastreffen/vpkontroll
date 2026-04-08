@@ -185,7 +185,7 @@ export default function CrmDealsPage() {
                 </div>
                 <div className="space-y-2 min-h-[100px] bg-muted/30 rounded-lg p-2">
                   {ds.map((d) => (
-                    <Card key={d.id} className="p-3 cursor-pointer hover:shadow-md transition-shadow" onClick={() => openEdit(d)}>
+                    <Card key={d.id} className="p-3 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/tenant/crm/deals/${d.id}`)}>
                       <p className="text-sm font-medium truncate">{d.title}</p>
                       {d.company_name && (
                         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
