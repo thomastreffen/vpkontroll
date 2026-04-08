@@ -56,6 +56,7 @@ export default function CrmCompaniesPage() {
     setEditCompany(c);
     setForm({
       name: c.name, org_number: c.org_number || "", industry: c.industry || "",
+      customer_type: (c as any).customer_type || "private",
       website: c.website || "", phone: c.phone || "", email: c.email || "",
       address: c.address || "", city: c.city || "", postal_code: c.postal_code || "", notes: c.notes || "",
     });
