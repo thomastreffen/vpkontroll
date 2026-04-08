@@ -408,6 +408,7 @@ export default function DealDetailPage() {
       scope_description: agreementForm.scope_description || null,
       next_visit_due: agreementForm.start_date,
       created_by: user?.id,
+      custom_interval_months: agreementForm.interval === "custom" ? parseInt(agreementForm.custom_interval_months) || null : null,
     } as any).select().single();
     setCreatingAgreement(false);
     if (error) { toast.error("Kunne ikke opprette avtale: " + error.message); return; }
