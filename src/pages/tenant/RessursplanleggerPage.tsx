@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   ChevronLeft, ChevronRight, Plus, RotateCcw,
-  Loader2, Users, Briefcase, CalendarDays, ExternalLink, X,
+  Loader2, Users, Briefcase, CalendarDays, ExternalLink, X, Eye, ClipboardList,
 } from "lucide-react";
 import {
   addWeeks, addDays, startOfWeek, endOfWeek, format, isSameDay,
