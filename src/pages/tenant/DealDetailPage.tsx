@@ -48,20 +48,20 @@ export default function DealDetailPage() {
     if (!d) { setLoading(false); return; }
     setDeal(d);
 
-    const promises: Promise<any>[] = [];
-    if (d.company_id) promises.push(supabase.from("crm_companies").select("*").eq("id", d.company_id).single().then(r => setCompany(r.data)));
-    else { setCompany(null); promises.push(Promise.resolve()); }
-    if (d.contact_id) promises.push(supabase.from("crm_contacts").select("*").eq("id", d.contact_id).single().then(r => setContact(r.data)));
-    else { setContact(null); promises.push(Promise.resolve()); }
-    if (d.site_id) promises.push(supabase.from("customer_sites").select("*").eq("id", d.site_id).single().then(r => setSite(r.data)));
-    else { setSite(null); promises.push(Promise.resolve()); }
+    const fetches: (() => Promise<void>)[] = [];
+    if (d.company_id) fetches.push(async () => { const { data } = await supabase.from("crm_companies").select("*").eq("id", d.company_id!).single(); setCompany(data); });
+    else setCompany(null);
+    if (d.contact_id) fetches.push(async () => { const { data } = await supabase.from("crm_contacts").select("*").eq("id", d.contact_id!).single(); setContact(data); });
+    else setContact(null);
+    if (d.site_id) fetches.push(async () => { const { data } = await supabase.from("customer_sites").select("*").eq("id", d.site_id!).single(); setSite(data); });
+    else setSite(null);
 
-    promises.push(
-      supabase.from("quotes").select("*").eq("deal_id", id).is("deleted_at", null).order("version", { ascending: false }).then(r => setQuotes(r.data || [])),
-      supabase.from("crm_activities").select("*").eq("deal_id", id).order("created_at", { ascending: false }).then(r => setActivities(r.data || [])),
+    fetches.push(
+      async () => { const { data } = await supabase.from("quotes").select("*").eq("deal_id", id!).is("deleted_at", null).order("version", { ascending: false }); setQuotes(data || []); },
+      async () => { const { data } = await supabase.from("crm_activities").select("*").eq("deal_id", id!).order("created_at", { ascending: false }); setActivities(data || []); },
     );
 
-    await Promise.all(promises);
+    await Promise.all(fetches.map(f => f()));
     setLoading(false);
   }, [id, tenantId]);
 
