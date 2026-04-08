@@ -547,7 +547,24 @@ export default function DealDetailPage() {
         </Card>
       )}
 
-      {/* ── Info cards grid ─────────────────────────────────────── */}
+      {/* ── Linked agreement banner ─────────────────────────────── */}
+      {linkedAgreement && (
+        <Card className="p-4 border-emerald-500/30 bg-emerald-500/5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <ScrollText className="h-5 w-5 text-emerald-600" />
+              <div>
+                <p className="text-sm font-medium">Serviceavtale: {linkedAgreement.agreement_number}</p>
+                <p className="text-xs text-muted-foreground">Status: {linkedAgreement.status}</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" asChild className="gap-1.5">
+              <Link to={`/tenant/crm/agreements/${linkedAgreement.id}`}>Se avtale <ArrowRight className="h-3.5 w-3.5" /></Link>
+            </Button>
+          </div>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="p-4">
           <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" />Kunde</p>
