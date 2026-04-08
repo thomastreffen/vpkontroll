@@ -131,6 +131,17 @@ export default function JobDetailPage() {
       </Tabs>
 
       <JobEditDialog open={editOpen} onOpenChange={setEditOpen} job={j} />
+      <ScheduleEventDialog
+        open={scheduleOpen}
+        onOpenChange={setScheduleOpen}
+        jobId={j.id}
+        jobTitle={`${j.job_number} – ${j.title}`}
+        companyName={company.data?.name}
+        siteAddress={site.data ? `${site.data.address || ""}, ${site.data.city || ""}` : undefined}
+        siteId={j.site_id || undefined}
+        scheduledStart={j.scheduled_start}
+        scheduledEnd={j.scheduled_end}
+      />
     </div>
   );
 }
