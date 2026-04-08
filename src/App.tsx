@@ -32,6 +32,10 @@ import AssetDetailPage from "@/pages/tenant/AssetDetailPage";
 import JobDetailPage from "@/pages/tenant/JobDetailPage";
 import AgreementDetailPage from "@/pages/tenant/AgreementDetailPage";
 import WarrantyDetailPage from "@/pages/tenant/WarrantyDetailPage";
+import JobsListPage from "@/pages/tenant/JobsListPage";
+import AssetsListPage from "@/pages/tenant/AssetsListPage";
+import AgreementsListPage from "@/pages/tenant/AgreementsListPage";
+import WarrantyListPage from "@/pages/tenant/WarrantyListPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
