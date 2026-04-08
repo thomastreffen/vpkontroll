@@ -141,7 +141,14 @@ export default function CrmCompaniesPage() {
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold truncate">{c.name}</p>
-                  {c.industry && <p className="text-xs text-muted-foreground capitalize">{c.industry}</p>}
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    {(c as any).customer_type && (
+                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${CUSTOMER_TYPE_COLORS[(c as any).customer_type] || ""}`}>
+                        {CUSTOMER_TYPE_LABELS[(c as any).customer_type] || (c as any).customer_type}
+                      </Badge>
+                    )}
+                    {c.industry && <span className="text-xs text-muted-foreground capitalize">{c.industry}</span>}
+                  </div>
                   <div className="flex flex-col gap-1 mt-2">
                     {c.email && (
                       <span className="text-xs text-muted-foreground flex items-center gap-1.5">
