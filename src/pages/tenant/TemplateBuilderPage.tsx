@@ -262,6 +262,19 @@ export default function TemplateBuilderPage() {
     }
   };
 
+  const handleToggleDefault = async () => {
+    if (!tenantId || !id || !useContext) return;
+    if (isDefault) {
+      await clearDefault(id);
+      setIsDefault(false);
+      toast.success("Standardmal fjernet");
+    } else {
+      await setAsDefault(id, useContext, tenantId);
+      setIsDefault(true);
+      toast.success("Satt som standard");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -288,6 +301,8 @@ export default function TemplateBuilderPage() {
         isEdit={isEdit}
         previewMode={previewMode}
         onTogglePreview={() => { setPreviewMode(p => !p); setSelectedIndex(null); }}
+        isDefault={isDefault}
+        onToggleDefault={isEdit ? handleToggleDefault : undefined}
       />
 
       <div className="flex flex-1 min-h-0">
