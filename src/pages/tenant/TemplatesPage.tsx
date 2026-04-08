@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -8,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ClipboardList, Plus, Loader2, Pencil, ToggleLeft, ToggleRight } from "lucide-react";
 import { formatDate } from "@/lib/domain-labels";
-import TemplateEditorSheet from "@/components/service/TemplateEditorSheet";
 
 const CATEGORY_LABELS: Record<string, string> = {
   service: "Service",
@@ -30,10 +30,9 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export default function TemplatesPage() {
   const { tenantId } = useAuth();
+  const navigate = useNavigate();
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<any>(null);
   const [categoryFilter, setCategoryFilter] = useState("all");
 
   const fetchTemplates = useCallback(async () => {
@@ -52,7 +51,8 @@ export default function TemplatesPage() {
 
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
-  const toggleActive = async (id: string, currentActive: boolean) => {
+  const toggleActive = async (e: React.MouseEvent, id: string, currentActive: boolean) => {
+    e.stopPropagation();
     await supabase.from("service_templates" as any).update({ is_active: !currentActive }).eq("id", id);
     toast.success(currentActive ? "Mal deaktivert" : "Mal aktivert");
     fetchTemplates();
@@ -67,7 +67,7 @@ export default function TemplatesPage() {
             Definer maler for service, installasjon, befaring, salg og mer.
           </p>
         </div>
-        <Button onClick={() => { setEditingTemplate(null); setEditorOpen(true); }}>
+        <Button onClick={() => navigate("/tenant/templates/new")}>
           <Plus className="h-4 w-4 mr-2" /> Ny mal
         </Button>
       </div>
@@ -101,7 +101,7 @@ export default function TemplatesPage() {
               </div>
             ))}
           </div>
-          <Button onClick={() => { setEditingTemplate(null); setEditorOpen(true); }}>
+          <Button onClick={() => navigate("/tenant/templates/new")}>
             <Plus className="h-4 w-4 mr-2" /> Opprett første mal
           </Button>
         </div>
@@ -120,7 +120,7 @@ export default function TemplatesPage() {
             </TableHeader>
             <TableBody>
               {templates.map((t: any) => (
-                <TableRow key={t.id}>
+                <TableRow key={t.id} className="cursor-pointer" onClick={() => navigate(`/tenant/templates/${t.id}`)}>
                   <TableCell className="font-medium">{t.name}</TableCell>
                   <TableCell>
                     <Badge variant="secondary" className={CATEGORY_COLORS[t.category] || ""}>
@@ -136,10 +136,10 @@ export default function TemplatesPage() {
                   <TableCell className="text-sm">{formatDate(t.created_at)}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingTemplate(t); setEditorOpen(true); }}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={e => { e.stopPropagation(); navigate(`/tenant/templates/${t.id}`); }}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleActive(t.id, t.is_active)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={e => toggleActive(e, t.id, t.is_active)}>
                         {t.is_active ? <ToggleRight className="h-3.5 w-3.5" /> : <ToggleLeft className="h-3.5 w-3.5" />}
                       </Button>
                     </div>
@@ -150,13 +150,6 @@ export default function TemplatesPage() {
           </Table>
         </div>
       )}
-
-      <TemplateEditorSheet
-        open={editorOpen}
-        onOpenChange={setEditorOpen}
-        template={editingTemplate}
-        onSaved={fetchTemplates}
-      />
     </div>
   );
 }
