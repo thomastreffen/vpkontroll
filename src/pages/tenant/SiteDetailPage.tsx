@@ -176,6 +176,12 @@ export default function SiteDetailPage() {
         companyId={s.company_id}
         site={s}
       />
+      <AgreementFormDialog
+        open={agreementOpen}
+        onOpenChange={setAgreementOpen}
+        companyId={s.company_id}
+        siteId={id}
+      />
     </div>
   );
 }
