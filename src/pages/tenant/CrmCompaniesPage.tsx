@@ -100,11 +100,11 @@ export default function CrmCompaniesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Bedrifter</h1>
-          <p className="text-sm text-muted-foreground mt-1">{companies.length} bedrifter totalt</p>
+          <h1 className="text-2xl font-bold tracking-tight">Kunder</h1>
+          <p className="text-sm text-muted-foreground mt-1">{companies.length} kunder totalt</p>
         </div>
         <Button onClick={openNew} className="gap-2">
-          <Plus className="h-4 w-4" /> Ny bedrift
+          <Plus className="h-4 w-4" /> Ny kunde
         </Button>
       </div>
 
