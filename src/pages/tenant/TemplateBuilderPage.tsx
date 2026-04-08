@@ -12,6 +12,7 @@ import TemplateBuilderHeader from "@/components/templates/TemplateBuilderHeader"
 import FieldPalette from "@/components/templates/FieldPalette";
 import FieldCanvas, { type TemplateField } from "@/components/templates/FieldCanvas";
 import FieldSettingsPanel from "@/components/templates/FieldSettingsPanel";
+import { getPresetSections, CATEGORY_TO_CONTEXT } from "@/lib/template-presets";
 
 function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").substring(0, 40);
@@ -19,16 +20,24 @@ function slugify(text: string): string {
 
 function emptyField(type: string, sortOrder: number): TemplateField {
   return {
-    field_type: type,
-    field_key: "",
-    label: "",
-    unit: "",
-    help_text: "",
-    is_required: false,
-    default_value: null,
-    options: null,
-    sort_order: sortOrder,
+    field_type: type, field_key: "", label: "", unit: "",
+    help_text: "", is_required: false, default_value: null,
+    options: null, sort_order: sortOrder,
   };
+}
+
+function buildPresetFields(category: string): TemplateField[] {
+  const sections = getPresetSections(category);
+  const fields: TemplateField[] = [];
+  sections.forEach((s, i) => {
+    fields.push({
+      field_type: "section_header", field_key: slugify(s.label),
+      label: s.label, unit: "", help_text: s.help_text || "",
+      is_required: false, default_value: null, options: null,
+      sort_order: fields.length,
+    });
+  });
+  return fields;
 }
 
 export default function TemplateBuilderPage() {
@@ -39,12 +48,16 @@ export default function TemplateBuilderPage() {
 
   const [loading, setLoading] = useState(!!id);
   const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"unsaved" | "saving" | "saved">("unsaved");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("service");
   const [templateKey, setTemplateKey] = useState("");
+  const [useContext, setUseContext] = useState("");
   const [fields, setFields] = useState<TemplateField[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [previewMode, setPreviewMode] = useState(false);
+  const [hasAppliedPreset, setHasAppliedPreset] = useState(false);
 
   // Load existing template
   useEffect(() => {
@@ -56,10 +69,13 @@ export default function TemplateBuilderPage() {
         .eq("id", id)
         .single();
       if (!tmpl) { navigate("/tenant/templates"); return; }
-      setName((tmpl as any).name || "");
-      setDescription((tmpl as any).description || "");
-      setCategory((tmpl as any).category || "service");
-      setTemplateKey((tmpl as any).template_key || "");
+      const t = tmpl as any;
+      setName(t.name || "");
+      setDescription(t.description || "");
+      setCategory(t.category || "service");
+      setTemplateKey(t.template_key || "");
+      setUseContext(t.use_context || "");
+      setHasAppliedPreset(true);
 
       const { data: fieldData } = await supabase
         .from("service_template_fields" as any)
@@ -73,28 +89,66 @@ export default function TemplateBuilderPage() {
         options: f.options, sort_order: f.sort_order,
       })));
       setLoading(false);
+      setSaveStatus("saved");
     })();
   }, [id, tenantId, navigate]);
 
-  // Start with category selection for new templates
+  // For new templates: auto-apply preset when category changes
   useEffect(() => {
     if (!id) setLoading(false);
   }, [id]);
+
+  const handleCategoryChange = useCallback((newCategory: string) => {
+    setCategory(newCategory);
+    setSaveStatus("unsaved");
+    // Auto-set use_context from category
+    const ctx = CATEGORY_TO_CONTEXT[newCategory] || "";
+    setUseContext(ctx);
+    // Apply preset for new templates
+    if (!isEdit && !hasAppliedPreset) {
+      setFields(buildPresetFields(newCategory));
+      setSelectedIndex(null);
+    }
+  }, [isEdit, hasAppliedPreset]);
+
+  // Apply initial preset for new templates
+  useEffect(() => {
+    if (!isEdit && !hasAppliedPreset && fields.length === 0) {
+      setFields(buildPresetFields(category));
+      setUseContext(CATEGORY_TO_CONTEXT[category] || "");
+      setHasAppliedPreset(true);
+    }
+  }, [isEdit, hasAppliedPreset, fields.length, category]);
+
+  const markUnsaved = useCallback(() => setSaveStatus("unsaved"), []);
 
   const addField = useCallback((type: string) => {
     const f = emptyField(type, fields.length);
     setFields(prev => [...prev, f]);
     setSelectedIndex(fields.length);
-  }, [fields.length]);
+    markUnsaved();
+  }, [fields.length, markUnsaved]);
+
+  const insertAt = useCallback((type: string, afterIndex: number) => {
+    const f = emptyField(type, afterIndex);
+    setFields(prev => {
+      const updated = [...prev.slice(0, afterIndex), f, ...prev.slice(afterIndex)];
+      return updated.map((ff, i) => ({ ...ff, sort_order: i }));
+    });
+    setSelectedIndex(afterIndex);
+    markUnsaved();
+  }, [markUnsaved]);
 
   const updateField = useCallback((index: number, updates: Partial<TemplateField>) => {
     setFields(prev => prev.map((f, i) => i === index ? { ...f, ...updates } : f));
-  }, []);
+    markUnsaved();
+  }, [markUnsaved]);
 
   const removeField = useCallback((index: number) => {
     setFields(prev => prev.filter((_, i) => i !== index).map((f, i) => ({ ...f, sort_order: i })));
     setSelectedIndex(null);
-  }, []);
+    markUnsaved();
+  }, [markUnsaved]);
 
   const moveField = useCallback((index: number, direction: -1 | 1) => {
     const target = index + direction;
@@ -105,7 +159,8 @@ export default function TemplateBuilderPage() {
       return updated.map((f, i) => ({ ...f, sort_order: i }));
     });
     setSelectedIndex(index + direction);
-  }, []);
+    markUnsaved();
+  }, [markUnsaved]);
 
   const duplicateField = useCallback((index: number) => {
     setFields(prev => {
@@ -114,13 +169,15 @@ export default function TemplateBuilderPage() {
       return updated.map((f, i) => ({ ...f, sort_order: i }));
     });
     setSelectedIndex(index + 1);
-  }, []);
+    markUnsaved();
+  }, [markUnsaved]);
 
   const handleSave = async () => {
     if (!tenantId || !name.trim()) { toast.error("Malnavn er påkrevd"); return; }
     const nonHeaders = fields.filter(f => f.field_type !== "section_header");
     if (nonHeaders.some(f => !f.label.trim())) { toast.error("Alle felt må ha en label"); return; }
     setSaving(true);
+    setSaveStatus("saving");
 
     try {
       let templateId = id;
@@ -129,13 +186,17 @@ export default function TemplateBuilderPage() {
       if (isEdit) {
         await supabase.from("service_templates" as any).update({
           name: name.trim(), description: description.trim() || null,
-          category, template_key: tKey,
+          category, template_key: tKey, use_context: useContext || null,
         }).eq("id", templateId);
         await supabase.from("service_template_fields" as any).delete().eq("template_id", templateId);
       } else {
         const { data, error } = await (supabase
           .from("service_templates" as any)
-          .insert({ tenant_id: tenantId, name: name.trim(), description: description.trim() || null, category, template_key: tKey, created_by: user?.id })
+          .insert({
+            tenant_id: tenantId, name: name.trim(), description: description.trim() || null,
+            category, template_key: tKey, created_by: user?.id,
+            use_context: useContext || null,
+          })
           .select("id")
           .single() as any);
         if (error) throw error;
@@ -148,17 +209,18 @@ export default function TemplateBuilderPage() {
           field_type: f.field_type, field_key: f.field_key.trim() || slugify(f.label),
           label: f.label.trim(), unit: f.unit.trim() || null,
           help_text: f.help_text.trim() || null, is_required: f.is_required,
-          default_value: f.default_value, options: f.options,
-          sort_order: i,
+          default_value: f.default_value, options: f.options, sort_order: i,
         }));
         const { error } = await supabase.from("service_template_fields" as any).insert(fieldRows);
         if (error) throw error;
       }
 
       toast.success(isEdit ? "Mal oppdatert" : "Mal opprettet");
-      navigate("/tenant/templates");
+      setSaveStatus("saved");
+      if (!isEdit) navigate(`/tenant/templates/${templateId}`);
     } catch {
       toast.error("Kunne ikke lagre mal");
+      setSaveStatus("unsaved");
     } finally {
       setSaving(false);
     }
@@ -174,6 +236,7 @@ export default function TemplateBuilderPage() {
           tenant_id: tenantId, name: name.trim() + " (kopi)",
           description: description.trim() || null, category,
           template_key: slugify(name) + "_copy", created_by: user?.id,
+          use_context: useContext || null,
         })
         .select("id").single() as any);
       if (error) throw error;
@@ -211,84 +274,105 @@ export default function TemplateBuilderPage() {
       <TemplateBuilderHeader
         name={name}
         category={category}
-        onNameChange={v => { setName(v); if (!templateKey || templateKey === slugify(name)) setTemplateKey(slugify(v)); }}
-        onCategoryChange={setCategory}
+        useContext={useContext}
+        saveStatus={saveStatus}
+        onNameChange={v => { setName(v); markUnsaved(); if (!templateKey || templateKey === slugify(name)) setTemplateKey(slugify(v)); }}
+        onCategoryChange={handleCategoryChange}
+        onUseContextChange={v => { setUseContext(v); markUnsaved(); }}
         onSave={handleSave}
         onDuplicate={isEdit ? handleDuplicate : undefined}
         saving={saving}
         isEdit={isEdit}
+        previewMode={previewMode}
+        onTogglePreview={() => { setPreviewMode(p => !p); setSelectedIndex(null); }}
       />
 
       <div className="flex flex-1 min-h-0">
-        {/* Left: Palette */}
-        <aside className="w-52 border-r border-border bg-card shrink-0">
-          <ScrollArea className="h-full">
-            <div className="p-3">
-              <FieldPalette onAddField={addField} />
-            </div>
-          </ScrollArea>
-        </aside>
+        {/* Left: Palette — hidden in preview */}
+        {!previewMode && (
+          <aside className="w-52 border-r border-border bg-card shrink-0">
+            <ScrollArea className="h-full">
+              <div className="p-3">
+                <FieldPalette onAddField={addField} />
+              </div>
+            </ScrollArea>
+          </aside>
+        )}
 
         {/* Center: Canvas */}
         <div className="flex-1 bg-muted/30 overflow-auto">
-          <div className="max-w-2xl mx-auto py-6 px-4">
-            {/* Template meta top area */}
-            <div className="mb-6 space-y-3 bg-card rounded-lg border border-border p-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Beskrivelse</Label>
-                <Textarea
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  placeholder="Hva dekker denne malen?"
-                  rows={2}
-                  className="text-sm resize-none"
-                />
+          <div className={`max-w-2xl mx-auto py-6 px-4 ${previewMode ? "max-w-xl" : ""}`}>
+            {/* Template meta (edit mode only) */}
+            {!previewMode && (
+              <div className="mb-6 space-y-3 bg-card rounded-lg border border-border p-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Beskrivelse</Label>
+                  <Textarea
+                    value={description}
+                    onChange={e => { setDescription(e.target.value); markUnsaved(); }}
+                    placeholder="Hva dekker denne malen?"
+                    rows={2}
+                    className="text-sm resize-none"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Malnøkkel</Label>
+                  <Input
+                    value={templateKey}
+                    onChange={e => { setTemplateKey(e.target.value); markUnsaved(); }}
+                    placeholder="auto-generert"
+                    className="text-xs font-mono h-8"
+                  />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Malnøkkel</Label>
-                <Input
-                  value={templateKey}
-                  onChange={e => setTemplateKey(e.target.value)}
-                  placeholder="auto-generert"
-                  className="text-xs font-mono h-8"
-                />
+            )}
+
+            {/* Preview header */}
+            {previewMode && (
+              <div className="mb-6 text-center">
+                <h2 className="text-lg font-semibold">{name || "Uten navn"}</h2>
+                {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
               </div>
-            </div>
+            )}
 
             {/* Canvas */}
-            <div className="bg-card rounded-lg border border-border p-4 min-h-[300px]">
+            <div className={`bg-card rounded-lg border border-border p-5 min-h-[300px] ${previewMode ? "shadow-sm" : ""}`}>
               <FieldCanvas
                 fields={fields}
-                selectedIndex={selectedIndex}
-                onSelect={setSelectedIndex}
+                selectedIndex={previewMode ? null : selectedIndex}
+                onSelect={previewMode ? () => {} : setSelectedIndex}
                 onMove={moveField}
                 onRemove={removeField}
                 onDuplicate={duplicateField}
                 onAddField={addField}
+                onInsertAt={insertAt}
+                previewMode={previewMode}
               />
             </div>
           </div>
         </div>
 
-        {/* Right: Settings */}
-        <aside className="w-64 border-l border-border bg-card shrink-0">
-          <ScrollArea className="h-full">
-            <div className="p-4">
-              {selectedField ? (
-                <FieldSettingsPanel
-                  field={selectedField}
-                  onChange={updates => updateField(selectedIndex!, updates)}
-                />
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-xs text-muted-foreground">
-                    Velg et felt i skjemaet for å se innstillinger
-                  </p>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-        </aside>
+        {/* Right: Settings — hidden in preview */}
+        {!previewMode && (
+          <aside className="w-64 border-l border-border bg-card shrink-0">
+            <ScrollArea className="h-full">
+              <div className="p-4">
+                {selectedField ? (
+                  <FieldSettingsPanel
+                    field={selectedField}
+                    onChange={updates => updateField(selectedIndex!, updates)}
+                  />
+                ) : (
+                  <div className="text-center py-12">
+                    <p className="text-xs text-muted-foreground">
+                      Velg et felt eller en seksjon i skjemaet for å se innstillinger
+                    </p>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </aside>
+        )}
       </div>
     </div>
   );

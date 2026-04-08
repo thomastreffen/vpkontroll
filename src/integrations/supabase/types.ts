@@ -1652,6 +1652,7 @@ export type Database = {
           template_key: string | null
           tenant_id: string
           updated_at: string
+          use_context: string | null
         }
         Insert: {
           category?: string
@@ -1664,6 +1665,7 @@ export type Database = {
           template_key?: string | null
           tenant_id: string
           updated_at?: string
+          use_context?: string | null
         }
         Update: {
           category?: string
@@ -1676,6 +1678,7 @@ export type Database = {
           template_key?: string | null
           tenant_id?: string
           updated_at?: string
+          use_context?: string | null
         }
         Relationships: [
           {

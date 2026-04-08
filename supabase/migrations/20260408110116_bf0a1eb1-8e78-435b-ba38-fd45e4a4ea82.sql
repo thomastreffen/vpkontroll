@@ -1,0 +1,1 @@
+ALTER TABLE public.service_templates ADD COLUMN IF NOT EXISTS use_context text;

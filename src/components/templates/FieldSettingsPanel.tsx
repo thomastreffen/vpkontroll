@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { FIELD_TYPE_META } from "./FieldPalette";
 import type { TemplateField } from "./FieldCanvas";
 
@@ -30,42 +31,65 @@ export default function FieldSettingsPanel({ field, onChange }: Props) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* Header */}
       <div className="flex items-center gap-2 pb-2 border-b border-border">
         {meta && <meta.icon className="h-4 w-4 text-muted-foreground" />}
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          {meta?.label || field.field_type}
+          {isSection ? "Seksjon" : meta?.label || field.field_type}
         </p>
       </div>
 
-      {/* Common: Label */}
-      <div className="space-y-1.5">
-        <Label className="text-xs">{isSection ? "Seksjonsoverskrift" : "Label / beskrivelse"}</Label>
-        <Input
-          value={field.label}
-          onChange={e => autoKey(e.target.value)}
-          placeholder={isSection ? "f.eks. Generelt" : "Beskrivelse av felt"}
-          className="text-sm"
-        />
+      {/* ── Generelt ── */}
+      <div className="space-y-3">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Generelt</p>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs">{isSection ? "Seksjonsoverskrift" : "Label / beskrivelse"}</Label>
+          <Input
+            value={field.label}
+            onChange={e => autoKey(e.target.value)}
+            placeholder={isSection ? "f.eks. Generelt" : "Beskrivelse av felt"}
+            className="text-sm"
+          />
+        </div>
+
+        {!isSection && (
+          <div className="space-y-1.5">
+            <Label className="text-xs">Feltnøkkel (intern)</Label>
+            <Input
+              value={field.field_key}
+              onChange={e => onChange({ field_key: e.target.value })}
+              placeholder="auto-generert"
+              className="text-xs font-mono"
+            />
+            <p className="text-[10px] text-muted-foreground">Brukes som lagringsnøkkel i utfylt data</p>
+          </div>
+        )}
+
+        {/* Help text / subtitle */}
+        <div className="space-y-1.5">
+          <Label className="text-xs">{isSection ? "Undertekst (valgfri)" : "Hjelpetekst"}</Label>
+          <Input
+            value={field.help_text}
+            onChange={e => onChange({ help_text: e.target.value })}
+            placeholder={isSection ? "Kort beskrivelse av seksjonen" : "Veiledning for utfyller"}
+            className="text-xs"
+          />
+        </div>
+
+        {!isSection && (
+          <div className="flex items-center justify-between py-1">
+            <Label className="text-xs">Obligatorisk felt</Label>
+            <Switch checked={field.is_required} onCheckedChange={v => onChange({ is_required: v })} />
+          </div>
+        )}
       </div>
 
-      {/* Field key — not for section */}
-      {!isSection && (
-        <div className="space-y-1.5">
-          <Label className="text-xs">Feltnøkkel (intern)</Label>
-          <Input
-            value={field.field_key}
-            onChange={e => onChange({ field_key: e.target.value })}
-            placeholder="auto-generert"
-            className="text-xs font-mono"
-          />
-          <p className="text-[10px] text-muted-foreground">Brukes som lagringsnøkkel i utfylt data</p>
-        </div>
-      )}
-
-      {/* Field type change */}
-      <div className="space-y-1.5">
-        <Label className="text-xs">Felttype</Label>
+      {/* ── Felttype ── */}
+      <div className="space-y-3">
+        <Separator />
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Felttype</p>
         <Select value={field.field_type} onValueChange={v => onChange({ field_type: v })}>
           <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -76,45 +100,12 @@ export default function FieldSettingsPanel({ field, onChange }: Props) {
         </Select>
       </div>
 
-      {/* Help text */}
-      {!isSection && (
-        <div className="space-y-1.5">
-          <Label className="text-xs">Hjelpetekst</Label>
-          <Input
-            value={field.help_text}
-            onChange={e => onChange({ help_text: e.target.value })}
-            placeholder="Veiledning for utfyller"
-            className="text-xs"
-          />
-        </div>
-      )}
-
-      {/* Section: subtitle help */}
-      {isSection && (
-        <div className="space-y-1.5">
-          <Label className="text-xs">Undertekst (valgfri)</Label>
-          <Input
-            value={field.help_text}
-            onChange={e => onChange({ help_text: e.target.value })}
-            placeholder="Kort beskrivelse av seksjonen"
-            className="text-xs"
-          />
-        </div>
-      )}
-
-      {/* Required toggle — not for section */}
-      {!isSection && (
-        <div className="flex items-center justify-between py-1">
-          <Label className="text-xs">Obligatorisk felt</Label>
-          <Switch checked={field.is_required} onCheckedChange={v => onChange({ is_required: v })} />
-        </div>
-      )}
-
-      {/* --- Type-specific settings --- */}
+      {/* ── Type-specific settings ── */}
 
       {/* Measurement */}
       {field.field_type === "measurement" && (
-        <div className="space-y-3 pt-2 border-t border-border">
+        <div className="space-y-3">
+          <Separator />
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Måleinnstillinger</p>
           <div className="space-y-1.5">
             <Label className="text-xs">Enhet</Label>
@@ -145,7 +136,8 @@ export default function FieldSettingsPanel({ field, onChange }: Props) {
 
       {/* Rating */}
       {field.field_type === "rating" && (
-        <div className="space-y-3 pt-2 border-t border-border">
+        <div className="space-y-3">
+          <Separator />
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Vurderingsinnstillinger</p>
           <div className="space-y-1">
             {RATING_LABELS.map((l, i) => (
@@ -161,7 +153,8 @@ export default function FieldSettingsPanel({ field, onChange }: Props) {
 
       {/* Dropdown / checkbox_list */}
       {(field.field_type === "dropdown" || field.field_type === "checkbox_list") && (
-        <div className="space-y-3 pt-2 border-t border-border">
+        <div className="space-y-3">
+          <Separator />
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             {field.field_type === "dropdown" ? "Nedtrekksvalg" : "Listevalg"}
           </p>
@@ -183,7 +176,8 @@ export default function FieldSettingsPanel({ field, onChange }: Props) {
 
       {/* File */}
       {field.field_type === "file" && (
-        <div className="space-y-3 pt-2 border-t border-border">
+        <div className="space-y-3">
+          <Separator />
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Filinnstillinger</p>
           <div className="flex items-center justify-between">
             <Label className="text-xs">Kun bilder</Label>
@@ -196,10 +190,11 @@ export default function FieldSettingsPanel({ field, onChange }: Props) {
         </div>
       )}
 
-      {/* Default value — text, textarea, number */}
+      {/* ── Standardverdi ── */}
       {(field.field_type === "text" || field.field_type === "textarea" || field.field_type === "number") && (
-        <div className="space-y-1.5 pt-2 border-t border-border">
-          <Label className="text-xs">Standardverdi</Label>
+        <div className="space-y-3">
+          <Separator />
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Standardverdi</p>
           <Input
             value={field.default_value != null ? String(field.default_value) : ""}
             onChange={e => {
