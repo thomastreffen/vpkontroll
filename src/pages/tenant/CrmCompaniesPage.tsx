@@ -69,6 +69,7 @@ export default function CrmCompaniesPage() {
       const payload = {
         tenant_id: tenantId, name: form.name.trim(),
         org_number: form.org_number || null, industry: form.industry || null,
+        customer_type: form.customer_type as any,
         website: form.website || null, phone: form.phone || null,
         email: form.email || null, address: form.address || null,
         city: form.city || null, postal_code: form.postal_code || null,
