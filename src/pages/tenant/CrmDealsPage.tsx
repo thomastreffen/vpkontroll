@@ -227,7 +227,7 @@ export default function CrmDealsPage() {
               <thead>
                 <tr className="border-b bg-muted/30">
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Deal</th>
-                  <th className="text-left py-3 px-4 font-medium text-muted-foreground hidden md:table-cell">Bedrift</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground hidden md:table-cell">Kunde</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Fase</th>
                   <th className="text-right py-3 px-4 font-medium text-muted-foreground">Verdi</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground hidden lg:table-cell">Forventet</th>
