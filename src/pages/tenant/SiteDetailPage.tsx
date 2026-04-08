@@ -120,6 +120,11 @@ export default function SiteDetailPage() {
         </TabsContent>
 
         <TabsContent value="agreements" className="mt-4">
+          <div className="flex justify-end mb-3">
+            <Button size="sm" onClick={() => setAgreementOpen(true)} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" />Ny serviceavtale
+            </Button>
+          </div>
           {!agreements.data?.length ? <Empty text="Ingen serviceavtaler på dette stedet" /> : (
             <div className="grid gap-3">
               {agreements.data.map(a => (
@@ -128,7 +133,7 @@ export default function SiteDetailPage() {
                     <div>
                       <p className="font-medium text-sm">{a.agreement_number}</p>
                       <p className="text-xs text-muted-foreground">
-                        {AGREEMENT_INTERVAL_LABELS[a.interval] || a.interval} · Neste: {formatDate(a.next_visit_due)}
+                        {formatIntervalLabel(a.interval, (a as any).custom_interval_months)} · Neste: {formatDate(a.next_visit_due)}
                       </p>
                     </div>
                     <Badge className={`text-[10px] ${AGREEMENT_STATUS_COLORS[a.status] || ""}`}>{AGREEMENT_STATUS_LABELS[a.status] || a.status}</Badge>
