@@ -16,14 +16,14 @@ import { toast } from "sonner";
 import {
   Loader2, ArrowLeft, Building2, Contact, MapPin, Zap, Calendar, FileText,
   TrendingUp, Pencil, MessageSquare, Briefcase, Plus, ArrowRight, CheckCircle2,
-  XCircle, Eye, Send, ChevronRight, ClipboardList, Phone, Mail,
+  XCircle, Eye, Send, ChevronRight, ClipboardList, Phone, Mail, ScrollText,
 } from "lucide-react";
 import {
   DEAL_STAGE_LABELS, DEAL_STAGE_COLORS, DEAL_STAGE_ORDER, DEAL_STAGE_BG,
   PIPELINE_STAGES, formatCurrency, type DealStage, ACTIVITY_TYPE_LABELS,
   QUOTE_STATUS_LABELS, QUOTE_STATUS_COLORS,
 } from "@/lib/crm-labels";
-import { ENERGY_SOURCE_LABELS, JOB_TYPE_LABELS, formatDate, formatDateTime } from "@/lib/domain-labels";
+import { ENERGY_SOURCE_LABELS, JOB_TYPE_LABELS, AGREEMENT_INTERVAL_LABELS, formatDate, formatDateTime } from "@/lib/domain-labels";
 
 const JOB_TYPES = ["installation", "service", "repair", "warranty", "inspection", "decommission"];
 
@@ -48,6 +48,7 @@ export default function DealDetailPage() {
   const [quotes, setQuotes] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
   const [linkedJob, setLinkedJob] = useState<any>(null);
+  const [linkedAgreement, setLinkedAgreement] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   // Edit deal sheet
@@ -83,6 +84,18 @@ export default function DealDetailPage() {
   const [noteBody, setNoteBody] = useState("");
   const [noteType, setNoteType] = useState<string>("note");
 
+  // Create agreement sheet
+  const [agreementSheetOpen, setAgreementSheetOpen] = useState(false);
+  const [creatingAgreement, setCreatingAgreement] = useState(false);
+  const [agreementForm, setAgreementForm] = useState({
+    interval: "annual", start_date: "", annual_price: "", scope_description: "",
+  });
+
+  // Assets for agreement
+  const [dealAssets, setDealAssets] = useState<any[]>([]);
+  const [selectedAssetId, setSelectedAssetId] = useState("");
+
+
   /* ─── Data fetching ─────────────────────────────────────────── */
   const fetchDeal = useCallback(async () => {
     if (!id || !tenantId) return;
@@ -103,6 +116,22 @@ export default function DealDetailPage() {
       async () => { const { data } = await supabase.from("quotes").select("*").eq("deal_id", id!).is("deleted_at", null).order("version", { ascending: false }); setQuotes(data || []); },
       async () => { const { data } = await supabase.from("crm_activities").select("*").eq("deal_id", id!).order("created_at", { ascending: false }); setActivities(data || []); },
       async () => { const { data } = await (supabase.from("jobs").select("*") as any).eq("deal_id", id!).is("deleted_at", null).limit(1); setLinkedJob(data?.[0] || null); },
+      async () => {
+        // Check if agreement exists linked via job from this deal
+        const { data: jobs } = await (supabase.from("jobs").select("id") as any).eq("deal_id", id!).is("deleted_at", null);
+        if (jobs && jobs.length > 0) {
+          const { data: ag } = await supabase.from("service_agreements").select("id, agreement_number, status").eq("company_id", d.company_id!).is("deleted_at", null).limit(1);
+          setLinkedAgreement(ag?.[0] || null);
+        } else {
+          // Also check direct company match
+          if (d.company_id) {
+            const { data: ag } = await supabase.from("service_agreements").select("id, agreement_number, status").eq("company_id", d.company_id).is("deleted_at", null).limit(1);
+            setLinkedAgreement(ag?.[0] || null);
+          } else {
+            setLinkedAgreement(null);
+          }
+        }
+      },
     );
 
     await Promise.all(fetches.map(f => f()));
@@ -340,6 +369,60 @@ export default function DealDetailPage() {
     fetchDeal();
   };
 
+  /* ─── Create agreement from deal ────────────────────────────── */
+  const openCreateAgreement = async () => {
+    if (!deal) return;
+    // Fetch assets for the site if available
+    if (deal.site_id && tenantId) {
+      const { data } = await supabase.from("hvac_assets").select("id, manufacturer, model, serial_number").eq("site_id", deal.site_id).eq("tenant_id", tenantId).is("deleted_at", null);
+      setDealAssets(data || []);
+    } else {
+      setDealAssets([]);
+    }
+    setSelectedAssetId("");
+    const today = new Date().toISOString().slice(0, 10);
+    setAgreementForm({
+      interval: "annual",
+      start_date: today,
+      annual_price: "",
+      scope_description: deal.energy_source ? `Serviceavtale for ${ENERGY_SOURCE_LABELS[deal.energy_source] || deal.energy_source}${deal.estimated_kw ? ` (${deal.estimated_kw} kW)` : ""}` : "",
+    });
+    setAgreementSheetOpen(true);
+  };
+
+  const createAgreement = async () => {
+    if (!deal || !tenantId || !agreementForm.start_date) return;
+    if (!deal.company_id) { toast.error("Deal mangler kunde – kan ikke opprette avtale"); return; }
+    setCreatingAgreement(true);
+    const { data, error } = await supabase.from("service_agreements").insert({
+      tenant_id: tenantId,
+      company_id: deal.company_id,
+      site_id: deal.site_id || null,
+      asset_id: selectedAssetId || null,
+      agreement_number: "TEMP",
+      interval: agreementForm.interval,
+      start_date: agreementForm.start_date,
+      annual_price: agreementForm.annual_price ? parseFloat(agreementForm.annual_price) : null,
+      scope_description: agreementForm.scope_description || null,
+      next_visit_due: agreementForm.start_date,
+      created_by: user?.id,
+    } as any).select().single();
+    setCreatingAgreement(false);
+    if (error) { toast.error("Kunne ikke opprette avtale: " + error.message); return; }
+    // Log activity
+    await supabase.from("crm_activities").insert({
+      tenant_id: tenantId, deal_id: deal.id, company_id: deal.company_id,
+      type: "task", subject: `Serviceavtale ${data.agreement_number} opprettet`,
+      created_by: user?.id,
+    } as any);
+    toast.success(`Serviceavtale ${data.agreement_number} opprettet`, {
+      action: { label: "Gå til avtale", onClick: () => navigate(`/tenant/crm/agreements/${data.id}`) },
+    });
+    setAgreementSheetOpen(false);
+    setLinkedAgreement(data);
+    fetchDeal();
+  };
+
   /* ─── Render ────────────────────────────────────────────────── */
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   if (!deal) return <div className="text-center py-20 text-muted-foreground">Deal ikke funnet</div>;
@@ -438,6 +521,11 @@ export default function DealDetailPage() {
               <Briefcase className="h-3.5 w-3.5" />Opprett jobb
             </Button>
           )}
+          {isWon && (
+            <Button variant="outline" size="sm" onClick={openCreateAgreement} className="gap-1.5">
+              <ScrollText className="h-3.5 w-3.5" />Opprett serviceavtale
+            </Button>
+          )}
         </div>
       </Card>
 
@@ -459,7 +547,24 @@ export default function DealDetailPage() {
         </Card>
       )}
 
-      {/* ── Info cards grid ─────────────────────────────────────── */}
+      {/* ── Linked agreement banner ─────────────────────────────── */}
+      {linkedAgreement && (
+        <Card className="p-4 border-emerald-500/30 bg-emerald-500/5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <ScrollText className="h-5 w-5 text-emerald-600" />
+              <div>
+                <p className="text-sm font-medium">Serviceavtale: {linkedAgreement.agreement_number}</p>
+                <p className="text-xs text-muted-foreground">Status: {linkedAgreement.status}</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" asChild className="gap-1.5">
+              <Link to={`/tenant/crm/agreements/${linkedAgreement.id}`}>Se avtale <ArrowRight className="h-3.5 w-3.5" /></Link>
+            </Button>
+          </div>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="p-4">
           <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" />Kunde</p>
@@ -936,6 +1041,79 @@ export default function DealDetailPage() {
           <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
             <Button variant="outline" onClick={() => setNoteOpen(false)}>Avbryt</Button>
             <Button onClick={saveNote} disabled={!noteBody.trim()}>Lagre</Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+      {/* ── Create agreement sheet ─────────────────────────────── */}
+      <Sheet open={agreementSheetOpen} onOpenChange={setAgreementSheetOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader><SheetTitle>Opprett serviceavtale</SheetTitle></SheetHeader>
+          <div className="space-y-4 py-4">
+            <Card className="p-4 bg-muted/30">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Overføres fra deal</p>
+              <div className="space-y-2 text-sm">
+                {company && (
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-muted-foreground">Kunde:</span>
+                    <span className="font-medium">{company.name}</span>
+                  </div>
+                )}
+                {site && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-muted-foreground">Sted:</span>
+                    <span className="font-medium">{site.name || site.address}</span>
+                  </div>
+                )}
+              </div>
+            </Card>
+            <Separator />
+            {dealAssets.length > 0 && (
+              <div className="space-y-1.5">
+                <Label>Anlegg (valgfritt)</Label>
+                <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
+                  <SelectTrigger><SelectValue placeholder="Velg anlegg" /></SelectTrigger>
+                  <SelectContent>
+                    {dealAssets.map(a => (
+                      <SelectItem key={a.id} value={a.id}>{`${a.manufacturer || ""} ${a.model || ""}`.trim() || a.serial_number || a.id.slice(0, 8)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Intervall *</Label>
+                <Select value={agreementForm.interval} onValueChange={v => setAgreementForm({ ...agreementForm, interval: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(AGREEMENT_INTERVAL_LABELS).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Startdato *</Label>
+                <Input type="date" value={agreementForm.start_date} onChange={e => setAgreementForm({ ...agreementForm, start_date: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Årspris (NOK)</Label>
+              <Input type="number" value={agreementForm.annual_price} onChange={e => setAgreementForm({ ...agreementForm, annual_price: e.target.value })} placeholder="F.eks. 4500" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Omfang / beskrivelse</Label>
+              <Textarea value={agreementForm.scope_description} onChange={e => setAgreementForm({ ...agreementForm, scope_description: e.target.value })} rows={3} placeholder="Hva dekker avtalen..." />
+            </div>
+          </div>
+          <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setAgreementSheetOpen(false)}>Avbryt</Button>
+            <Button onClick={createAgreement} disabled={creatingAgreement || !agreementForm.start_date} className="gap-1.5">
+              {creatingAgreement && <Loader2 className="h-4 w-4 animate-spin" />}
+              Opprett avtale
+            </Button>
           </SheetFooter>
         </SheetContent>
       </Sheet>

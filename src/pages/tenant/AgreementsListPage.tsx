@@ -6,9 +6,20 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, FileText, Loader2 } from "lucide-react";
+import { Search, FileText, Loader2, AlertTriangle, Clock, CheckCircle2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS, AGREEMENT_INTERVAL_LABELS, formatDate } from "@/lib/domain-labels";
+import { formatCurrency } from "@/lib/crm-labels";
+
+type DueFilter = "all" | "overdue" | "due_soon" | "ok";
+
+function getDueBadge(nextDue: string | null): { label: string; className: string; filter: DueFilter } {
+  if (!nextDue) return { label: "–", className: "", filter: "ok" };
+  const days = Math.ceil((new Date(nextDue).getTime() - Date.now()) / 86400000);
+  if (days < 0) return { label: "Forfalt", className: "bg-destructive/10 text-destructive", filter: "overdue" };
+  if (days <= 30) return { label: `${days}d`, className: "bg-amber-500/10 text-amber-600", filter: "due_soon" };
+  return { label: `${days}d`, className: "bg-emerald-500/10 text-emerald-600", filter: "ok" };
+}
 
 export default function AgreementsListPage() {
   const { tenantId } = useAuth();
@@ -17,6 +28,7 @@ export default function AgreementsListPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [dueFilter, setDueFilter] = useState<DueFilter>("all");
 
   const fetch = useCallback(async () => {
     if (!tenantId) return;
@@ -36,40 +48,65 @@ export default function AgreementsListPage() {
   useEffect(() => { fetch(); }, [fetch]);
 
   const filtered = items.filter((a) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return a.agreement_number?.toLowerCase().includes(q) || (a.company?.name || "").toLowerCase().includes(q);
+    if (search) {
+      const q = search.toLowerCase();
+      if (!a.agreement_number?.toLowerCase().includes(q) && !(a.company?.name || "").toLowerCase().includes(q)) return false;
+    }
+    if (dueFilter !== "all") {
+      const due = getDueBadge(a.next_visit_due);
+      if (due.filter !== dueFilter) return false;
+    }
+    return true;
   });
+
+  // Stats
+  const overdueCount = items.filter(a => getDueBadge(a.next_visit_due).filter === "overdue").length;
+  const dueSoonCount = items.filter(a => getDueBadge(a.next_visit_due).filter === "due_soon").length;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Serviceavtaler</h1>
-        <p className="text-sm text-muted-foreground mt-1">{items.length} avtaler totalt</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          {items.length} avtaler
+          {overdueCount > 0 && <span className="text-destructive font-medium"> · {overdueCount} forfalt</span>}
+          {dueSoonCount > 0 && <span className="text-amber-600 font-medium"> · {dueSoonCount} snart</span>}
+        </p>
       </div>
+
       <div className="flex flex-wrap gap-3">
         <div className="relative max-w-sm flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Søk avtaler..." className="pl-9" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Alle statuser</SelectItem>
             {Object.entries(AGREEMENT_STATUS_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={dueFilter} onValueChange={v => setDueFilter(v as DueFilter)}>
+          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Forfall" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle</SelectItem>
+            <SelectItem value="overdue">Forfalt</SelectItem>
+            <SelectItem value="due_soon">Snart (30d)</SelectItem>
+            <SelectItem value="ok">OK</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : filtered.length === 0 ? (
-        search || statusFilter !== "all" ? (
+        search || statusFilter !== "all" || dueFilter !== "all" ? (
           <div className="text-center py-20"><p className="text-sm text-muted-foreground">Ingen treff</p></div>
         ) : (
           <EmptyState
             icon={FileText}
             title="Ingen serviceavtaler ennå"
-            description="Serviceavtaler opprettes fra en kundeside eller anleggsside, og styrer automatisk generering av servicebesøk og jobber."
+            description="Serviceavtaler opprettes fra en kundeside, anleggsside, eller fra en vunnet deal, og styrer automatisk generering av servicebesøk og jobber."
             hint="Kunde → Anleggssted → Anlegg → Serviceavtale"
           />
         )
@@ -80,25 +117,45 @@ export default function AgreementsListPage() {
               <TableRow>
                 <TableHead>Avtalenr</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Forfall</TableHead>
                 <TableHead>Intervall</TableHead>
                 <TableHead>Kunde</TableHead>
-                <TableHead>Anlegg</TableHead>
-                <TableHead>Neste besøk</TableHead>
-                <TableHead>Start</TableHead>
+                <TableHead className="hidden md:table-cell">Anlegg</TableHead>
+                <TableHead className="hidden lg:table-cell">Årspris</TableHead>
+                <TableHead className="hidden lg:table-cell">Start</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((a) => (
-                <TableRow key={a.id} className="cursor-pointer" onClick={() => navigate(`/tenant/crm/agreements/${a.id}`)}>
-                  <TableCell className="font-mono text-xs">{a.agreement_number}</TableCell>
-                  <TableCell><Badge variant="secondary" className={AGREEMENT_STATUS_COLORS[a.status]}>{AGREEMENT_STATUS_LABELS[a.status] || a.status}</Badge></TableCell>
-                  <TableCell className="text-sm">{AGREEMENT_INTERVAL_LABELS[a.interval] || a.interval}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{a.company?.name || "–"}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{a.asset ? `${a.asset.manufacturer || ""} ${a.asset.model || ""}`.trim() : "–"}</TableCell>
-                  <TableCell className="text-sm font-medium">{formatDate(a.next_visit_due)}</TableCell>
-                  <TableCell className="text-sm">{formatDate(a.start_date)}</TableCell>
-                </TableRow>
-              ))}
+              {filtered.map((a) => {
+                const due = getDueBadge(a.next_visit_due);
+                return (
+                  <TableRow key={a.id} className="cursor-pointer" onClick={() => navigate(`/tenant/crm/agreements/${a.id}`)}>
+                    <TableCell className="font-mono text-xs">{a.agreement_number}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className={AGREEMENT_STATUS_COLORS[a.status]}>
+                        {AGREEMENT_STATUS_LABELS[a.status] || a.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm">{formatDate(a.next_visit_due)}</span>
+                        {due.className && (
+                          <Badge variant="outline" className={`text-[10px] ${due.className}`}>
+                            {due.label}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm">{AGREEMENT_INTERVAL_LABELS[a.interval] || a.interval}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{a.company?.name || "–"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
+                      {a.asset ? `${a.asset.manufacturer || ""} ${a.asset.model || ""}`.trim() : "–"}
+                    </TableCell>
+                    <TableCell className="text-sm hidden lg:table-cell">{a.annual_price ? formatCurrency(a.annual_price) : "–"}</TableCell>
+                    <TableCell className="text-sm hidden lg:table-cell">{formatDate(a.start_date)}</TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
