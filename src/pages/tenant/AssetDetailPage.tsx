@@ -60,8 +60,15 @@ export default function AssetDetailPage() {
         </div>
       </div>
 
+      {/* Quick action: create agreement */}
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" onClick={() => setAgreementOpen(true)} className="gap-1.5">
+          <Plus className="h-3.5 w-3.5" />Ny serviceavtale
+        </Button>
+      </div>
+
       <Tabs defaultValue="info">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="info" className="gap-1.5"><Info className="h-3.5 w-3.5" />Teknisk info</TabsTrigger>
           <TabsTrigger value="visits">Servicehistorikk ({serviceVisits.data?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="jobs" className="gap-1.5"><Wrench className="h-3.5 w-3.5" />Jobber ({jobs.data?.length ?? 0})</TabsTrigger>
