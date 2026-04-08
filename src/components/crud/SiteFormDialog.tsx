@@ -25,6 +25,7 @@ const EMPTY = { name: "", address: "", postal_code: "", city: "", site_type: "re
 export function SiteFormDialog({ open, onOpenChange, companyId, site }: SiteFormDialogProps) {
   const { tenantId } = useAuth();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const isEdit = !!site;
   const [form, setForm] = useState(EMPTY);
 
