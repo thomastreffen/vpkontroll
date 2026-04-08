@@ -340,7 +340,7 @@ export default function DealDetailPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Bedrift</Label>
+                <Label>Kunde</Label>
                 <Select value={form.company_id} onValueChange={v => setForm({ ...form, company_id: v })}>
                   <SelectTrigger><SelectValue placeholder="Velg" /></SelectTrigger>
                   <SelectContent>{companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
