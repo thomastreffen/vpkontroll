@@ -279,6 +279,31 @@ export default function AgreementDetailPage() {
         </Card>
       </div>
 
+      {/* Service template card */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <ClipboardList className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-sm font-medium">Servicemal</p>
+              {hasTemplate ? (
+                <p className="text-xs text-muted-foreground">
+                  {templateFields.data?.[0] ? "Aktiv mal med " + templateFields.data.length + " felter" : "Laster..."}
+                </p>
+              ) : (
+                <p className="text-xs text-amber-600">Ingen servicemal valgt</p>
+              )}
+            </div>
+          </div>
+          <ServiceTemplateSelector
+            tenantId={tenantId!}
+            currentTemplateId={serviceTemplateId || null}
+            agreementId={id!}
+            onChanged={() => qc.invalidateQueries({ queryKey: ["agreement", id] })}
+          />
+        </div>
+      </Card>
+
       {a.scope_description && (
         <Card className="p-4">
           <p className="text-xs font-medium text-muted-foreground mb-2">Omfang</p>
