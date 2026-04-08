@@ -91,17 +91,19 @@ export default function CompanyDetailPage() {
         <TabsContent value="contacts" className="mt-4">
           {contacts.data?.length === 0 ? <EmptyState text="Ingen kontakter" /> : (
             <div className="grid gap-3">
-              {contacts.data?.map(ct => (
-                <Card key={ct.id} className="p-4 flex items-center gap-4">
-                  <Avatar className="h-9 w-9"><AvatarFallback className="text-xs bg-muted">{ct.first_name[0]}{ct.last_name?.[0] || ""}</AvatarFallback></Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm">{ct.first_name} {ct.last_name || ""}</p>
-                    {ct.title && <p className="text-xs text-muted-foreground">{ct.title}</p>}
-                  </div>
-                  {ct.email && <span className="text-xs text-muted-foreground">{ct.email}</span>}
-                  {ct.phone && <span className="text-xs text-muted-foreground">{ct.phone}</span>}
-                  {ct.is_primary_contact && <Badge variant="secondary" className="text-[10px]">Primær</Badge>}
-                </Card>
+                {contacts.data?.map(ct => (
+                <Link key={ct.id} to={`/tenant/crm/contacts/${ct.id}`}>
+                  <Card className="p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
+                    <Avatar className="h-9 w-9"><AvatarFallback className="text-xs bg-muted">{ct.first_name[0]}{ct.last_name?.[0] || ""}</AvatarFallback></Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm">{ct.first_name} {ct.last_name || ""}</p>
+                      {ct.title && <p className="text-xs text-muted-foreground">{ct.title}</p>}
+                    </div>
+                    {ct.email && <span className="text-xs text-muted-foreground">{ct.email}</span>}
+                    {ct.phone && <span className="text-xs text-muted-foreground">{ct.phone}</span>}
+                    {ct.is_primary_contact && <Badge variant="secondary" className="text-[10px]">Primær</Badge>}
+                  </Card>
+                </Link>
               ))}
             </div>
           )}
@@ -114,20 +116,19 @@ export default function CompanyDetailPage() {
           {sites.data?.length === 0 ? <EmptyState text="Ingen anleggssteder" /> : (
             <div className="grid gap-3">
               {sites.data?.map(s => (
-                <Card key={s.id} className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-sm">{s.name || s.address || "Uten navn"}</p>
-                      <p className="text-xs text-muted-foreground">{s.address}, {s.postal_code} {s.city}</p>
+                <Link key={s.id} to={`/tenant/crm/sites/${s.id}`}>
+                  <Card className="p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-sm">{s.name || s.address || "Uten navn"}</p>
+                        <p className="text-xs text-muted-foreground">{s.address}, {s.postal_code} {s.city}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[10px]">{SITE_TYPE_LABELS[s.site_type] || s.site_type}</Badge>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-[10px]">{SITE_TYPE_LABELS[s.site_type] || s.site_type}</Badge>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSiteDialog({ open: true, site: s })}>
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
+                  </Card>
+                </Link>
               ))}
             </div>
           )}
