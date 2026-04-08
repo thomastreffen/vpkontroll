@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Search, Building2, MoreHorizontal, Globe, Phone, Mail, Loader2 } from "lucide-react";
+import { Plus, Search, Building2, MoreHorizontal, Globe, Phone, Mail, Loader2, FileUp } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CUSTOMER_TYPE_LABELS, CUSTOMER_TYPE_COLORS } from "@/lib/domain-labels";
@@ -107,9 +107,14 @@ export default function CrmCompaniesPage() {
           <h1 className="text-2xl font-bold tracking-tight">Kunder</h1>
           <p className="text-sm text-muted-foreground mt-1">{companies.length} kunder totalt</p>
         </div>
-        <Button onClick={openNew} className="gap-2">
-          <Plus className="h-4 w-4" /> Ny kunde
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate("/tenant/crm/customers/import")} className="gap-2">
+            <FileUp className="h-4 w-4" /> Importer
+          </Button>
+          <Button onClick={openNew} className="gap-2">
+            <Plus className="h-4 w-4" /> Ny kunde
+          </Button>
+        </div>
       </div>
 
       <div className="relative max-w-sm">

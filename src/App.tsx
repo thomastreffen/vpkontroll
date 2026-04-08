@@ -39,6 +39,7 @@ import WarrantyListPage from "@/pages/tenant/WarrantyListPage";
 import DealDetailPage from "@/pages/tenant/DealDetailPage";
 import ContactDetailPage from "@/pages/tenant/ContactDetailPage";
 import SiteDetailPage from "@/pages/tenant/SiteDetailPage";
+import CustomerImportPage from "@/pages/tenant/CustomerImportPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -110,6 +111,7 @@ function AppRoutes() {
       <Route path="/tenant/crm/deals/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><DealDetailPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/crm/contacts/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><ContactDetailPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/crm/sites/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><SiteDetailPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/crm/customers/import" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><CustomerImportPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
 
       <Route path="/" element={<Navigate to={getHomeRedirect()} replace />} />
       <Route path="*" element={<NotFound />} />
