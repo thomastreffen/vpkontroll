@@ -266,6 +266,14 @@ export default function JobDetailPage() {
                 <span className={`text-sm font-medium ${CASE_PRIORITY_COLOR[j.priority as keyof typeof CASE_PRIORITY_COLOR] || ""}`}>
                   {CASE_PRIORITY_LABELS[j.priority as keyof typeof CASE_PRIORITY_LABELS] || j.priority}
                 </span>
+                {/* Form status badge */}
+                {showFormTab && (
+                  hasEffectiveForm
+                    ? <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-600 gap-1"><ClipboardList className="h-3 w-3" />Skjema utfylt</Badge>
+                    : effectiveTemplateId
+                      ? <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-200 gap-1"><ClipboardList className="h-3 w-3" />Skjema mangler</Badge>
+                      : null
+                )}
               </>
             )}
             {isEditing ? (
