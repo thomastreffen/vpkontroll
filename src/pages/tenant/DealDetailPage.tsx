@@ -16,14 +16,15 @@ import { toast } from "sonner";
 import {
   Loader2, ArrowLeft, Building2, Contact, MapPin, Zap, Calendar, FileText,
   TrendingUp, Pencil, MessageSquare, Briefcase, Plus, ArrowRight, CheckCircle2,
-  XCircle, Eye, Send, ChevronRight, ClipboardList, Phone, Mail, ScrollText,
+  XCircle, Eye, Send, ChevronRight, ClipboardList, Phone, Mail, ScrollText, Search,
 } from "lucide-react";
 import {
   DEAL_STAGE_LABELS, DEAL_STAGE_COLORS, DEAL_STAGE_ORDER, DEAL_STAGE_BG,
   PIPELINE_STAGES, formatCurrency, type DealStage, ACTIVITY_TYPE_LABELS,
   QUOTE_STATUS_LABELS, QUOTE_STATUS_COLORS,
 } from "@/lib/crm-labels";
-import { ENERGY_SOURCE_LABELS, JOB_TYPE_LABELS, AGREEMENT_INTERVAL_LABELS, formatDate, formatDateTime } from "@/lib/domain-labels";
+import { ENERGY_SOURCE_LABELS, JOB_TYPE_LABELS, AGREEMENT_INTERVAL_LABELS, SITE_TYPE_LABELS, formatDate, formatDateTime } from "@/lib/domain-labels";
+import { EntityPickerDialog } from "@/components/postkontoret/EntityPickerDialog";
 
 const JOB_TYPES = ["installation", "service", "repair", "warranty", "inspection", "decommission"];
 
@@ -96,6 +97,15 @@ export default function DealDetailPage() {
   const [dealAssets, setDealAssets] = useState<any[]>([]);
   const [selectedAssetId, setSelectedAssetId] = useState("");
 
+  // Entity pickers for deal linking
+  const [pickerOpen, setPickerOpen] = useState<{ type: "company" | "contact" | "site"; open: boolean }>({ type: "company", open: false });
+  const [createCompanyOpen, setCreateCompanyOpen] = useState(false);
+  const [createContactOpen, setCreateContactOpen] = useState(false);
+  const [createSiteOpen, setCreateSiteOpen] = useState(false);
+  const [newCompanyForm, setNewCompanyForm] = useState({ name: "", customer_type: "private", phone: "", email: "" });
+  const [newContactForm, setNewContactForm] = useState({ first_name: "", last_name: "", email: "", phone: "" });
+  const [newSiteForm, setNewSiteForm] = useState({ name: "", address: "", postal_code: "", city: "", site_type: "residential" });
+  const [linkSaving, setLinkSaving] = useState(false);
 
   /* ─── Data fetching ─────────────────────────────────────────── */
   const fetchDeal = useCallback(async () => {
@@ -161,6 +171,67 @@ export default function DealDetailPage() {
     } as any);
     toast.success(`Fase endret til ${DEAL_STAGE_LABELS[newStage]}`);
     fetchDeal();
+  };
+
+  /* ─── Link entity to deal ───────────────────────────────────── */
+  const linkEntityToDeal = async (field: string, value: string) => {
+    if (!deal) return;
+    setLinkSaving(true);
+    const { error } = await supabase.from("crm_deals").update({ [field]: value } as any).eq("id", deal.id);
+    setLinkSaving(false);
+    if (error) { toast.error("Kunne ikke koble til deal"); return; }
+    toast.success("Tilknyttet deal");
+    fetchDeal();
+  };
+
+  const handlePickerSelect = (type: "company" | "contact" | "site", entityId: string) => {
+    const fieldMap = { company: "company_id", contact: "contact_id", site: "site_id" };
+    linkEntityToDeal(fieldMap[type], entityId);
+  };
+
+  const createAndLinkCompany = async () => {
+    if (!tenantId || !newCompanyForm.name.trim()) return;
+    setLinkSaving(true);
+    const { data, error } = await supabase.from("crm_companies").insert({
+      tenant_id: tenantId, name: newCompanyForm.name.trim(),
+      customer_type: newCompanyForm.customer_type as any,
+      phone: newCompanyForm.phone || null, email: newCompanyForm.email || null,
+      created_by: user?.id,
+    }).select("id").single();
+    if (error || !data) { setLinkSaving(false); toast.error("Kunne ikke opprette kunde"); return; }
+    await linkEntityToDeal("company_id", data.id);
+    setCreateCompanyOpen(false);
+    setNewCompanyForm({ name: "", customer_type: "private", phone: "", email: "" });
+  };
+
+  const createAndLinkContact = async () => {
+    if (!tenantId || !newContactForm.first_name.trim()) return;
+    setLinkSaving(true);
+    const { data, error } = await supabase.from("crm_contacts").insert({
+      tenant_id: tenantId, first_name: newContactForm.first_name.trim(),
+      last_name: newContactForm.last_name || null,
+      email: newContactForm.email || null, phone: newContactForm.phone || null,
+      company_id: deal?.company_id || null, created_by: user?.id,
+    }).select("id").single();
+    if (error || !data) { setLinkSaving(false); toast.error("Kunne ikke opprette kontakt"); return; }
+    await linkEntityToDeal("contact_id", data.id);
+    setCreateContactOpen(false);
+    setNewContactForm({ first_name: "", last_name: "", email: "", phone: "" });
+  };
+
+  const createAndLinkSite = async () => {
+    if (!tenantId || !deal?.company_id || !newSiteForm.address.trim()) return;
+    setLinkSaving(true);
+    const { data, error } = await supabase.from("customer_sites").insert({
+      tenant_id: tenantId, company_id: deal.company_id,
+      name: newSiteForm.name || null, address: newSiteForm.address.trim(),
+      postal_code: newSiteForm.postal_code || null, city: newSiteForm.city || null,
+      site_type: newSiteForm.site_type as any, created_by: user?.id,
+    }).select("id").single();
+    if (error || !data) { setLinkSaving(false); toast.error("Kunne ikke opprette anleggssted"); return; }
+    await linkEntityToDeal("site_id", data.id);
+    setCreateSiteOpen(false);
+    setNewSiteForm({ name: "", address: "", postal_code: "", city: "", site_type: "residential" });
   };
 
   /* ─── Edit deal ─────────────────────────────────────────────── */
@@ -597,30 +668,84 @@ export default function DealDetailPage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Kunde */}
         <Card className="p-4">
           <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" />Kunde</p>
           {company ? (
-            <Link to={`/tenant/crm/companies/${company.id}`} className="text-sm font-medium hover:underline">{company.name}</Link>
-          ) : <span className="text-sm text-muted-foreground">Ikke tilknyttet</span>}
+            <div className="flex items-center justify-between">
+              <Link to={`/tenant/crm/companies/${company.id}`} className="text-sm font-medium hover:underline">{company.name}</Link>
+              <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]" onClick={() => setPickerOpen({ type: "company", open: true })}>Bytt</Button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground italic">Ikke tilknyttet</p>
+              <div className="flex gap-1.5">
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setPickerOpen({ type: "company", open: true })}>
+                  <Search className="h-3 w-3" />Velg
+                </Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { setNewCompanyForm({ name: "", customer_type: "private", phone: "", email: "" }); setCreateCompanyOpen(true); }}>
+                  <Plus className="h-3 w-3" />Ny
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
+
+        {/* Kontaktperson */}
         <Card className="p-4">
           <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5"><Contact className="h-3.5 w-3.5" />Kontaktperson</p>
           {contact ? (
             <div>
-              <Link to={`/tenant/crm/contacts/${contact.id}`} className="text-sm font-medium hover:underline">{contact.first_name} {contact.last_name || ""}</Link>
+              <div className="flex items-center justify-between">
+                <Link to={`/tenant/crm/contacts/${contact.id}`} className="text-sm font-medium hover:underline">{contact.first_name} {contact.last_name || ""}</Link>
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]" onClick={() => setPickerOpen({ type: "contact", open: true })}>Bytt</Button>
+              </div>
               {contact.email && <p className="text-xs text-muted-foreground mt-0.5">{contact.email}</p>}
               {contact.phone && <p className="text-xs text-muted-foreground">{contact.phone}</p>}
             </div>
-          ) : <span className="text-sm text-muted-foreground">Ikke tilknyttet</span>}
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground italic">Ikke tilknyttet</p>
+              <div className="flex gap-1.5">
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setPickerOpen({ type: "contact", open: true })}>
+                  <Search className="h-3 w-3" />Velg
+                </Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { setNewContactForm({ first_name: "", last_name: "", email: "", phone: "" }); setCreateContactOpen(true); }}>
+                  <Plus className="h-3 w-3" />Ny
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
+
+        {/* Anleggssted */}
         <Card className="p-4">
           <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />Anleggssted</p>
           {site ? (
             <div>
-              <Link to={`/tenant/crm/sites/${site.id}`} className="text-sm font-medium hover:underline">{site.name || site.address}</Link>
+              <div className="flex items-center justify-between">
+                <Link to={`/tenant/crm/sites/${site.id}`} className="text-sm font-medium hover:underline">{site.name || site.address}</Link>
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]" onClick={() => setPickerOpen({ type: "site", open: true })}>Bytt</Button>
+              </div>
               {site.address && <p className="text-xs text-muted-foreground mt-0.5">{site.address}, {site.postal_code} {site.city}</p>}
             </div>
-          ) : <span className="text-sm text-muted-foreground">Ikke tilknyttet</span>}
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground italic">Ikke tilknyttet</p>
+              <div className="flex gap-1.5">
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setPickerOpen({ type: "site", open: true })}>
+                  <Search className="h-3 w-3" />Velg
+                </Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { setNewSiteForm({ name: "", address: "", postal_code: "", city: "", site_type: "residential" }); setCreateSiteOpen(true); }}
+                  disabled={!deal.company_id}
+                  title={!deal.company_id ? "Koble en kunde først" : undefined}
+                >
+                  <Plus className="h-3 w-3" />Ny
+                </Button>
+              </div>
+              {!deal.company_id && <p className="text-[10px] text-muted-foreground/70">Koble en kunde først for å opprette sted</p>}
+            </div>
+          )}
         </Card>
       </div>
 
@@ -1165,6 +1290,141 @@ export default function DealDetailPage() {
             <Button onClick={createAgreement} disabled={creatingAgreement || !agreementForm.start_date} className="gap-1.5">
               {creatingAgreement && <Loader2 className="h-4 w-4 animate-spin" />}
               Opprett avtale
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Entity picker dialog ────────────────────────────────── */}
+      <EntityPickerDialog
+        open={pickerOpen.open}
+        onOpenChange={(open) => setPickerOpen(p => ({ ...p, open }))}
+        entityType={pickerOpen.type}
+        onSelect={(id) => handlePickerSelect(pickerOpen.type, id)}
+        companyId={deal?.company_id || undefined}
+      />
+
+      {/* ── Quick create company sheet ──────────────────────────── */}
+      <Sheet open={createCompanyOpen} onOpenChange={setCreateCompanyOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader><SheetTitle>Ny kunde</SheetTitle></SheetHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-1.5">
+              <Label>Navn *</Label>
+              <Input value={newCompanyForm.name} onChange={e => setNewCompanyForm(f => ({ ...f, name: e.target.value }))} placeholder="Kunde- eller bedriftsnavn" autoFocus />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Kundetype</Label>
+              <Select value={newCompanyForm.customer_type} onValueChange={v => setNewCompanyForm(f => ({ ...f, customer_type: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="private">Privat</SelectItem>
+                  <SelectItem value="business">Bedriftskunde</SelectItem>
+                  <SelectItem value="housing_coop">Borettslag</SelectItem>
+                  <SelectItem value="public_sector">Offentlig</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Telefon</Label>
+                <Input value={newCompanyForm.phone} onChange={e => setNewCompanyForm(f => ({ ...f, phone: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>E-post</Label>
+                <Input value={newCompanyForm.email} onChange={e => setNewCompanyForm(f => ({ ...f, email: e.target.value }))} />
+              </div>
+            </div>
+          </div>
+          <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setCreateCompanyOpen(false)}>Avbryt</Button>
+            <Button onClick={createAndLinkCompany} disabled={linkSaving || !newCompanyForm.name.trim()}>
+              {linkSaving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Opprett og koble
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Quick create contact sheet ──────────────────────────── */}
+      <Sheet open={createContactOpen} onOpenChange={setCreateContactOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader><SheetTitle>Ny kontaktperson</SheetTitle></SheetHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Fornavn *</Label>
+                <Input value={newContactForm.first_name} onChange={e => setNewContactForm(f => ({ ...f, first_name: e.target.value }))} autoFocus />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Etternavn</Label>
+                <Input value={newContactForm.last_name} onChange={e => setNewContactForm(f => ({ ...f, last_name: e.target.value }))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>E-post</Label>
+                <Input value={newContactForm.email} onChange={e => setNewContactForm(f => ({ ...f, email: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Telefon</Label>
+                <Input value={newContactForm.phone} onChange={e => setNewContactForm(f => ({ ...f, phone: e.target.value }))} />
+              </div>
+            </div>
+            {deal?.company_id && company && (
+              <p className="text-xs text-muted-foreground">Kobles automatisk til {company.name}</p>
+            )}
+          </div>
+          <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setCreateContactOpen(false)}>Avbryt</Button>
+            <Button onClick={createAndLinkContact} disabled={linkSaving || !newContactForm.first_name.trim()}>
+              {linkSaving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Opprett og koble
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Quick create site sheet ─────────────────────────────── */}
+      <Sheet open={createSiteOpen} onOpenChange={setCreateSiteOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader><SheetTitle>Nytt anleggssted</SheetTitle></SheetHeader>
+          <div className="space-y-4 py-4">
+            {company && (
+              <p className="text-xs text-muted-foreground">Kobles til {company.name}</p>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Navn</Label>
+                <Input value={newSiteForm.name} onChange={e => setNewSiteForm(f => ({ ...f, name: e.target.value }))} placeholder="F.eks. Bolig" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Type</Label>
+                <Select value={newSiteForm.site_type} onValueChange={v => setNewSiteForm(f => ({ ...f, site_type: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(SITE_TYPE_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Adresse *</Label>
+              <Input value={newSiteForm.address} onChange={e => setNewSiteForm(f => ({ ...f, address: e.target.value }))} autoFocus />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Postnummer</Label>
+                <Input value={newSiteForm.postal_code} onChange={e => setNewSiteForm(f => ({ ...f, postal_code: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Sted</Label>
+                <Input value={newSiteForm.city} onChange={e => setNewSiteForm(f => ({ ...f, city: e.target.value }))} />
+              </div>
+            </div>
+          </div>
+          <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setCreateSiteOpen(false)}>Avbryt</Button>
+            <Button onClick={createAndLinkSite} disabled={linkSaving || !newSiteForm.address.trim()}>
+              {linkSaving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Opprett og koble
             </Button>
           </SheetFooter>
         </SheetContent>
