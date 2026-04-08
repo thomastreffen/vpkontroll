@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, ArrowLeft, Building2, Contact, MapPin, Thermometer, TrendingUp, Wrench, ShieldCheck, FileText, Mail, Phone, Plus, Pencil } from "lucide-react";
+import { Loader2, ArrowLeft, Building2, Contact, MapPin, Thermometer, TrendingUp, Wrench, ShieldCheck, FileText, Mail, Phone, Plus, Pencil, ScrollText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DEAL_STAGE_LABELS, DEAL_STAGE_COLORS, formatCurrency,
