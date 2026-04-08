@@ -157,7 +157,7 @@ export default function CrmContactsPage() {
               </thead>
               <tbody>
                 {filtered.map((c) => (
-                  <tr key={c.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors" onClick={() => openEdit(c)}>
+                  <tr key={c.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors" onClick={() => navigate(`/tenant/crm/contacts/${c.id}`)}>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8 shrink-0">

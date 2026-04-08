@@ -116,20 +116,19 @@ export default function CompanyDetailPage() {
           {sites.data?.length === 0 ? <EmptyState text="Ingen anleggssteder" /> : (
             <div className="grid gap-3">
               {sites.data?.map(s => (
-                <Card key={s.id} className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-sm">{s.name || s.address || "Uten navn"}</p>
-                      <p className="text-xs text-muted-foreground">{s.address}, {s.postal_code} {s.city}</p>
+                <Link key={s.id} to={`/tenant/crm/sites/${s.id}`}>
+                  <Card className="p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-sm">{s.name || s.address || "Uten navn"}</p>
+                        <p className="text-xs text-muted-foreground">{s.address}, {s.postal_code} {s.city}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[10px]">{SITE_TYPE_LABELS[s.site_type] || s.site_type}</Badge>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-[10px]">{SITE_TYPE_LABELS[s.site_type] || s.site_type}</Badge>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSiteDialog({ open: true, site: s })}>
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
+                  </Card>
+                </Link>
               ))}
             </div>
           )}
