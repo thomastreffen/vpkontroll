@@ -82,7 +82,7 @@ export default function RessursplanleggerPage() {
     setLoading(true);
     const { data: eventsData } = await supabase
       .from("events")
-      .select("*, job:jobs(id, job_number, title, status, job_type, company_id), service_visit:service_visits(id, status, scheduled_date, agreement_id), site:customer_sites(id, name, address, city)")
+      .select("*, job:jobs(id, job_number, title, status, job_type, company_id), service_visit:service_visits(id, status, scheduled_date, agreement_id, report_data), site:customer_sites(id, name, address, city)")
       .eq("tenant_id", tenantId)
       .is("deleted_at", null)
       .gte("start_time", weekStart.toISOString())
