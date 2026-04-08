@@ -126,6 +126,7 @@ export function AgreementFormDialog({
         asset_id: form.asset_id || null,
         next_visit_due: form.start_date || null,
         custom_interval_months: form.interval === "custom" ? parseInt(form.custom_interval_months) || null : null,
+        service_template_id: form.service_template_id || null,
       };
       if (isEdit) {
         const { error } = await supabase.from("service_agreements").update(payload).eq("id", agreement.id);
