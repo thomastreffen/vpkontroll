@@ -35,7 +35,7 @@ const CONDITION_LABELS: Record<number, { label: string; color: string }> = {
   5: { label: "Utmerket", color: "text-emerald-700" },
 };
 
-export function DynamicFormRenderer({ fields, values, onChange, readonly = false }: DynamicFormRendererProps) {
+export function DynamicFormRenderer({ fields, values, onChange = () => {}, readonly = false }: DynamicFormRendererProps) {
   const sorted = [...fields].sort((a, b) => a.sort_order - b.sort_order);
 
   const getKey = (f: TemplateField) => f.field_key || f.id;
