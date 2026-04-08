@@ -43,7 +43,7 @@ export function DocumentUploadSection({ documents, entityType, entityId, queryKe
 
       const fkMap = { job: "job_id", asset: "asset_id", warranty: "warranty_case_id" } as const;
       const fkCol = fkMap[entityType];
-      const { error: dbErr } = await supabase.from("documents").insert({
+      const docPayload: any = {
         tenant_id: tenantId,
         [fkCol]: entityId,
         category,
@@ -52,7 +52,8 @@ export function DocumentUploadSection({ documents, entityType, entityId, queryKe
         file_size_bytes: file.size,
         mime_type: file.type || null,
         uploaded_by: user?.id || null,
-      });
+      };
+      const { error: dbErr } = await supabase.from("documents").insert(docPayload);
       if (dbErr) throw dbErr;
     },
     onSuccess: () => {

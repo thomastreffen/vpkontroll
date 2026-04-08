@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Plug, LogOut, Flame, Puzzle, Users, Mail,
   CalendarDays, Menu, Search, Bell, Contact,
-  Building2, TrendingUp, Shield,
+  Building2, TrendingUp, Shield, Briefcase, Cpu, FileText, ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -32,6 +32,10 @@ const navSections: { label: string; items: NavItem[] }[] = [
       { label: "Kontakter", href: "/tenant/crm/contacts", icon: Contact, module: "crm" },
       { label: "Bedrifter", href: "/tenant/crm/companies", icon: Building2, module: "crm" },
       { label: "Deals", href: "/tenant/crm/deals", icon: TrendingUp, module: "crm" },
+      { label: "Jobber", href: "/tenant/crm/jobs", icon: Briefcase, module: "crm" },
+      { label: "Anlegg", href: "/tenant/crm/assets", icon: Cpu, module: "crm" },
+      { label: "Serviceavtaler", href: "/tenant/crm/agreements", icon: FileText, module: "crm" },
+      { label: "Garantisaker", href: "/tenant/crm/warranties", icon: ShieldAlert, module: "crm" },
     ],
   },
   {

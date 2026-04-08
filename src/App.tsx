@@ -32,6 +32,10 @@ import AssetDetailPage from "@/pages/tenant/AssetDetailPage";
 import JobDetailPage from "@/pages/tenant/JobDetailPage";
 import AgreementDetailPage from "@/pages/tenant/AgreementDetailPage";
 import WarrantyDetailPage from "@/pages/tenant/WarrantyDetailPage";
+import JobsListPage from "@/pages/tenant/JobsListPage";
+import AssetsListPage from "@/pages/tenant/AssetsListPage";
+import AgreementsListPage from "@/pages/tenant/AgreementsListPage";
+import WarrantyListPage from "@/pages/tenant/WarrantyListPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -91,6 +95,10 @@ function AppRoutes() {
       <Route path="/tenant/crm/contacts" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><CrmContactsPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/crm/companies" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><CrmCompaniesPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/crm/deals" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><CrmDealsPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/crm/jobs" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><JobsListPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/crm/assets" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><AssetsListPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/crm/agreements" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><AgreementsListPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/crm/warranties" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><WarrantyListPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/crm/companies/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><CompanyDetailPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/crm/assets/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><AssetDetailPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/crm/jobs/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><JobDetailPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
