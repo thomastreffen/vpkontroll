@@ -46,6 +46,22 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
 
 export const PIPELINE_STAGES = DEAL_STAGE_ORDER.filter(s => s !== "won" && s !== "lost");
 
+export const QUOTE_STATUS_LABELS: Record<string, string> = {
+  draft: "Utkast",
+  sent: "Sendt",
+  accepted: "Akseptert",
+  rejected: "Avslått",
+  expired: "Utløpt",
+};
+
+export const QUOTE_STATUS_COLORS: Record<string, string> = {
+  draft: "bg-muted text-muted-foreground",
+  sent: "bg-blue-500/10 text-blue-600",
+  accepted: "bg-emerald-500/10 text-emerald-600",
+  rejected: "bg-destructive/10 text-destructive",
+  expired: "bg-amber-500/10 text-amber-600",
+};
+
 export function formatCurrency(value: number | null | undefined, currency = "NOK"): string {
   if (value == null) return "–";
   return new Intl.NumberFormat("nb-NO", { style: "currency", currency, maximumFractionDigits: 0 }).format(value);
