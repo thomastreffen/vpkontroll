@@ -514,11 +514,47 @@ export default function AgreementDetailPage() {
                 })()}
               </div>
 
-              {reportMode === "edit" ? (
+              {dynamicFormMode === "edit" && templateFields.data ? (
+                <div className="space-y-4">
+                  <DynamicFormRenderer
+                    fields={templateFields.data}
+                    values={dynamicFormValues}
+                    onChange={(key, val) => setDynamicFormValues(prev => ({ ...prev, [key]: val }))}
+                  />
+                  <div className="flex justify-end gap-2 pt-2 border-t">
+                    <Button variant="outline" onClick={() => setDynamicFormMode(null)}>Avbryt</Button>
+                    <Button
+                      onClick={async () => {
+                        setSavingDynamicForm(true);
+                        const payload = {
+                          schema_version: 1,
+                          template_id: serviceTemplateId,
+                          template_key: "",
+                          values: dynamicFormValues,
+                        };
+                        const { error } = await supabase.from("service_visits").update({
+                          report_data: payload as any,
+                        }).eq("id", visitDetailOpen.id);
+                        setSavingDynamicForm(false);
+                        if (error) { toast.error("Kunne ikke lagre skjema"); return; }
+                        toast.success("Skjema lagret");
+                        setDynamicFormMode("view");
+                        setVisitDetailOpen({ ...visitDetailOpen, report_data: payload });
+                        visits.refetch();
+                      }}
+                      disabled={savingDynamicForm}
+                      className="gap-1.5"
+                    >
+                      {savingDynamicForm && <Loader2 className="h-4 w-4 animate-spin" />}
+                      <Save className="h-4 w-4" />Lagre skjema
+                    </Button>
+                  </div>
+                </div>
+              ) : reportMode === "edit" ? (
                 <ServiceReportForm
                   initialData={(() => {
                     const rd = visitDetailOpen.report_data as ServiceReportData | null;
-                    if (rd && rd.schema_version === 1) return rd;
+                    if (rd && rd.schema_version === 1 && !(rd as any).template_id) return rd;
                     return createDefaultReport({
                       customerName: company.data?.name || "",
                       siteAddress: site.data ? [site.data.address, site.data.postal_code, site.data.city].filter(Boolean).join(", ") : "",
@@ -552,6 +588,19 @@ export default function AgreementDetailPage() {
                 />
               ) : (() => {
                 const rd = visitDetailOpen.report_data as ServiceReportData | null;
+                const hasDynamicData = rd && rd.schema_version === 1 && (rd as any).template_id;
+                if (hasDynamicData && templateFields.data) {
+                  return (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-3">Utfylt skjema</p>
+                      <DynamicFormRenderer
+                        fields={templateFields.data}
+                        values={(rd as any).values || {}}
+                        readonly
+                      />
+                    </div>
+                  );
+                }
                 if (rd && rd.schema_version === 1) {
                   return <ServiceReportView data={rd} />;
                 }
