@@ -1436,6 +1436,7 @@ export type Database = {
           next_visit_due: string | null
           notes: string | null
           scope_description: string | null
+          service_template_id: string | null
           site_id: string | null
           start_date: string
           status: Database["public"]["Enums"]["agreement_status"]
@@ -1457,6 +1458,7 @@ export type Database = {
           next_visit_due?: string | null
           notes?: string | null
           scope_description?: string | null
+          service_template_id?: string | null
           site_id?: string | null
           start_date: string
           status?: Database["public"]["Enums"]["agreement_status"]
@@ -1478,6 +1480,7 @@ export type Database = {
           next_visit_due?: string | null
           notes?: string | null
           scope_description?: string | null
+          service_template_id?: string | null
           site_id?: string | null
           start_date?: string
           status?: Database["public"]["Enums"]["agreement_status"]
@@ -1498,6 +1501,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "crm_companies"
             referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "service_agreements_service_template_id_fkey"
+            columns: ["service_template_id"]
+            isOneToOne: false
+            referencedRelation: "service_templates"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "service_agreements_site_fk"
@@ -1553,6 +1563,95 @@ export type Database = {
           visits_created?: number
         }
         Relationships: []
+      }
+      service_template_fields: {
+        Row: {
+          created_at: string
+          field_type: string
+          id: string
+          label: string
+          sort_order: number
+          template_id: string
+          tenant_id: string
+          unit: string | null
+        }
+        Insert: {
+          created_at?: string
+          field_type?: string
+          id?: string
+          label: string
+          sort_order?: number
+          template_id: string
+          tenant_id: string
+          unit?: string | null
+        }
+        Update: {
+          created_at?: string
+          field_type?: string
+          id?: string
+          label?: string
+          sort_order?: number
+          template_id?: string
+          tenant_id?: string
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_template_fields_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "service_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_template_fields_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_templates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       service_visits: {
         Row: {
