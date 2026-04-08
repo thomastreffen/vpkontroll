@@ -56,6 +56,7 @@ export default function JobDetailPage() {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [savingForm, setSavingForm] = useState(false);
   const [markCompleted, setMarkCompleted] = useState(false);
+  const [formSignoff, setFormSignoff] = useState<SignoffData>({ ...DEFAULT_SIGNOFF });
 
   useEffect(() => {
     if (!id || !tenantId) return;
