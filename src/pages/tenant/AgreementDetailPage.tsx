@@ -25,6 +25,7 @@ import { ServiceReportForm } from "@/components/service/ServiceReportForm";
 import { ServiceReportView } from "@/components/service/ServiceReportView";
 import { createDefaultReport, ServiceReportData } from "@/lib/service-report-schema";
 import { ENERGY_SOURCE_LABELS } from "@/lib/domain-labels";
+import { DynamicFormRenderer, type TemplateField } from "@/components/service/DynamicFormRenderer";
 import {
   AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS,
   AGREEMENT_INTERVAL_LABELS,
