@@ -24,6 +24,26 @@ export function useAgreementDetail(agreementId: string | undefined) {
     enabled: !!agreement.data?.company_id,
   });
 
+  const site = useQuery({
+    queryKey: ["agreement-site", agreement.data?.site_id],
+    queryFn: async () => {
+      if (!agreement.data?.site_id) return null;
+      const { data } = await supabase.from("customer_sites").select("*").eq("id", agreement.data.site_id).single();
+      return data;
+    },
+    enabled: !!agreement.data?.site_id,
+  });
+
+  const asset = useQuery({
+    queryKey: ["agreement-asset", agreement.data?.asset_id],
+    queryFn: async () => {
+      if (!agreement.data?.asset_id) return null;
+      const { data } = await supabase.from("hvac_assets").select("*").eq("id", agreement.data.asset_id).single();
+      return data;
+    },
+    enabled: !!agreement.data?.asset_id,
+  });
+
   const visits = useQuery({
     queryKey: ["agreement-visits", agreementId],
     queryFn: async () => {
@@ -46,5 +66,18 @@ export function useAgreementDetail(agreementId: string | undefined) {
     enabled: !!visits.data,
   });
 
-  return { agreement, company, visits, jobs };
+  const generationRuns = useQuery({
+    queryKey: ["agreement-generation-runs", tenantId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("service_generation_runs")
+        .select("*")
+        .order("started_at", { ascending: false })
+        .limit(5);
+      return data || [];
+    },
+    enabled: !!tenantId,
+  });
+
+  return { agreement, company, site, asset, visits, jobs, generationRuns };
 }
