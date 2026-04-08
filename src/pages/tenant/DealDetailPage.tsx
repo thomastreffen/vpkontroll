@@ -668,30 +668,84 @@ export default function DealDetailPage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Kunde */}
         <Card className="p-4">
           <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" />Kunde</p>
           {company ? (
-            <Link to={`/tenant/crm/companies/${company.id}`} className="text-sm font-medium hover:underline">{company.name}</Link>
-          ) : <span className="text-sm text-muted-foreground">Ikke tilknyttet</span>}
+            <div className="flex items-center justify-between">
+              <Link to={`/tenant/crm/companies/${company.id}`} className="text-sm font-medium hover:underline">{company.name}</Link>
+              <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]" onClick={() => setPickerOpen({ type: "company", open: true })}>Bytt</Button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground italic">Ikke tilknyttet</p>
+              <div className="flex gap-1.5">
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setPickerOpen({ type: "company", open: true })}>
+                  <Search className="h-3 w-3" />Velg
+                </Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { setNewCompanyForm({ name: "", customer_type: "private", phone: "", email: "" }); setCreateCompanyOpen(true); }}>
+                  <Plus className="h-3 w-3" />Ny
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
+
+        {/* Kontaktperson */}
         <Card className="p-4">
           <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5"><Contact className="h-3.5 w-3.5" />Kontaktperson</p>
           {contact ? (
             <div>
-              <Link to={`/tenant/crm/contacts/${contact.id}`} className="text-sm font-medium hover:underline">{contact.first_name} {contact.last_name || ""}</Link>
+              <div className="flex items-center justify-between">
+                <Link to={`/tenant/crm/contacts/${contact.id}`} className="text-sm font-medium hover:underline">{contact.first_name} {contact.last_name || ""}</Link>
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]" onClick={() => setPickerOpen({ type: "contact", open: true })}>Bytt</Button>
+              </div>
               {contact.email && <p className="text-xs text-muted-foreground mt-0.5">{contact.email}</p>}
               {contact.phone && <p className="text-xs text-muted-foreground">{contact.phone}</p>}
             </div>
-          ) : <span className="text-sm text-muted-foreground">Ikke tilknyttet</span>}
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground italic">Ikke tilknyttet</p>
+              <div className="flex gap-1.5">
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setPickerOpen({ type: "contact", open: true })}>
+                  <Search className="h-3 w-3" />Velg
+                </Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { setNewContactForm({ first_name: "", last_name: "", email: "", phone: "" }); setCreateContactOpen(true); }}>
+                  <Plus className="h-3 w-3" />Ny
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
+
+        {/* Anleggssted */}
         <Card className="p-4">
           <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />Anleggssted</p>
           {site ? (
             <div>
-              <Link to={`/tenant/crm/sites/${site.id}`} className="text-sm font-medium hover:underline">{site.name || site.address}</Link>
+              <div className="flex items-center justify-between">
+                <Link to={`/tenant/crm/sites/${site.id}`} className="text-sm font-medium hover:underline">{site.name || site.address}</Link>
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]" onClick={() => setPickerOpen({ type: "site", open: true })}>Bytt</Button>
+              </div>
               {site.address && <p className="text-xs text-muted-foreground mt-0.5">{site.address}, {site.postal_code} {site.city}</p>}
             </div>
-          ) : <span className="text-sm text-muted-foreground">Ikke tilknyttet</span>}
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground italic">Ikke tilknyttet</p>
+              <div className="flex gap-1.5">
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setPickerOpen({ type: "site", open: true })}>
+                  <Search className="h-3 w-3" />Velg
+                </Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { setNewSiteForm({ name: "", address: "", postal_code: "", city: "", site_type: "residential" }); setCreateSiteOpen(true); }}
+                  disabled={!deal.company_id}
+                  title={!deal.company_id ? "Koble en kunde først" : undefined}
+                >
+                  <Plus className="h-3 w-3" />Ny
+                </Button>
+              </div>
+              {!deal.company_id && <p className="text-[10px] text-muted-foreground/70">Koble en kunde først for å opprette sted</p>}
+            </div>
+          )}
         </Card>
       </div>
 
