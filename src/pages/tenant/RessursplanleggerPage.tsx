@@ -437,8 +437,34 @@ export default function RessursplanleggerPage() {
                 </div>
               )}
 
-              <div className="flex gap-2 pt-2">
+              <div className="flex gap-2 pt-2 flex-wrap">
                 <Button variant="outline" size="sm" onClick={() => { openEditEvent(detailEvent); setDetailEvent(null); }}>Rediger</Button>
+                {/* Form CTAs */}
+                {detailEvent.service_visit_id && detailEvent.service_visit && (
+                  detailEvent.service_visit.report_data?.schema_version === 1 ? (
+                    <Link to={`/tenant/crm/agreements/${detailEvent.service_visit.agreement_id}`}>
+                      <Button variant="outline" size="sm" className="gap-1.5">
+                        <Eye className="h-3 w-3" />Se skjema
+                      </Button>
+                    </Link>
+                  ) : detailEvent.service_visit.agreement_id ? (
+                    <Link to={`/tenant/crm/agreements/${detailEvent.service_visit.agreement_id}`}>
+                      <Button size="sm" className="gap-1.5">
+                        <ClipboardList className="h-3 w-3" />Fyll ut skjema
+                      </Button>
+                    </Link>
+                  ) : null
+                )}
+                {detailEvent.job_id && detailEvent.job && (
+                  (detailEvent.job.job_type === "installation" || detailEvent.job.job_type === "service") && (
+                    <Link to={`/tenant/crm/jobs/${detailEvent.job.id}`}>
+                      <Button variant="outline" size="sm" className="gap-1.5">
+                        <ClipboardList className="h-3 w-3" />
+                        {detailEvent.job.form_data?.schema_version === 1 ? "Se skjema" : "Fyll ut skjema"}
+                      </Button>
+                    </Link>
+                  )
+                )}
               </div>
             </div>
           )}
