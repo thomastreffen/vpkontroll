@@ -73,6 +73,22 @@ export function EntityPickerDialog({
           label: c.name,
           sub: [c.org_number, c.city].filter(Boolean).join(" · "),
         }));
+      } else if (entityType === "contact") {
+        let query = supabase
+          .from("crm_contacts")
+          .select("id, first_name, last_name, email, company_id")
+          .eq("tenant_id", tenantId)
+          .is("deleted_at", null)
+          .order("first_name")
+          .limit(50);
+        if (companyId) query = query.eq("company_id", companyId);
+        if (q) query = query.or(`first_name.ilike.${lq},last_name.ilike.${lq},email.ilike.${lq}`);
+        const { data } = await query;
+        items = (data || []).map((c) => ({
+          id: c.id,
+          label: [c.first_name, c.last_name].filter(Boolean).join(" "),
+          sub: c.email || "",
+        }));
       } else if (entityType === "site") {
         let query = supabase
           .from("customer_sites")
