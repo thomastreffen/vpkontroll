@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import {
   Loader2, ArrowLeft, Info, CalendarDays, Wrench, Building2, MapPin,
   Zap, Plus, CheckCircle2, Clock, AlertTriangle, Settings2, Pencil,
-  RefreshCw, ArrowRight, FileText, Eye, Paperclip,
+  RefreshCw, ArrowRight, FileText, Eye, Paperclip, ClipboardCheck,
 } from "lucide-react";
 import { ScheduleEventDialog } from "@/components/crud/ScheduleEventDialog";
 import { AgreementFormDialog } from "@/components/crud/AgreementFormDialog";
