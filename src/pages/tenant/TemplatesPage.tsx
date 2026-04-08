@@ -2,13 +2,16 @@ import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { setAsDefault, clearDefault } from "@/hooks/useDefaultTemplate";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ClipboardList, Plus, Loader2, Pencil, ToggleLeft, ToggleRight } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ClipboardList, Plus, Loader2, Pencil, ToggleLeft, ToggleRight, MoreHorizontal, Copy, Star, StarOff } from "lucide-react";
 import { formatDate } from "@/lib/domain-labels";
+import { USE_CONTEXT_LABELS } from "@/lib/template-presets";
 
 const CATEGORY_LABELS: Record<string, string> = {
   service: "Service",
@@ -34,6 +37,7 @@ export default function TemplatesPage() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [contextFilter, setContextFilter] = useState("all");
 
   const fetchTemplates = useCallback(async () => {
     if (!tenantId) return;
@@ -44,10 +48,11 @@ export default function TemplatesPage() {
       .eq("tenant_id", tenantId)
       .order("name");
     if (categoryFilter !== "all") q = q.eq("category", categoryFilter);
+    if (contextFilter !== "all") q = q.eq("use_context", contextFilter);
     const { data } = await q;
     setTemplates(data || []);
     setLoading(false);
-  }, [tenantId, categoryFilter]);
+  }, [tenantId, categoryFilter, contextFilter]);
 
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
@@ -55,6 +60,47 @@ export default function TemplatesPage() {
     e.stopPropagation();
     await supabase.from("service_templates" as any).update({ is_active: !currentActive }).eq("id", id);
     toast.success(currentActive ? "Mal deaktivert" : "Mal aktivert");
+    fetchTemplates();
+  };
+
+  const handleSetDefault = async (e: React.MouseEvent, t: any) => {
+    e.stopPropagation();
+    if (!tenantId || !t.use_context) {
+      toast.error("Malen mangler brukskontekst – sett den først i malbyggeren");
+      return;
+    }
+    await setAsDefault(t.id, t.use_context, tenantId);
+    toast.success(`Satt som standard for ${USE_CONTEXT_LABELS[t.use_context] || t.use_context}`);
+    fetchTemplates();
+  };
+
+  const handleClearDefault = async (e: React.MouseEvent, t: any) => {
+    e.stopPropagation();
+    await clearDefault(t.id);
+    toast.success("Standardmal fjernet");
+    fetchTemplates();
+  };
+
+  const handleDuplicate = async (e: React.MouseEvent, t: any) => {
+    e.stopPropagation();
+    if (!tenantId) return;
+    const { data, error } = await (supabase.from("service_templates" as any).insert({
+      tenant_id: tenantId, name: t.name + " (kopi)", description: t.description,
+      category: t.category, template_key: (t.template_key || "") + "_copy",
+      use_context: t.use_context, is_active: false,
+    }).select("id").single() as any);
+    if (error) { toast.error("Kunne ikke duplisere"); return; }
+    // Copy fields
+    const { data: fields } = await supabase.from("service_template_fields" as any).select("*").eq("template_id", t.id).order("sort_order");
+    if (fields && fields.length > 0) {
+      const rows = (fields as any[]).map(f => ({
+        template_id: data.id, tenant_id: tenantId, field_type: f.field_type,
+        field_key: f.field_key, label: f.label, unit: f.unit, help_text: f.help_text,
+        is_required: f.is_required, default_value: f.default_value, options: f.options, sort_order: f.sort_order,
+      }));
+      await supabase.from("service_template_fields" as any).insert(rows);
+    }
+    toast.success("Mal duplisert");
     fetchTemplates();
   };
 
@@ -78,6 +124,13 @@ export default function TemplatesPage() {
           <SelectContent>
             <SelectItem value="all">Alle kategorier</SelectItem>
             {Object.entries(CATEGORY_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={contextFilter} onValueChange={setContextFilter}>
+          <SelectTrigger className="w-[180px]"><SelectValue placeholder="Brukskontekst" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle kontekster</SelectItem>
+            {Object.entries(USE_CONTEXT_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -112,7 +165,7 @@ export default function TemplatesPage() {
               <TableRow>
                 <TableHead>Navn</TableHead>
                 <TableHead>Kategori</TableHead>
-                <TableHead>Beskrivelse</TableHead>
+                <TableHead>Brukes til</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Opprettet</TableHead>
                 <TableHead className="w-20"></TableHead>
@@ -121,13 +174,30 @@ export default function TemplatesPage() {
             <TableBody>
               {templates.map((t: any) => (
                 <TableRow key={t.id} className="cursor-pointer" onClick={() => navigate(`/tenant/templates/${t.id}`)}>
-                  <TableCell className="font-medium">{t.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      {t.name}
+                      {t.is_default && (
+                        <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 text-[10px] gap-1">
+                          <Star className="h-2.5 w-2.5" />Standard
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <Badge variant="secondary" className={CATEGORY_COLORS[t.category] || ""}>
                       {CATEGORY_LABELS[t.category] || t.category}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground max-w-[250px] truncate">{t.description || "–"}</TableCell>
+                  <TableCell>
+                    {t.use_context ? (
+                      <Badge variant="outline" className="text-[10px]">
+                        {USE_CONTEXT_LABELS[t.use_context] || t.use_context}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">–</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge variant="secondary" className={t.is_active ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"}>
                       {t.is_active ? "Aktiv" : "Inaktiv"}
@@ -135,14 +205,34 @@ export default function TemplatesPage() {
                   </TableCell>
                   <TableCell className="text-sm">{formatDate(t.created_at)}</TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={e => { e.stopPropagation(); navigate(`/tenant/templates/${t.id}`); }}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={e => toggleActive(e, t.id, t.is_active)}>
-                        {t.is_active ? <ToggleRight className="h-3.5 w-3.5" /> : <ToggleLeft className="h-3.5 w-3.5" />}
-                      </Button>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-3.5 w-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" onClick={e => e.stopPropagation()}>
+                        <DropdownMenuItem onClick={e => { e.stopPropagation(); navigate(`/tenant/templates/${t.id}`); }}>
+                          <Pencil className="h-3.5 w-3.5 mr-2" />Åpne
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={e => handleDuplicate(e, t)}>
+                          <Copy className="h-3.5 w-3.5 mr-2" />Dupliser
+                        </DropdownMenuItem>
+                        {t.is_default ? (
+                          <DropdownMenuItem onClick={e => handleClearDefault(e, t)}>
+                            <StarOff className="h-3.5 w-3.5 mr-2" />Fjern som standard
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem onClick={e => handleSetDefault(e, t)}>
+                            <Star className="h-3.5 w-3.5 mr-2" />Sett som standard
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onClick={e => toggleActive(e, t.id, t.is_active)}>
+                          {t.is_active ? <ToggleLeft className="h-3.5 w-3.5 mr-2" /> : <ToggleRight className="h-3.5 w-3.5 mr-2" />}
+                          {t.is_active ? "Deaktiver" : "Aktiver"}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
