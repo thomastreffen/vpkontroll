@@ -1294,6 +1294,141 @@ export default function DealDetailPage() {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      {/* ── Entity picker dialog ────────────────────────────────── */}
+      <EntityPickerDialog
+        open={pickerOpen.open}
+        onOpenChange={(open) => setPickerOpen(p => ({ ...p, open }))}
+        entityType={pickerOpen.type}
+        onSelect={(id) => handlePickerSelect(pickerOpen.type, id)}
+        companyId={deal?.company_id || undefined}
+      />
+
+      {/* ── Quick create company sheet ──────────────────────────── */}
+      <Sheet open={createCompanyOpen} onOpenChange={setCreateCompanyOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader><SheetTitle>Ny kunde</SheetTitle></SheetHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-1.5">
+              <Label>Navn *</Label>
+              <Input value={newCompanyForm.name} onChange={e => setNewCompanyForm(f => ({ ...f, name: e.target.value }))} placeholder="Kunde- eller bedriftsnavn" autoFocus />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Kundetype</Label>
+              <Select value={newCompanyForm.customer_type} onValueChange={v => setNewCompanyForm(f => ({ ...f, customer_type: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="private">Privat</SelectItem>
+                  <SelectItem value="business">Bedriftskunde</SelectItem>
+                  <SelectItem value="housing_coop">Borettslag</SelectItem>
+                  <SelectItem value="public_sector">Offentlig</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Telefon</Label>
+                <Input value={newCompanyForm.phone} onChange={e => setNewCompanyForm(f => ({ ...f, phone: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>E-post</Label>
+                <Input value={newCompanyForm.email} onChange={e => setNewCompanyForm(f => ({ ...f, email: e.target.value }))} />
+              </div>
+            </div>
+          </div>
+          <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setCreateCompanyOpen(false)}>Avbryt</Button>
+            <Button onClick={createAndLinkCompany} disabled={linkSaving || !newCompanyForm.name.trim()}>
+              {linkSaving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Opprett og koble
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Quick create contact sheet ──────────────────────────── */}
+      <Sheet open={createContactOpen} onOpenChange={setCreateContactOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader><SheetTitle>Ny kontaktperson</SheetTitle></SheetHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Fornavn *</Label>
+                <Input value={newContactForm.first_name} onChange={e => setNewContactForm(f => ({ ...f, first_name: e.target.value }))} autoFocus />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Etternavn</Label>
+                <Input value={newContactForm.last_name} onChange={e => setNewContactForm(f => ({ ...f, last_name: e.target.value }))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>E-post</Label>
+                <Input value={newContactForm.email} onChange={e => setNewContactForm(f => ({ ...f, email: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Telefon</Label>
+                <Input value={newContactForm.phone} onChange={e => setNewContactForm(f => ({ ...f, phone: e.target.value }))} />
+              </div>
+            </div>
+            {deal?.company_id && company && (
+              <p className="text-xs text-muted-foreground">Kobles automatisk til {company.name}</p>
+            )}
+          </div>
+          <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setCreateContactOpen(false)}>Avbryt</Button>
+            <Button onClick={createAndLinkContact} disabled={linkSaving || !newContactForm.first_name.trim()}>
+              {linkSaving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Opprett og koble
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Quick create site sheet ─────────────────────────────── */}
+      <Sheet open={createSiteOpen} onOpenChange={setCreateSiteOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader><SheetTitle>Nytt anleggssted</SheetTitle></SheetHeader>
+          <div className="space-y-4 py-4">
+            {company && (
+              <p className="text-xs text-muted-foreground">Kobles til {company.name}</p>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Navn</Label>
+                <Input value={newSiteForm.name} onChange={e => setNewSiteForm(f => ({ ...f, name: e.target.value }))} placeholder="F.eks. Bolig" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Type</Label>
+                <Select value={newSiteForm.site_type} onValueChange={v => setNewSiteForm(f => ({ ...f, site_type: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(SITE_TYPE_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Adresse *</Label>
+              <Input value={newSiteForm.address} onChange={e => setNewSiteForm(f => ({ ...f, address: e.target.value }))} autoFocus />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Postnummer</Label>
+                <Input value={newSiteForm.postal_code} onChange={e => setNewSiteForm(f => ({ ...f, postal_code: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Sted</Label>
+                <Input value={newSiteForm.city} onChange={e => setNewSiteForm(f => ({ ...f, city: e.target.value }))} />
+              </div>
+            </div>
+          </div>
+          <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setCreateSiteOpen(false)}>Avbryt</Button>
+            <Button onClick={createAndLinkSite} disabled={linkSaving || !newSiteForm.address.trim()}>
+              {linkSaving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Opprett og koble
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
