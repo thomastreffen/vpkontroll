@@ -22,6 +22,7 @@ import { SiteFormDialog } from "@/components/crud/SiteFormDialog";
 import { AssetFormDialog } from "@/components/crud/AssetFormDialog";
 import { AgreementFormDialog } from "@/components/crud/AgreementFormDialog";
 import { WarrantyFormDialog } from "@/components/crud/WarrantyFormDialog";
+import { CompanyEditDialog } from "@/components/crud/CompanyEditDialog";
 
 export default function CompanyDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -31,6 +32,7 @@ export default function CompanyDetailPage() {
   const [assetDialog, setAssetDialog] = useState<{ open: boolean; asset?: any }>({ open: false });
   const [agreementDialog, setAgreementDialog] = useState<{ open: boolean; agreement?: any }>({ open: false });
   const [warrantyDialog, setWarrantyDialog] = useState(false);
+  const [editCompanyOpen, setEditCompanyOpen] = useState(false);
 
   if (company.isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -68,6 +70,9 @@ export default function CompanyDetailPage() {
             {c.phone && <span className="flex items-center gap-1.5 text-muted-foreground"><Phone className="h-3.5 w-3.5" />{c.phone}</span>}
           </div>
         </div>
+        <Button variant="outline" size="sm" onClick={() => setEditCompanyOpen(true)} className="gap-1.5">
+          <Pencil className="h-3.5 w-3.5" />Rediger
+        </Button>
       </div>
 
       {/* Tabs */}
@@ -161,15 +166,17 @@ export default function CompanyDetailPage() {
           {deals.data?.length === 0 ? <EmptyState text="Ingen deals" /> : (
             <div className="grid gap-3">
               {deals.data?.map(d => (
-                <Card key={d.id} className="p-4 flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-sm">{d.title}</p>
-                    <p className="text-xs text-muted-foreground">{formatCurrency(d.value as number | null)} · {formatDate(d.expected_close_date)}</p>
-                  </div>
-                  <Badge className={`text-[10px] ${DEAL_STAGE_COLORS[d.stage as keyof typeof DEAL_STAGE_COLORS] || ""}`}>
-                    {DEAL_STAGE_LABELS[d.stage as keyof typeof DEAL_STAGE_LABELS] || d.stage}
-                  </Badge>
-                </Card>
+                <Link key={d.id} to={`/tenant/crm/deals/${d.id}`}>
+                  <Card className="p-4 flex items-center justify-between hover:shadow-md transition-shadow">
+                    <div>
+                      <p className="font-medium text-sm">{d.title}</p>
+                      <p className="text-xs text-muted-foreground">{formatCurrency(d.value as number | null)} · {formatDate(d.expected_close_date)}</p>
+                    </div>
+                    <Badge className={`text-[10px] ${DEAL_STAGE_COLORS[d.stage as keyof typeof DEAL_STAGE_COLORS] || ""}`}>
+                      {DEAL_STAGE_LABELS[d.stage as keyof typeof DEAL_STAGE_LABELS] || d.stage}
+                    </Badge>
+                  </Card>
+                </Link>
               ))}
             </div>
           )}
@@ -259,6 +266,12 @@ export default function CompanyDetailPage() {
         onOpenChange={setWarrantyDialog}
         companyId={id!}
         assets={assets.data?.map(a => ({ id: a.id, manufacturer: a.manufacturer, model: a.model })) || []}
+      />
+      <CompanyEditDialog
+        open={editCompanyOpen}
+        onOpenChange={setEditCompanyOpen}
+        company={c}
+        onSaved={() => company.refetch()}
       />
     </div>
   );

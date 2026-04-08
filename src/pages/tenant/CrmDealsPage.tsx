@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ type Company = { id: string; name: string };
 type Contact = { id: string; first_name: string; last_name: string | null; company_id: string | null };
 
 export default function CrmDealsPage() {
+  const navigate = useNavigate();
   const { tenantId, user } = useAuth();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -183,7 +185,7 @@ export default function CrmDealsPage() {
                 </div>
                 <div className="space-y-2 min-h-[100px] bg-muted/30 rounded-lg p-2">
                   {ds.map((d) => (
-                    <Card key={d.id} className="p-3 cursor-pointer hover:shadow-md transition-shadow" onClick={() => openEdit(d)}>
+                    <Card key={d.id} className="p-3 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/tenant/crm/deals/${d.id}`)}>
                       <p className="text-sm font-medium truncate">{d.title}</p>
                       {d.company_name && (
                         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
@@ -223,7 +225,7 @@ export default function CrmDealsPage() {
               </thead>
               <tbody>
                 {deals.map((d) => (
-                  <tr key={d.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => openEdit(d)}>
+                  <tr key={d.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => navigate(`/tenant/crm/deals/${d.id}`)}>
                     <td className="py-3 px-4">
                       <p className="font-medium">{d.title}</p>
                       {d.contact_name && <p className="text-xs text-muted-foreground">{d.contact_name}</p>}
@@ -258,7 +260,7 @@ export default function CrmDealsPage() {
               </div>
               <div className="space-y-2">
                 {stageDeals("won").map((d) => (
-                  <div key={d.id} className="flex items-center justify-between p-2 rounded bg-muted/30 cursor-pointer hover:bg-muted/50" onClick={() => openEdit(d)}>
+                   <div key={d.id} className="flex items-center justify-between p-2 rounded bg-muted/30 cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/tenant/crm/deals/${d.id}`)}>
                     <span className="text-sm">{d.title}</span>
                     <span className="text-sm font-medium text-[hsl(var(--crm-won))]">{formatCurrency(d.value)}</span>
                   </div>
@@ -274,7 +276,7 @@ export default function CrmDealsPage() {
               </div>
               <div className="space-y-2">
                 {stageDeals("lost").map((d) => (
-                  <div key={d.id} className="flex items-center justify-between p-2 rounded bg-muted/30 cursor-pointer hover:bg-muted/50" onClick={() => openEdit(d)}>
+                  <div key={d.id} className="flex items-center justify-between p-2 rounded bg-muted/30 cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/tenant/crm/deals/${d.id}`)}>
                     <span className="text-sm line-through text-muted-foreground">{d.title}</span>
                     <span className="text-sm text-muted-foreground">{formatCurrency(d.value)}</span>
                   </div>
