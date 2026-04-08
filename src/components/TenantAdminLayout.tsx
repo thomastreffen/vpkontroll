@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Plug, LogOut, Flame, Puzzle, Users, Mail,
   CalendarDays, Menu, Search, Bell, Contact,
-  Building2, TrendingUp, Shield,
+  Building2, TrendingUp, Shield, Briefcase, Cpu, FileText, ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
