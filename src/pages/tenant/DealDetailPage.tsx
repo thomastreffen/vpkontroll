@@ -1570,6 +1570,54 @@ export default function DealDetailPage() {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      {/* ── Inspection form sheet ────────────────────────────────── */}
+      <Sheet open={inspectionFormOpen} onOpenChange={setInspectionFormOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader><SheetTitle>{hasInspectionForm ? "Rediger befaringsskjema" : "Fyll ut befaringsskjema"}</SheetTitle></SheetHeader>
+          <div className="space-y-4 py-4">
+            {inspectionFields.data && inspectionFields.data.length > 0 ? (
+              <DynamicFormRenderer
+                fields={inspectionFields.data}
+                values={inspectionFormValues}
+                onChange={(key, val) => setInspectionFormValues(prev => ({ ...prev, [key]: val }))}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">Malen har ingen felter ennå.</p>
+            )}
+          </div>
+          <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setInspectionFormOpen(false)}>Avbryt</Button>
+            <Button
+              onClick={async () => {
+                if (!deal || !effectiveInspectionTemplateId) return;
+                setSavingInspection(true);
+                const template = (siteVisitTemplates.data || []).find((t: any) => t.id === effectiveInspectionTemplateId);
+                const payload = {
+                  schema_version: 1,
+                  template_id: effectiveInspectionTemplateId,
+                  template_key: template?.template_key || "",
+                  values: inspectionFormValues,
+                };
+                const { error } = await supabase.from("crm_deals").update({
+                  site_visit_data: payload,
+                  site_visit_template_id: effectiveInspectionTemplateId,
+                } as any).eq("id", deal.id);
+                setSavingInspection(false);
+                if (error) { toast.error("Kunne ikke lagre befaringsskjema"); return; }
+                toast.success("Befaringsskjema lagret");
+                setInspectionFormOpen(false);
+                fetchDeal();
+              }}
+              disabled={savingInspection}
+              className="gap-1.5"
+            >
+              {savingInspection && <Loader2 className="h-4 w-4 animate-spin" />}
+              <Save className="h-3.5 w-3.5" />Lagre
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
