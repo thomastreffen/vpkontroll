@@ -816,25 +816,106 @@ export default function DealDetailPage() {
           </div>
         </Card>
         <Card className="p-4">
-          <p className="text-xs font-medium text-muted-foreground mb-3 flex items-center gap-1.5"><Eye className="h-3.5 w-3.5" />Befaring</p>
-          {deal.site_visit_date || deal.site_visit_notes ? (
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Befaringsdato</span>
-                <span>{formatDate(deal.site_visit_date)}</span>
-              </div>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5"><Eye className="h-3.5 w-3.5" />Befaring</p>
+            {inspectionFormStatus === "filled" && (
+              <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-600">Skjema utfylt</Badge>
+            )}
+            {inspectionFormStatus === "started" && (
+              <Badge variant="secondary" className="text-[10px] bg-amber-500/10 text-amber-600">Påbegynt</Badge>
+            )}
+          </div>
+
+          {/* Date + notes */}
+          {(deal.site_visit_date || deal.site_visit_notes) && (
+            <div className="space-y-2 text-sm mb-3">
+              {deal.site_visit_date && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Befaringsdato</span>
+                  <span>{formatDate(deal.site_visit_date)}</span>
+                </div>
+              )}
               {deal.site_visit_notes && (
-                <div className="border-t pt-2 mt-2">
+                <div className="border-t pt-2">
                   <p className="text-xs text-muted-foreground font-medium mb-1">Notater</p>
                   <p className="text-sm whitespace-pre-wrap">{deal.site_visit_notes}</p>
                 </div>
               )}
             </div>
+          )}
+
+          {/* Template + form actions */}
+          {effectiveInspectionTemplateId ? (
+            <div className="space-y-2">
+              {hasInspectionForm ? (
+                <div className="space-y-2">
+                  <DynamicFormRenderer
+                    fields={inspectionFields.data || []}
+                    values={inspectionData?.values || {}}
+                    readonly
+                  />
+                  <div className="flex gap-2 pt-2 border-t">
+                    <Button size="sm" variant="outline" className="gap-1.5" onClick={() => {
+                      setInspectionFormValues(inspectionData?.values || {});
+                      setInspectionFormOpen(true);
+                    }}>
+                      <Pencil className="h-3 w-3" />Rediger skjema
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button size="sm" className="gap-1.5 w-full" onClick={() => {
+                  setInspectionFormValues({});
+                  setInspectionFormOpen(true);
+                }}>
+                  <ClipboardList className="h-3.5 w-3.5" />Fyll ut befaringsskjema
+                </Button>
+              )}
+              {/* Template selector */}
+              <div className="flex items-center gap-2 pt-1">
+                <Select
+                  value={dealTemplateId || effectiveInspectionTemplateId || ""}
+                  onValueChange={async (v) => {
+                    await supabase.from("crm_deals").update({ site_visit_template_id: v } as any).eq("id", deal.id);
+                    toast.success("Befaringsmal oppdatert");
+                    fetchDeal();
+                  }}
+                >
+                  <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Velg mal" /></SelectTrigger>
+                  <SelectContent>
+                    {(siteVisitTemplates.data || []).map((t: any) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}{t.is_default ? " (standard)" : ""}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           ) : (
-            <div className="text-sm text-muted-foreground">
-              <p>Ingen befaring registrert</p>
-              {!isClosed && (
-                <Button variant="link" size="sm" className="px-0 h-auto mt-1" onClick={openEdit}>
+            <div className="space-y-2 text-sm">
+              <p className="text-muted-foreground">Ingen befaringsmal valgt</p>
+              {(siteVisitTemplates.data || []).length > 0 ? (
+                <Select
+                  value=""
+                  onValueChange={async (v) => {
+                    await supabase.from("crm_deals").update({ site_visit_template_id: v } as any).eq("id", deal.id);
+                    toast.success("Befaringsmal valgt");
+                    fetchDeal();
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Velg befaringsmal..." /></SelectTrigger>
+                  <SelectContent>
+                    {(siteVisitTemplates.data || []).map((t: any) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Button variant="link" size="sm" className="px-0 h-auto" asChild>
+                  <Link to="/tenant/templates/new?category=befaring">Opprett befaringsmal →</Link>
+                </Button>
+              )}
+              {!deal.site_visit_date && !isClosed && (
+                <Button variant="link" size="sm" className="px-0 h-auto" onClick={openEdit}>
                   Registrer befaring →
                 </Button>
               )}
