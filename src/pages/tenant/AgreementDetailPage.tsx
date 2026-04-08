@@ -16,11 +16,15 @@ import { toast } from "sonner";
 import {
   Loader2, ArrowLeft, Info, CalendarDays, Wrench, Building2, MapPin,
   Zap, Plus, CheckCircle2, Clock, AlertTriangle, Settings2, Pencil,
-  RefreshCw, ArrowRight, FileText, Eye, Paperclip,
+  RefreshCw, ArrowRight, FileText, Eye, Paperclip, ClipboardCheck,
 } from "lucide-react";
 import { ScheduleEventDialog } from "@/components/crud/ScheduleEventDialog";
 import { AgreementFormDialog } from "@/components/crud/AgreementFormDialog";
 import { DocumentUploadSection } from "@/components/crud/DocumentUploadSection";
+import { ServiceReportForm } from "@/components/service/ServiceReportForm";
+import { ServiceReportView } from "@/components/service/ServiceReportView";
+import { createDefaultReport, ServiceReportData } from "@/lib/service-report-schema";
+import { ENERGY_SOURCE_LABELS } from "@/lib/domain-labels";
 import {
   AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS,
   AGREEMENT_INTERVAL_LABELS,
@@ -85,7 +89,7 @@ export default function AgreementDetailPage() {
   const [renewMonths, setRenewMonths] = useState("12");
   const [renewing, setRenewing] = useState(false);
   const [visitDetailOpen, setVisitDetailOpen] = useState<any>(null);
-
+  const [reportMode, setReportMode] = useState<"view" | "edit" | null>(null);
   // Fetch sites/assets for edit dialog
   const [editSites, setEditSites] = useState<any[]>([]);
   const [editAssets, setEditAssets] = useState<any[]>([]);
@@ -443,50 +447,91 @@ export default function AgreementDetailPage() {
       </Sheet>
 
       {/* Visit detail sheet */}
-      <Sheet open={!!visitDetailOpen} onOpenChange={o => { if (!o) setVisitDetailOpen(null); }}>
-        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+      <Sheet open={!!visitDetailOpen} onOpenChange={o => { if (!o) { setVisitDetailOpen(null); setReportMode(null); } }}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
           <SheetHeader><SheetTitle>Besøksdetaljer</SheetTitle></SheetHeader>
           {visitDetailOpen && (
             <div className="space-y-4 py-4">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">{VISIT_STATUS_LABELS[visitDetailOpen.status] || visitDetailOpen.status}</Badge>
-                <span className="text-sm font-medium">{formatDate(visitDetailOpen.scheduled_date)}</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">{VISIT_STATUS_LABELS[visitDetailOpen.status] || visitDetailOpen.status}</Badge>
+                  <span className="text-sm font-medium">{formatDate(visitDetailOpen.scheduled_date)}</span>
+                </div>
+                {(() => {
+                  const rd = visitDetailOpen.report_data as ServiceReportData | null;
+                  const hasReport = rd && rd.schema_version === 1;
+                  if (reportMode === "edit") return null;
+                  return (
+                    <Button
+                      size="sm"
+                      variant={hasReport ? "outline" : "default"}
+                      className="gap-1.5"
+                      onClick={() => setReportMode("edit")}
+                    >
+                      <ClipboardCheck className="h-3.5 w-3.5" />
+                      {hasReport ? "Rediger rapport" : "Fyll ut servicerapport"}
+                    </Button>
+                  );
+                })()}
               </div>
 
-              {visitDetailOpen.completed_at && (
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Fullført:</span> {formatDateTime(visitDetailOpen.completed_at)}
-                </div>
-              )}
-
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Funn</p>
-                  <p className="text-sm whitespace-pre-wrap">{visitDetailOpen.findings || "Ingen funn registrert"}</p>
-                </div>
-
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Tiltak utført</p>
-                  <p className="text-sm whitespace-pre-wrap">{visitDetailOpen.actions_taken || "Ingen tiltak registrert"}</p>
-                </div>
-
-                {visitDetailOpen.next_visit_recommended && (
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Anbefalt neste besøk</p>
-                    <p className="text-sm">{formatDate(visitDetailOpen.next_visit_recommended)}</p>
+              {reportMode === "edit" ? (
+                <ServiceReportForm
+                  initialData={(() => {
+                    const rd = visitDetailOpen.report_data as ServiceReportData | null;
+                    if (rd && rd.schema_version === 1) return rd;
+                    return createDefaultReport({
+                      customerName: company.data?.name || "",
+                      siteAddress: site.data ? [site.data.address, site.data.postal_code, site.data.city].filter(Boolean).join(", ") : "",
+                      manufacturer: asset.data?.manufacturer || "",
+                      model: asset.data?.model || "",
+                      serialNumber: asset.data?.serial_number || "",
+                      indoorModel: asset.data?.indoor_unit_model || "",
+                      energySource: asset.data ? (ENERGY_SOURCE_LABELS[asset.data.energy_source] || asset.data.energy_source) : "",
+                      technicianName: user?.email || "",
+                    });
+                  })()}
+                  onSave={async (reportData) => {
+                    const { error } = await supabase.from("service_visits").update({
+                      report_data: reportData as any,
+                      findings: reportData.findings_summary || visitDetailOpen.findings,
+                      actions_taken: reportData.actions_taken_summary || visitDetailOpen.actions_taken,
+                    }).eq("id", visitDetailOpen.id);
+                    if (error) { toast.error("Kunne ikke lagre rapport"); return; }
+                    toast.success("Servicerapport lagret");
+                    setReportMode("view");
+                    setVisitDetailOpen({ ...visitDetailOpen, report_data: reportData, findings: reportData.findings_summary, actions_taken: reportData.actions_taken_summary });
+                    visits.refetch();
+                  }}
+                  onCancel={() => setReportMode(null)}
+                />
+              ) : (() => {
+                const rd = visitDetailOpen.report_data as ServiceReportData | null;
+                if (rd && rd.schema_version === 1) {
+                  return <ServiceReportView data={rd} />;
+                }
+                return (
+                  <div className="space-y-3">
+                    {visitDetailOpen.completed_at && (
+                      <div className="text-sm"><span className="text-muted-foreground">Fullført:</span> {formatDateTime(visitDetailOpen.completed_at)}</div>
+                    )}
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Funn</p>
+                      <p className="text-sm whitespace-pre-wrap">{visitDetailOpen.findings || "Ingen funn registrert"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Tiltak utført</p>
+                      <p className="text-sm whitespace-pre-wrap">{visitDetailOpen.actions_taken || "Ingen tiltak registrert"}</p>
+                    </div>
+                    {visitDetailOpen.next_visit_recommended && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Anbefalt neste besøk</p>
+                        <p className="text-sm">{formatDate(visitDetailOpen.next_visit_recommended)}</p>
+                      </div>
+                    )}
                   </div>
-                )}
-
-                {/* Report data (structured measurements) */}
-                {visitDetailOpen.report_data && Object.keys(visitDetailOpen.report_data).length > 0 && (
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Målinger / skjemadata</p>
-                    <Card className="p-3 bg-muted/30">
-                      <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(visitDetailOpen.report_data, null, 2)}</pre>
-                    </Card>
-                  </div>
-                )}
-              </div>
+                );
+              })()}
 
               {/* Visit documents */}
               <div className="border-t pt-4">
