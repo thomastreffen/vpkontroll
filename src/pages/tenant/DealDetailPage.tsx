@@ -109,6 +109,56 @@ export default function DealDetailPage() {
   const [newSiteForm, setNewSiteForm] = useState({ name: "", address: "", postal_code: "", city: "", site_type: "residential" });
   const [linkSaving, setLinkSaving] = useState(false);
 
+  // Inspection form state
+  const [inspectionFormOpen, setInspectionFormOpen] = useState(false);
+  const [inspectionFormValues, setInspectionFormValues] = useState<Record<string, any>>({});
+  const [savingInspection, setSavingInspection] = useState(false);
+
+  // Fetch site_visit templates
+  const siteVisitTemplates = useQuery({
+    queryKey: ["site-visit-templates", tenantId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("service_templates")
+        .select("id, name, template_key, is_default, use_context")
+        .eq("tenant_id", tenantId!)
+        .eq("is_active", true)
+        .or("use_context.eq.site_visit,category.eq.befaring")
+        .order("name");
+      return (data as any[]) || [];
+    },
+    enabled: !!tenantId,
+  });
+
+  // Determine effective inspection template
+  const dealTemplateId = deal?.site_visit_template_id;
+  const defaultSiteVisitTemplate = siteVisitTemplates.data?.find((t: any) => t.is_default);
+  const effectiveInspectionTemplateId = dealTemplateId || defaultSiteVisitTemplate?.id || null;
+
+  // Fetch fields for the inspection template
+  const inspectionFields = useQuery({
+    queryKey: ["template-fields", effectiveInspectionTemplateId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("service_template_fields")
+        .select("*")
+        .eq("template_id", effectiveInspectionTemplateId!)
+        .order("sort_order");
+      return (data as TemplateField[]) || [];
+    },
+    enabled: !!effectiveInspectionTemplateId,
+  });
+
+  // Inspection form data from deal
+  const inspectionData = deal?.site_visit_data as any;
+  const hasInspectionForm = inspectionData?.schema_version === 1 && inspectionData?.template_id;
+  const inspectionFormStatus = !effectiveInspectionTemplateId
+    ? "no_template"
+    : hasInspectionForm
+      ? (Object.keys(inspectionData?.values || {}).length > 0 ? "filled" : "started")
+      : "not_started";
+  const [linkSaving, setLinkSaving] = useState(false);
+
   /* ─── Data fetching ─────────────────────────────────────────── */
   const fetchDeal = useCallback(async () => {
     if (!id || !tenantId) return;
