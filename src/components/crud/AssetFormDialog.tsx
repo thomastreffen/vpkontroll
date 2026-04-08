@@ -77,16 +77,25 @@ export function AssetFormDialog({ open, onOpenChange, siteId, asset, sites }: As
       if (isEdit) {
         const { error } = await supabase.from("hvac_assets").update(payload).eq("id", asset.id);
         if (error) throw error;
+        return null;
       } else {
-        const { error } = await supabase.from("hvac_assets").insert({ ...payload, tenant_id: tenantId! });
+        const { data, error } = await supabase.from("hvac_assets").insert({ ...payload, tenant_id: tenantId! }).select("id").single();
         if (error) throw error;
+        return data;
       }
     },
-    onSuccess: () => {
-      toast.success(isEdit ? "Anlegg oppdatert" : "Anlegg opprettet");
+    onSuccess: (created) => {
       qc.invalidateQueries({ queryKey: ["company-assets"] });
+      qc.invalidateQueries({ queryKey: ["site-assets"] });
       qc.invalidateQueries({ queryKey: ["asset"] });
       onOpenChange(false);
+      if (isEdit) {
+        toast.success("Anlegg oppdatert");
+      } else if (created) {
+        toast.success("Anlegg opprettet", {
+          action: { label: "Se anlegg →", onClick: () => window.location.assign(`/tenant/crm/assets/${created.id}`) },
+        });
+      }
     },
     onError: (e: any) => toast.error(e.message),
   });

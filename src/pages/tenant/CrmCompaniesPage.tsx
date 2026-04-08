@@ -77,8 +77,10 @@ export default function CrmCompaniesPage() {
         await supabase.from("crm_companies").update(payload as any).eq("id", editCompany.id);
         toast.success("Bedrift oppdatert");
       } else {
-        await supabase.from("crm_companies").insert({ ...payload, created_by: user?.id } as any);
-        toast.success("Bedrift opprettet");
+        const { data: created } = await supabase.from("crm_companies").insert({ ...payload, created_by: user?.id } as any).select("id").single();
+        toast.success("Bedrift opprettet", {
+          action: created ? { label: "Åpne bedrift", onClick: () => navigate(`/tenant/crm/companies/${created.id}`) } : undefined,
+        });
       }
       setDialogOpen(false);
       fetchData();

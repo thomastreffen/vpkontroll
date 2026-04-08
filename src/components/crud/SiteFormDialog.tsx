@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,6 +25,7 @@ const EMPTY = { name: "", address: "", postal_code: "", city: "", site_type: "re
 export function SiteFormDialog({ open, onOpenChange, companyId, site }: SiteFormDialogProps) {
   const { tenantId } = useAuth();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const isEdit = !!site;
   const [form, setForm] = useState(EMPTY);
 
@@ -45,20 +47,27 @@ export function SiteFormDialog({ open, onOpenChange, companyId, site }: SiteForm
 
   const mutation = useMutation({
     mutationFn: async () => {
-      
       const typedForm = { ...form, site_type: form.site_type as SiteType };
       if (isEdit) {
         const { error } = await supabase.from("customer_sites").update(typedForm).eq("id", site.id);
         if (error) throw error;
+        return null;
       } else {
-        const { error } = await supabase.from("customer_sites").insert({ ...typedForm, company_id: companyId, tenant_id: tenantId! });
+        const { data, error } = await supabase.from("customer_sites").insert({ ...typedForm, company_id: companyId, tenant_id: tenantId! }).select("id").single();
         if (error) throw error;
+        return data;
       }
     },
-    onSuccess: () => {
-      toast.success(isEdit ? "Anleggssted oppdatert" : "Anleggssted opprettet");
+    onSuccess: (created) => {
       qc.invalidateQueries({ queryKey: ["company-sites", companyId] });
       onOpenChange(false);
+      if (isEdit) {
+        toast.success("Anleggssted oppdatert");
+      } else if (created) {
+        toast.success("Anleggssted opprettet", {
+          action: { label: "Legg til anlegg →", onClick: () => navigate(`/tenant/crm/sites/${created.id}`) },
+        });
+      }
     },
     onError: (e: any) => toast.error(e.message),
   });
