@@ -40,6 +40,7 @@ import DealDetailPage from "@/pages/tenant/DealDetailPage";
 import ContactDetailPage from "@/pages/tenant/ContactDetailPage";
 import SiteDetailPage from "@/pages/tenant/SiteDetailPage";
 import CustomerImportPage from "@/pages/tenant/CustomerImportPage";
+import ServiceTemplatesPage from "@/pages/tenant/ServiceTemplatesPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
