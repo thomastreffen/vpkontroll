@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Building2, MapPin, Zap, Loader2 } from "lucide-react";
+import { Building2, MapPin, Zap, Loader2, Star } from "lucide-react";
 import { AGREEMENT_INTERVAL_LABELS, AGREEMENT_STATUS_LABELS } from "@/lib/domain-labels";
 
 interface AgreementFormDialogProps {
