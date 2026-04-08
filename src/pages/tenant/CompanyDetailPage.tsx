@@ -22,6 +22,7 @@ import { SiteFormDialog } from "@/components/crud/SiteFormDialog";
 import { AssetFormDialog } from "@/components/crud/AssetFormDialog";
 import { AgreementFormDialog } from "@/components/crud/AgreementFormDialog";
 import { WarrantyFormDialog } from "@/components/crud/WarrantyFormDialog";
+import { CompanyEditDialog } from "@/components/crud/CompanyEditDialog";
 
 export default function CompanyDetailPage() {
   const { id } = useParams<{ id: string }>();
