@@ -84,6 +84,18 @@ export default function DealDetailPage() {
   const [noteBody, setNoteBody] = useState("");
   const [noteType, setNoteType] = useState<string>("note");
 
+  // Create agreement sheet
+  const [agreementSheetOpen, setAgreementSheetOpen] = useState(false);
+  const [creatingAgreement, setCreatingAgreement] = useState(false);
+  const [agreementForm, setAgreementForm] = useState({
+    interval: "annual", start_date: "", annual_price: "", scope_description: "",
+  });
+
+  // Assets for agreement
+  const [dealAssets, setDealAssets] = useState<any[]>([]);
+  const [selectedAssetId, setSelectedAssetId] = useState("");
+
+
   /* ─── Data fetching ─────────────────────────────────────────── */
   const fetchDeal = useCallback(async () => {
     if (!id || !tenantId) return;
