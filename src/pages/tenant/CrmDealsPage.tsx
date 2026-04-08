@@ -173,10 +173,10 @@ export default function CrmDealsPage() {
         <EmptyState
           icon={TrendingUp}
           title="Ingen deals ennå"
-          description="Deals representerer salgsmuligheter. Opprett en deal fra en bedriftsside eller legg til en ny her for å starte salgsprosessen."
+          description="Deals representerer salgsmuligheter. Opprett en deal fra en kundeside eller legg til en ny her for å starte salgsprosessen."
           actionLabel="Ny deal"
           onAction={() => openNew()}
-          hint="Bedrift → Deal → Tilbud → Jobb"
+          hint="Kunde → Deal → Tilbud → Jobb"
         />
       ) : view === "pipeline" ? (
         <div className="flex gap-3 overflow-x-auto pb-4">

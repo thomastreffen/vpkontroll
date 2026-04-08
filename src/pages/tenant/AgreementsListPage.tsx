@@ -81,7 +81,7 @@ export default function AgreementsListPage() {
                 <TableHead>Avtalenr</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Intervall</TableHead>
-                <TableHead>Bedrift</TableHead>
+                <TableHead>Kunde</TableHead>
                 <TableHead>Anlegg</TableHead>
                 <TableHead>Neste besøk</TableHead>
                 <TableHead>Start</TableHead>

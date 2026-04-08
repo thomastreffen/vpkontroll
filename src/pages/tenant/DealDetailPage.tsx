@@ -443,8 +443,8 @@ export default function DealDetailPage() {
             {/* Show what will be linked */}
             <div className="rounded-md bg-muted/50 p-3 space-y-1 text-xs text-muted-foreground">
               <p className="font-medium text-foreground text-sm mb-1">Følgende kobles automatisk:</p>
-              {company && <p>Bedrift: {company.name}</p>}
-              {contact && <p>Kontakt: {contact.first_name} {contact.last_name || ""}</p>}
+              {company && <p>Kunde: {company.name}</p>}
+              {contact && <p>Kontaktperson: {contact.first_name} {contact.last_name || ""}</p>}
               {site && <p>Sted: {site.name || site.address}</p>}
               <p>Deal: {deal.title}</p>
             </div>

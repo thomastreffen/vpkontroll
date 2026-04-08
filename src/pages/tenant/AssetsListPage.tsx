@@ -82,7 +82,7 @@ export default function AssetsListPage() {
                 <TableHead>Serienr</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Energikilde</TableHead>
-                <TableHead>Bedrift</TableHead>
+                <TableHead>Kunde</TableHead>
                 <TableHead>Site</TableHead>
                 <TableHead>Garanti utløper</TableHead>
               </TableRow>

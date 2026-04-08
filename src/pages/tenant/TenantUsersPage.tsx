@@ -43,7 +43,7 @@ export default function TenantUsersPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Brukere</h1>
-        <p className="text-muted-foreground mt-1">Oversikt over brukere i din bedrift</p>
+        <p className="text-muted-foreground mt-1">Oversikt over brukere i din virksomhet</p>
       </div>
 
       <Card className="border-border/50">
