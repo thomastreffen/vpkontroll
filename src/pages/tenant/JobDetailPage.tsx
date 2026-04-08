@@ -167,11 +167,12 @@ export default function JobDetailPage() {
     if (!id || !effectiveTemplateId) return;
     setSavingForm(true);
     const template = categoryTemplates.data?.find((t: any) => t.id === effectiveTemplateId);
-    const payload: FormDataPayload = {
+    const payload: any = {
       schema_version: 1,
       template_id: effectiveTemplateId,
       template_key: template?.template_key || "",
       values: formValues,
+      signoff: formSignoff,
     };
 
     if (isServiceJob && linkedVisit.data) {
