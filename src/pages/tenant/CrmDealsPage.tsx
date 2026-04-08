@@ -260,7 +260,7 @@ export default function CrmDealsPage() {
               </div>
               <div className="space-y-2">
                 {stageDeals("won").map((d) => (
-                  <div key={d.id} className="flex items-center justify-between p-2 rounded bg-muted/30 cursor-pointer hover:bg-muted/50" onClick={() => openEdit(d)}>
+                   <div key={d.id} className="flex items-center justify-between p-2 rounded bg-muted/30 cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/tenant/crm/deals/${d.id}`)}>
                     <span className="text-sm">{d.title}</span>
                     <span className="text-sm font-medium text-[hsl(var(--crm-won))]">{formatCurrency(d.value)}</span>
                   </div>
