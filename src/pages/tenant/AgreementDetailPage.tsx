@@ -520,9 +520,10 @@ export default function AgreementDetailPage() {
                           size="sm"
                           variant={hasDynamicData ? "outline" : "default"}
                           className="gap-1.5"
-                          onClick={() => {
+                         onClick={() => {
                             const vals = hasDynamicData ? ((rd as any).values || {}) : {};
                             setDynamicFormValues(vals);
+                            setVisitSignoff((rd as any)?.signoff || { ...DEFAULT_SIGNOFF });
                             setDynamicFormMode("edit");
                           }}
                         >
