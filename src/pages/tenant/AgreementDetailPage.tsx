@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAgreementDetail } from "@/hooks/useAgreementDetail";
 import { useAuth } from "@/hooks/useAuth";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import {
   Loader2, ArrowLeft, Info, CalendarDays, Wrench, Building2, MapPin,
   Zap, Plus, CheckCircle2, Clock, AlertTriangle, Settings2, Pencil,
-  RefreshCw, ArrowRight, FileText, Eye, Paperclip, ClipboardCheck,
+  RefreshCw, ArrowRight, FileText, Eye, Paperclip, ClipboardCheck, ClipboardList, Save,
 } from "lucide-react";
 import { ScheduleEventDialog } from "@/components/crud/ScheduleEventDialog";
 import { AgreementFormDialog } from "@/components/crud/AgreementFormDialog";
@@ -25,6 +25,7 @@ import { ServiceReportForm } from "@/components/service/ServiceReportForm";
 import { ServiceReportView } from "@/components/service/ServiceReportView";
 import { createDefaultReport, ServiceReportData } from "@/lib/service-report-schema";
 import { ENERGY_SOURCE_LABELS } from "@/lib/domain-labels";
+import { DynamicFormRenderer, type TemplateField } from "@/components/service/DynamicFormRenderer";
 import {
   AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS,
   AGREEMENT_INTERVAL_LABELS,
@@ -90,9 +91,29 @@ export default function AgreementDetailPage() {
   const [renewing, setRenewing] = useState(false);
   const [visitDetailOpen, setVisitDetailOpen] = useState<any>(null);
   const [reportMode, setReportMode] = useState<"view" | "edit" | null>(null);
+  const [dynamicFormMode, setDynamicFormMode] = useState<"view" | "edit" | null>(null);
+  const [dynamicFormValues, setDynamicFormValues] = useState<Record<string, any>>({});
+  const [savingDynamicForm, setSavingDynamicForm] = useState(false);
   // Fetch sites/assets for edit dialog
   const [editSites, setEditSites] = useState<any[]>([]);
   const [editAssets, setEditAssets] = useState<any[]>([]);
+
+  // Fetch template fields if agreement has a service_template_id
+  const serviceTemplateId = agreement.data?.service_template_id;
+  const templateFields = useQuery({
+    queryKey: ["template-fields", serviceTemplateId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("service_template_fields")
+        .select("*")
+        .eq("template_id", serviceTemplateId!)
+        .order("sort_order");
+      return (data as unknown as TemplateField[]) || [];
+    },
+    enabled: !!serviceTemplateId,
+  });
+
+  const hasTemplate = !!serviceTemplateId && !!templateFields.data?.length;
 
   const openEdit = async () => {
     if (!agreement.data) return;
@@ -447,7 +468,7 @@ export default function AgreementDetailPage() {
       </Sheet>
 
       {/* Visit detail sheet */}
-      <Sheet open={!!visitDetailOpen} onOpenChange={o => { if (!o) { setVisitDetailOpen(null); setReportMode(null); } }}>
+      <Sheet open={!!visitDetailOpen} onOpenChange={o => { if (!o) { setVisitDetailOpen(null); setReportMode(null); setDynamicFormMode(null); } }}>
         <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
           <SheetHeader><SheetTitle>Besøksdetaljer</SheetTitle></SheetHeader>
           {visitDetailOpen && (
@@ -460,26 +481,80 @@ export default function AgreementDetailPage() {
                 {(() => {
                   const rd = visitDetailOpen.report_data as ServiceReportData | null;
                   const hasReport = rd && rd.schema_version === 1;
-                  if (reportMode === "edit") return null;
+                  const hasDynamicData = rd && rd.schema_version === 1 && (rd as any).template_id;
+                  if (reportMode === "edit" || dynamicFormMode === "edit") return null;
                   return (
-                    <Button
-                      size="sm"
-                      variant={hasReport ? "outline" : "default"}
-                      className="gap-1.5"
-                      onClick={() => setReportMode("edit")}
-                    >
-                      <ClipboardCheck className="h-3.5 w-3.5" />
-                      {hasReport ? "Rediger rapport" : "Fyll ut servicerapport"}
-                    </Button>
+                    <div className="flex gap-1.5">
+                      {hasTemplate && (
+                        <Button
+                          size="sm"
+                          variant={hasDynamicData ? "outline" : "default"}
+                          className="gap-1.5"
+                          onClick={() => {
+                            const vals = hasDynamicData ? ((rd as any).values || {}) : {};
+                            setDynamicFormValues(vals);
+                            setDynamicFormMode("edit");
+                          }}
+                        >
+                          <ClipboardList className="h-3.5 w-3.5" />
+                          {hasDynamicData ? "Rediger skjema" : "Fyll ut skjema"}
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant={hasReport && !hasDynamicData ? "outline" : "ghost"}
+                        className="gap-1.5"
+                        onClick={() => setReportMode("edit")}
+                      >
+                        <ClipboardCheck className="h-3.5 w-3.5" />
+                        {hasReport ? "Rediger rapport" : "Servicerapport"}
+                      </Button>
+                    </div>
                   );
                 })()}
               </div>
 
-              {reportMode === "edit" ? (
+              {dynamicFormMode === "edit" && templateFields.data ? (
+                <div className="space-y-4">
+                  <DynamicFormRenderer
+                    fields={templateFields.data}
+                    values={dynamicFormValues}
+                    onChange={(key, val) => setDynamicFormValues(prev => ({ ...prev, [key]: val }))}
+                  />
+                  <div className="flex justify-end gap-2 pt-2 border-t">
+                    <Button variant="outline" onClick={() => setDynamicFormMode(null)}>Avbryt</Button>
+                    <Button
+                      onClick={async () => {
+                        setSavingDynamicForm(true);
+                        const payload = {
+                          schema_version: 1,
+                          template_id: serviceTemplateId,
+                          template_key: "",
+                          values: dynamicFormValues,
+                        };
+                        const { error } = await supabase.from("service_visits").update({
+                          report_data: payload as any,
+                        }).eq("id", visitDetailOpen.id);
+                        setSavingDynamicForm(false);
+                        if (error) { toast.error("Kunne ikke lagre skjema"); return; }
+                        toast.success("Skjema lagret");
+                        setDynamicFormMode("view");
+                        setVisitDetailOpen({ ...visitDetailOpen, report_data: payload });
+                        visits.refetch();
+                      }}
+                      disabled={savingDynamicForm}
+                      className="gap-1.5"
+                    >
+                      {savingDynamicForm && <Loader2 className="h-4 w-4 animate-spin" />}
+                      <Save className="h-4 w-4" />Lagre skjema
+                    </Button>
+                  </div>
+                </div>
+              ) : reportMode === "edit" ? (
                 <ServiceReportForm
                   initialData={(() => {
                     const rd = visitDetailOpen.report_data as ServiceReportData | null;
-                    if (rd && rd.schema_version === 1) return rd;
+                    if (rd && rd.schema_version === 1 && !(rd as any).template_id) return rd;
                     return createDefaultReport({
                       customerName: company.data?.name || "",
                       siteAddress: site.data ? [site.data.address, site.data.postal_code, site.data.city].filter(Boolean).join(", ") : "",
@@ -513,6 +588,19 @@ export default function AgreementDetailPage() {
                 />
               ) : (() => {
                 const rd = visitDetailOpen.report_data as ServiceReportData | null;
+                const hasDynamicData = rd && rd.schema_version === 1 && (rd as any).template_id;
+                if (hasDynamicData && templateFields.data) {
+                  return (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-3">Utfylt skjema</p>
+                      <DynamicFormRenderer
+                        fields={templateFields.data}
+                        values={(rd as any).values || {}}
+                        readonly
+                      />
+                    </div>
+                  );
+                }
                 if (rd && rd.schema_version === 1) {
                   return <ServiceReportView data={rd} />;
                 }

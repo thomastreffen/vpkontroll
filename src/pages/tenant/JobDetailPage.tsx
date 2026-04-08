@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useJobDetail } from "@/hooks/useJobDetail";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,7 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, ArrowLeft, Info, Users, ClipboardCheck, FileText, Pencil, CalendarDays, ExternalLink, X, Save } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
+import { Loader2, ArrowLeft, Info, Users, ClipboardCheck, FileText, Pencil, CalendarDays, ExternalLink, X, Save, ClipboardList } from "lucide-react";
 import {
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
   formatDate, formatDateTime,
@@ -21,7 +22,16 @@ import { CASE_PRIORITY_LABELS, CASE_PRIORITY_COLOR } from "@/lib/case-labels";
 import { DocumentUploadSection } from "@/components/crud/DocumentUploadSection";
 import { ChecklistSection } from "@/components/crud/ChecklistSection";
 import { ScheduleEventDialog } from "@/components/crud/ScheduleEventDialog";
+import { DynamicFormRenderer, type TemplateField } from "@/components/service/DynamicFormRenderer";
 import { toast } from "sonner";
+
+/* ─── Form data structure ──────────────────────────────────────── */
+interface FormDataPayload {
+  schema_version: number;
+  template_id: string;
+  template_key: string;
+  values: Record<string, any>;
+}
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -36,16 +46,97 @@ export default function JobDetailPage() {
     scheduled_start: "", scheduled_end: "", description: "", notes: "",
   });
 
+  // Form/schema state
+  const [formSheetOpen, setFormSheetOpen] = useState(false);
+  const [formValues, setFormValues] = useState<Record<string, any>>({});
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [savingForm, setSavingForm] = useState(false);
+
   useEffect(() => {
     if (!id || !tenantId) return;
     supabase.from("events").select("id, start_time, end_time, status").eq("job_id", id).is("deleted_at", null).limit(1)
       .then(({ data }) => { if (data && data.length > 0) setLinkedEvent(data[0]); });
   }, [id, tenantId, scheduleOpen]);
 
-  // Populate edit form when entering edit mode
+  // Fetch installation templates
+  const installationTemplates = useQuery({
+    queryKey: ["installation-templates", tenantId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("service_templates")
+        .select("id, name, template_key, category, is_active")
+        .eq("tenant_id", tenantId!)
+        .eq("category", "installation")
+        .eq("is_active", true)
+        .order("name");
+      return (data as any[]) || [];
+    },
+    enabled: !!tenantId,
+  });
+
+  // Determine effective template id
+  const jobData = job.data;
+  const existingFormData = jobData?.form_data as unknown as FormDataPayload | null;
+  const hasExistingForm = existingFormData && existingFormData.schema_version === 1 && existingFormData.template_id;
+  const effectiveTemplateId = selectedTemplateId || (hasExistingForm ? existingFormData.template_id : ((jobData as any)?.installation_template_id || null));
+
+  // Auto-select first template for installation jobs if none set
+  useEffect(() => {
+    if (jobData?.job_type === "installation" && !effectiveTemplateId && installationTemplates.data?.length) {
+      setSelectedTemplateId(installationTemplates.data[0].id);
+    }
+  }, [jobData?.job_type, effectiveTemplateId, installationTemplates.data]);
+
+  // Fetch template fields for the effective template
+  const templateFields = useQuery({
+    queryKey: ["template-fields", effectiveTemplateId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("service_template_fields")
+        .select("*")
+        .eq("template_id", effectiveTemplateId!)
+        .order("sort_order");
+      return (data as TemplateField[]) || [];
+    },
+    enabled: !!effectiveTemplateId,
+  });
+
+  // Show Skjema tab for installation jobs or jobs with form_data
+  const showFormTab = jobData?.job_type === "installation" || (hasExistingForm);
+
+  const openFormSheet = useCallback(() => {
+    if (hasExistingForm) {
+      setFormValues(existingFormData.values || {});
+    } else {
+      setFormValues({});
+    }
+    setFormSheetOpen(true);
+  }, [hasExistingForm, existingFormData]);
+
+  const saveFormData = async () => {
+    if (!id || !effectiveTemplateId) return;
+    setSavingForm(true);
+    const template = installationTemplates.data?.find((t: any) => t.id === effectiveTemplateId);
+    const payload: FormDataPayload = {
+      schema_version: 1,
+      template_id: effectiveTemplateId,
+      template_key: template?.template_key || "",
+      values: formValues,
+    };
+    const { error } = await supabase.from("jobs").update({
+      form_data: payload as any,
+      installation_template_id: effectiveTemplateId,
+    }).eq("id", id);
+    setSavingForm(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Skjema lagret");
+    setFormSheetOpen(false);
+    qc.invalidateQueries({ queryKey: ["job", id] });
+  };
+
   const startEditing = () => {
-    if (!job.data) return;
-    const j = job.data;
+    if (!jobData) return;
+    const j = jobData;
     setEditForm({
       title: j.title || "",
       status: j.status || "planned",
@@ -87,11 +178,11 @@ export default function JobDetailPage() {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
 
-  if (!job.data) {
+  if (!jobData) {
     return <div className="text-center py-20 text-muted-foreground">Jobb ikke funnet</div>;
   }
 
-  const j = job.data;
+  const j = jobData;
 
   return (
     <div className="space-y-6">
@@ -149,11 +240,17 @@ export default function JobDetailPage() {
       </div>
 
       <Tabs defaultValue="info">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="info" className="gap-1.5"><Info className="h-3.5 w-3.5" />Detaljer</TabsTrigger>
           <TabsTrigger value="technicians" className="gap-1.5"><Users className="h-3.5 w-3.5" />Teknikere ({technicians.data?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="checklists" className="gap-1.5"><ClipboardCheck className="h-3.5 w-3.5" />Sjekklister ({checklists.data?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="documents" className="gap-1.5"><FileText className="h-3.5 w-3.5" />Dokumenter ({documents.data?.length ?? 0})</TabsTrigger>
+          {showFormTab && (
+            <TabsTrigger value="form" className="gap-1.5">
+              <ClipboardList className="h-3.5 w-3.5" />Skjema
+              {hasExistingForm && <Badge variant="secondary" className="text-[9px] ml-1 px-1 py-0">Utfylt</Badge>}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="info" className="mt-4">
@@ -247,6 +344,70 @@ export default function JobDetailPage() {
             queryKey={["job-documents", id!]}
           />
         </TabsContent>
+
+        {showFormTab && (
+          <TabsContent value="form" className="mt-4">
+            <Card className="p-5">
+              {/* Template selector */}
+              {!hasExistingForm && (installationTemplates.data?.length ?? 0) > 1 && (
+                <div className="mb-4">
+                  <Label className="text-xs text-muted-foreground mb-1.5 block">Velg installasjonsmal</Label>
+                  <Select
+                    value={effectiveTemplateId || ""}
+                    onValueChange={(v) => setSelectedTemplateId(v)}
+                  >
+                    <SelectTrigger className="w-[280px]"><SelectValue placeholder="Velg mal..." /></SelectTrigger>
+                    <SelectContent>
+                      {(installationTemplates.data || []).map((t: any) => (
+                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {hasExistingForm && templateFields.data ? (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className="text-sm font-medium">Utfylt skjema</p>
+                      <p className="text-xs text-muted-foreground">
+                        Mal: {installationTemplates.data?.find((t: any) => t.id === existingFormData.template_id)?.name || existingFormData.template_key || "Ukjent"}
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={openFormSheet} className="gap-1.5">
+                      <Pencil className="h-3 w-3" />Rediger
+                    </Button>
+                  </div>
+                  <DynamicFormRenderer
+                    fields={templateFields.data}
+                    values={existingFormData.values || {}}
+                    readonly
+                  />
+                </>
+              ) : effectiveTemplateId ? (
+                <div className="text-center py-8">
+                  <ClipboardList className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-sm font-medium mb-1">Installasjonsskjema</p>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    {installationTemplates.data?.find((t: any) => t.id === effectiveTemplateId)?.name || "Valgt mal"}
+                  </p>
+                  <Button onClick={openFormSheet} className="gap-1.5">
+                    <ClipboardList className="h-4 w-4" />Fyll ut installasjonsskjema
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <ClipboardList className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground mb-1">Ingen installasjonsmal tilgjengelig</p>
+                  <p className="text-xs text-muted-foreground">
+                    Opprett en mal under <span className="font-medium">Skjemaer og maler</span> med kategori "Installasjon" for å bruke denne funksjonen.
+                  </p>
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
 
       <ScheduleEventDialog
@@ -260,6 +421,35 @@ export default function JobDetailPage() {
         scheduledStart={j.scheduled_start}
         scheduledEnd={j.scheduled_end}
       />
+
+      {/* Form fill sheet */}
+      <Sheet open={formSheetOpen} onOpenChange={setFormSheetOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>
+              {hasExistingForm ? "Rediger installasjonsskjema" : "Fyll ut installasjonsskjema"}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="py-4">
+            {templateFields.data ? (
+              <DynamicFormRenderer
+                fields={templateFields.data}
+                values={formValues}
+                onChange={(key, val) => setFormValues(prev => ({ ...prev, [key]: val }))}
+              />
+            ) : (
+              <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+            )}
+          </div>
+          <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setFormSheetOpen(false)}>Avbryt</Button>
+            <Button onClick={saveFormData} disabled={savingForm} className="gap-1.5">
+              {savingForm && <Loader2 className="h-4 w-4 animate-spin" />}
+              <Save className="h-4 w-4" />Lagre skjema
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
