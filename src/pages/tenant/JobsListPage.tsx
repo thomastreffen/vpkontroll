@@ -62,10 +62,16 @@ export default function JobsListPage() {
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20">
-          <Briefcase className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-sm text-muted-foreground">{search || statusFilter !== "all" ? "Ingen treff" : "Ingen jobber ennå"}</p>
-        </div>
+        search || statusFilter !== "all" ? (
+          <div className="text-center py-20"><p className="text-sm text-muted-foreground">Ingen treff</p></div>
+        ) : (
+          <EmptyState
+            icon={Briefcase}
+            title="Ingen jobber ennå"
+            description="Jobber opprettes fra en deal når salget er vunnet, eller direkte fra en garantisak. Du kan også opprette en jobb manuelt fra en bedriftsside."
+            hint="Deal → Jobb, eller Garantisak → Jobb"
+          />
+        )
       ) : (
         <div className="border rounded-lg">
           <Table>

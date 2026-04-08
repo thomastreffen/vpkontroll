@@ -62,10 +62,16 @@ export default function AssetsListPage() {
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20">
-          <Cpu className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-sm text-muted-foreground">{search || statusFilter !== "all" ? "Ingen treff" : "Ingen anlegg ennå"}</p>
-        </div>
+        search || statusFilter !== "all" ? (
+          <div className="text-center py-20"><p className="text-sm text-muted-foreground">Ingen treff</p></div>
+        ) : (
+          <EmptyState
+            icon={Cpu}
+            title="Ingen anlegg registrert"
+            description="Anlegg (varmepumper) registreres på et anleggssted under en bedrift. Gå til en bedrift og legg til anleggssted først."
+            hint="Bedrift → Anleggssted → Anlegg"
+          />
+        )
       ) : (
         <div className="border rounded-lg">
           <Table>
