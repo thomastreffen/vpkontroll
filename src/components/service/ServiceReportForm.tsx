@@ -214,13 +214,21 @@ export function ServiceReportForm({ initialData, onSave, onCancel, visitStatus }
         </div>
       </section>
 
-      {/* Actions */}
-      <div className="flex justify-end gap-2 pt-2 border-t">
-        <Button variant="outline" onClick={onCancel}>Avbryt</Button>
-        <Button onClick={handleSave} disabled={saving} className="gap-1.5">
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Lagre rapport
-        </Button>
+      {/* Mark completed + Actions */}
+      <div className="space-y-3 pt-2 border-t">
+        {visitStatus !== "completed" && (
+          <label className="flex items-center gap-2 cursor-pointer">
+            <Checkbox checked={markCompleted} onCheckedChange={(c) => setMarkCompleted(!!c)} />
+            <span className="text-sm font-medium">Markér servicebesøket som fullført</span>
+          </label>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={onCancel}>Avbryt</Button>
+          <Button onClick={handleSave} disabled={saving} className="gap-1.5">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Lagre rapport
+          </Button>
+        </div>
       </div>
     </div>
   );
