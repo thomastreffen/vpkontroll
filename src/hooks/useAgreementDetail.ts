@@ -82,8 +82,8 @@ export function useAgreementDetail(agreementId: string | undefined) {
   const documents = useQuery({
     queryKey: ["agreement-documents", agreementId],
     queryFn: async () => {
-      const { data } = await supabase.from("documents").select("*")
-        .eq("agreement_id" as any, agreementId! as any)
+      const { data, error } = await (supabase.from("documents").select("*") as any)
+        .eq("agreement_id", agreementId!)
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
       return (data as any[]) || [];
