@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useJobDetail } from "@/hooks/useJobDetail";
+import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Info, Users, ClipboardCheck, FileText, Pencil } from "lucide-react";
+import { Loader2, ArrowLeft, Info, Users, ClipboardCheck, FileText, Pencil, CalendarDays, ExternalLink } from "lucide-react";
 import {
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
   DOCUMENT_CATEGORY_LABELS,
@@ -15,6 +17,7 @@ import { CASE_PRIORITY_LABELS, CASE_PRIORITY_COLOR } from "@/lib/case-labels";
 import { JobEditDialog } from "@/components/crud/JobEditDialog";
 import { DocumentUploadSection } from "@/components/crud/DocumentUploadSection";
 import { ChecklistSection } from "@/components/crud/ChecklistSection";
+import { ScheduleEventDialog } from "@/components/crud/ScheduleEventDialog";
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
