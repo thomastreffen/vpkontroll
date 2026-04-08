@@ -16,8 +16,9 @@ import { format } from "date-fns";
 
 interface Props {
   initialData: ServiceReportData;
-  onSave: (data: ServiceReportData) => Promise<void>;
+  onSave: (data: ServiceReportData, markCompleted: boolean) => Promise<void>;
   onCancel: () => void;
+  visitStatus?: string;
 }
 
 export function ServiceReportForm({ initialData, onSave, onCancel }: Props) {
