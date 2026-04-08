@@ -121,6 +121,17 @@ export default function AgreementDetailPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {scheduleVisit && (
+        <ScheduleEventDialog
+          open={!!scheduleVisit}
+          onOpenChange={(o) => { if (!o) setScheduleVisit(null); }}
+          serviceVisitId={scheduleVisit.id}
+          visitDate={scheduleVisit.scheduled_date}
+          jobTitle={`Servicebesøk – ${a.agreement_number}`}
+          companyName={company.data?.name}
+        />
+      )}
     </div>
   );
 }
