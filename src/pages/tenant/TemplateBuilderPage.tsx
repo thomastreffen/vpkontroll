@@ -77,6 +77,7 @@ export default function TemplateBuilderPage() {
       setCategory(t.category || "service");
       setTemplateKey(t.template_key || "");
       setUseContext(t.use_context || "");
+      setIsDefault(t.is_default || false);
       setHasAppliedPreset(true);
 
       const { data: fieldData } = await supabase
