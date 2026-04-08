@@ -69,8 +69,8 @@ export default function AssetsListPage() {
           <EmptyState
             icon={Cpu}
             title="Ingen anlegg registrert"
-            description="Anlegg (varmepumper) registreres på et anleggssted under en bedrift. Gå til en bedrift og legg til anleggssted først."
-            hint="Bedrift → Anleggssted → Anlegg"
+            description="Anlegg (varmepumper) registreres på et anleggssted under en kunde. Gå til en kundeside og legg til anleggssted først."
+            hint="Kunde → Anleggssted → Anlegg"
           />
         )
       ) : (
