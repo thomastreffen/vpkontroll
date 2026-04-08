@@ -3,13 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, FileText, Loader2, AlertTriangle, Clock, CheckCircle2, ScrollText, Building2, MapPin, TrendingUp } from "lucide-react";
+import { Search, FileText, Loader2, AlertTriangle, Clock, CheckCircle2, ScrollText, Building2, MapPin, TrendingUp, Plus } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS, AGREEMENT_INTERVAL_LABELS, formatDate } from "@/lib/domain-labels";
 import { formatCurrency } from "@/lib/crm-labels";
+import AgreementCreateSheet from "@/components/crud/AgreementCreateSheet";
 
 type DueFilter = "all" | "overdue" | "due_soon" | "ok";
 
@@ -29,6 +31,7 @@ export default function AgreementsListPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dueFilter, setDueFilter] = useState<DueFilter>("all");
+  const [createOpen, setCreateOpen] = useState(false);
 
   const fetch = useCallback(async () => {
     if (!tenantId) return;
@@ -65,13 +68,18 @@ export default function AgreementsListPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Serviceavtaler</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {items.length} avtaler
-          {overdueCount > 0 && <span className="text-destructive font-medium"> · {overdueCount} forfalt</span>}
-          {dueSoonCount > 0 && <span className="text-amber-600 font-medium"> · {dueSoonCount} snart</span>}
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Serviceavtaler</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {items.length} avtaler
+            {overdueCount > 0 && <span className="text-destructive font-medium"> · {overdueCount} forfalt</span>}
+            {dueSoonCount > 0 && <span className="text-amber-600 font-medium"> · {dueSoonCount} snart</span>}
+          </p>
+        </div>
+        <Button onClick={() => setCreateOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" /> Ny serviceavtale
+        </Button>
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -178,6 +186,8 @@ export default function AgreementsListPage() {
           </Table>
         </div>
       )}
+
+      <AgreementCreateSheet open={createOpen} onOpenChange={setCreateOpen} onCreated={fetch} />
     </div>
   );
 }
