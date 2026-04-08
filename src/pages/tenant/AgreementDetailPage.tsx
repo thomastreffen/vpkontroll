@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -278,6 +279,31 @@ export default function AgreementDetailPage() {
           <p className="text-sm">{formatDate(a.start_date)} – {formatDate(a.end_date) || "Løpende"}</p>
         </Card>
       </div>
+
+      {/* Service template card */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <ClipboardList className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-sm font-medium">Servicemal</p>
+              {hasTemplate ? (
+                <p className="text-xs text-muted-foreground">
+                  {templateFields.data?.[0] ? "Aktiv mal med " + templateFields.data.length + " felter" : "Laster..."}
+                </p>
+              ) : (
+                <p className="text-xs text-amber-600">Ingen servicemal valgt</p>
+              )}
+            </div>
+          </div>
+          <ServiceTemplateSelector
+            tenantId={tenantId!}
+            currentTemplateId={serviceTemplateId || null}
+            agreementId={id!}
+            onChanged={() => qc.invalidateQueries({ queryKey: ["agreement", id] })}
+          />
+        </div>
+      </Card>
 
       {a.scope_description && (
         <Card className="p-4">
@@ -721,9 +747,10 @@ function TimelineItem({ visit, type, onSchedule, onDetail }: { visit: any; type:
               <div className="flex items-center gap-2 mb-0.5">
                 <p className="font-medium text-sm">{formatDate(visit.scheduled_date)}</p>
                 <Badge variant="outline" className="text-[10px]">{VISIT_STATUS_LABELS[visit.status] || visit.status}</Badge>
-                {visit.report_data?.schema_version === 1 && (
+              {visit.report_data?.schema_version === 1 && (
                   <Badge variant="secondary" className="text-[10px] gap-1">
-                    <ClipboardCheck className="h-2.5 w-2.5" />Rapport
+                    <ClipboardCheck className="h-2.5 w-2.5" />
+                    {(visit.report_data as any)?.template_id ? "Skjema" : "Rapport"}
                   </Badge>
                 )}
               </div>
@@ -774,6 +801,55 @@ function Field({ label, value }: { label: string; value: string | null | undefin
     <div>
       <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">{label}</p>
       <p className="mt-0.5">{value || "–"}</p>
+    </div>
+  );
+}
+
+/* ─── Service template selector ──────────────────────────────── */
+function ServiceTemplateSelector({ tenantId, currentTemplateId, agreementId, onChanged }: {
+  tenantId: string; currentTemplateId: string | null; agreementId: string; onChanged: () => void;
+}) {
+  const [changing, setChanging] = useState(false);
+  const templates = useQuery({
+    queryKey: ["service-templates-for-selector", tenantId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("service_templates")
+        .select("id, name, is_default, use_context")
+        .eq("tenant_id", tenantId)
+        .eq("is_active", true)
+        .in("category", ["service"])
+        .order("name");
+      return (data as any[]) || [];
+    },
+    enabled: !!tenantId,
+  });
+
+  const handleChange = async (templateId: string) => {
+    setChanging(true);
+    const val = templateId === "__none__" ? null : templateId;
+    await supabase.from("service_agreements").update({ service_template_id: val }).eq("id", agreementId);
+    setChanging(false);
+    toast.success(val ? "Servicemal oppdatert" : "Servicemal fjernet");
+    onChanged();
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <Select value={currentTemplateId || "__none__"} onValueChange={handleChange} disabled={changing}>
+        <SelectTrigger className="w-[200px] h-8 text-xs">
+          <SelectValue placeholder="Velg mal..." />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__none__">Ingen mal</SelectItem>
+          {(templates.data || []).map((t: any) => (
+            <SelectItem key={t.id} value={t.id}>{t.name}{t.is_default ? " ★" : ""}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {(!templates.data?.length) && (
+        <Link to="/tenant/templates" className="text-xs text-primary hover:underline">Opprett mal</Link>
+      )}
     </div>
   );
 }

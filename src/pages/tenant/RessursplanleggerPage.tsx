@@ -82,7 +82,7 @@ export default function RessursplanleggerPage() {
     setLoading(true);
     const { data: eventsData } = await supabase
       .from("events")
-      .select("*, job:jobs(id, job_number, title, status, job_type, company_id), service_visit:service_visits(id, status, scheduled_date, agreement_id), site:customer_sites(id, name, address, city)")
+      .select("*, job:jobs(id, job_number, title, status, job_type, company_id), service_visit:service_visits(id, status, scheduled_date, agreement_id, report_data), site:customer_sites(id, name, address, city)")
       .eq("tenant_id", tenantId)
       .is("deleted_at", null)
       .gte("start_time", weekStart.toISOString())
@@ -389,13 +389,24 @@ export default function RessursplanleggerPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm">Planlagt: {detailEvent.service_visit.scheduled_date || "–"}</p>
-                      <Badge variant="outline" className="text-[10px] mt-1">{VISIT_STATUS_LABELS[detailEvent.service_visit.status] || detailEvent.service_visit.status}</Badge>
+                      <div className="flex gap-1.5 mt-1">
+                        <Badge variant="outline" className="text-[10px]">{VISIT_STATUS_LABELS[detailEvent.service_visit.status] || detailEvent.service_visit.status}</Badge>
+                        {detailEvent.service_visit.report_data?.schema_version === 1 ? (
+                          <Badge variant="secondary" className="text-[10px] gap-1 bg-emerald-500/10 text-emerald-600">
+                            <CalendarDays className="h-2.5 w-2.5" />Skjema utfylt
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-200">Skjema mangler</Badge>
+                        )}
+                      </div>
                     </div>
-                    {detailEvent.service_visit.agreement_id && (
-                      <Link to={`/tenant/crm/agreements/${detailEvent.service_visit.agreement_id}`}>
-                        <Button variant="ghost" size="icon"><ExternalLink className="h-4 w-4" /></Button>
-                      </Link>
-                    )}
+                    <div className="flex gap-1">
+                      {detailEvent.service_visit.agreement_id && (
+                        <Link to={`/tenant/crm/agreements/${detailEvent.service_visit.agreement_id}`}>
+                          <Button variant="ghost" size="icon"><ExternalLink className="h-4 w-4" /></Button>
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 </Card>
               )}
