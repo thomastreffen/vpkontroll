@@ -68,13 +68,18 @@ export default function AgreementsListPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Serviceavtaler</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {items.length} avtaler
-          {overdueCount > 0 && <span className="text-destructive font-medium"> · {overdueCount} forfalt</span>}
-          {dueSoonCount > 0 && <span className="text-amber-600 font-medium"> · {dueSoonCount} snart</span>}
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Serviceavtaler</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {items.length} avtaler
+            {overdueCount > 0 && <span className="text-destructive font-medium"> · {overdueCount} forfalt</span>}
+            {dueSoonCount > 0 && <span className="text-amber-600 font-medium"> · {dueSoonCount} snart</span>}
+          </p>
+        </div>
+        <Button onClick={() => setCreateOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" /> Ny serviceavtale
+        </Button>
       </div>
 
       <div className="flex flex-wrap gap-3">
