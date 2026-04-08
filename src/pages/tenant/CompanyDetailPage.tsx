@@ -195,9 +195,24 @@ export default function CompanyDetailPage() {
 
         <TabsContent value="agreements" className="mt-4">
           <div className="flex justify-end mb-3">
-            <Button size="sm" onClick={() => setAgreementDialog({ open: true })}><Plus className="h-3.5 w-3.5 mr-1" />Ny avtale</Button>
+            <Button size="sm" onClick={() => setAgreementDialog({ open: true })} className="gap-1.5">
+              <ScrollText className="h-3.5 w-3.5" />Ny serviceavtale
+            </Button>
           </div>
-          {agreements.data?.length === 0 ? <EmptyState text="Ingen serviceavtaler" /> : (
+          {agreements.data?.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-14 px-6 text-center max-w-sm mx-auto">
+              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+                <ScrollText className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-sm font-semibold mb-1">Ingen serviceavtaler</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+                Opprett en serviceavtale for å sette opp periodisk vedlikehold med faste intervaller. Avtalen styrer automatisk generering av servicebesøk.
+              </p>
+              <Button size="sm" onClick={() => setAgreementDialog({ open: true })} className="gap-1.5">
+                <Plus className="h-3.5 w-3.5" />Opprett serviceavtale
+              </Button>
+            </div>
+          ) : (
             <div className="grid gap-3">
               {agreements.data?.map(a => (
                 <Link key={a.id} to={`/tenant/crm/agreements/${a.id}`}>
