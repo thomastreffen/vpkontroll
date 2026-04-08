@@ -77,11 +77,11 @@ export default function CrmCompaniesPage() {
       };
       if (editCompany) {
         await supabase.from("crm_companies").update(payload as any).eq("id", editCompany.id);
-        toast.success("Bedrift oppdatert");
+        toast.success("Kunde oppdatert");
       } else {
         const { data: created } = await supabase.from("crm_companies").insert({ ...payload, created_by: user?.id } as any).select("id").single();
-        toast.success("Bedrift opprettet", {
-          action: created ? { label: "Åpne bedrift", onClick: () => navigate(`/tenant/crm/companies/${created.id}`) } : undefined,
+        toast.success("Kunde opprettet", {
+          action: created ? { label: "Åpne kunde", onClick: () => navigate(`/tenant/crm/companies/${created.id}`) } : undefined,
         });
       }
       setDialogOpen(false);
