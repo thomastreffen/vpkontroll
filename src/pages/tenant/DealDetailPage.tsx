@@ -1097,11 +1097,32 @@ export default function DealDetailPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {agreementForm.interval === "custom" ? (
+                <div className="space-y-1.5">
+                  <Label>Antall måneder *</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="60"
+                    value={agreementForm.custom_interval_months}
+                    onChange={e => setAgreementForm({ ...agreementForm, custom_interval_months: e.target.value })}
+                    placeholder="F.eks. 18"
+                  />
+                  <p className="text-[11px] text-muted-foreground">Service hver {agreementForm.custom_interval_months || "?"} måned</p>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <Label>Startdato *</Label>
+                  <Input type="date" value={agreementForm.start_date} onChange={e => setAgreementForm({ ...agreementForm, start_date: e.target.value })} />
+                </div>
+              )}
+            </div>
+            {agreementForm.interval === "custom" && (
               <div className="space-y-1.5">
                 <Label>Startdato *</Label>
                 <Input type="date" value={agreementForm.start_date} onChange={e => setAgreementForm({ ...agreementForm, start_date: e.target.value })} />
               </div>
-            </div>
+            )}
             <div className="space-y-1.5">
               <Label>Årspris (NOK)</Label>
               <Input type="number" value={agreementForm.annual_price} onChange={e => setAgreementForm({ ...agreementForm, annual_price: e.target.value })} placeholder="F.eks. 4500" />
