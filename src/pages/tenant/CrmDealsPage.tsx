@@ -327,9 +327,9 @@ export default function CrmDealsPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Bedrift</Label>
+                <Label>Kunde</Label>
                 <Select value={form.company_id} onValueChange={(v) => setForm({ ...form, company_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Velg bedrift" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Velg kunde" /></SelectTrigger>
                   <SelectContent>
                     {companies.map((co) => (
                       <SelectItem key={co.id} value={co.id}>{co.name}</SelectItem>

@@ -136,7 +136,7 @@ export function CaseLinkingSection({ caseData, onUpdated }: CaseLinkingSectionPr
     {
       key: "company" as const,
       icon: Building2,
-      label: "Bedrift",
+      label: "Kunde",
       linked: linked.company,
       linkedLabel: linked.company?.name,
       hasId: !!caseData.company_id,

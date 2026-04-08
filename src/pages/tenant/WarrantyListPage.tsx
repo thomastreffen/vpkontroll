@@ -80,7 +80,7 @@ export default function WarrantyListPage() {
               <TableRow>
                 <TableHead>Saksnr</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Bedrift</TableHead>
+                <TableHead>Kunde</TableHead>
                 <TableHead>Anlegg</TableHead>
                 <TableHead>Produsentreferanse</TableHead>
                 <TableHead>Opprettet</TableHead>
