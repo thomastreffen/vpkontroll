@@ -521,6 +521,11 @@ export default function DealDetailPage() {
               <Briefcase className="h-3.5 w-3.5" />Opprett jobb
             </Button>
           )}
+          {isWon && (
+            <Button variant="outline" size="sm" onClick={openCreateAgreement} className="gap-1.5">
+              <ScrollText className="h-3.5 w-3.5" />Opprett serviceavtale
+            </Button>
+          )}
         </div>
       </Card>
 
