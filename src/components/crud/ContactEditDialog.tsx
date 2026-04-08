@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,12 +67,12 @@ export function ContactEditDialog({ open, onOpenChange, contact, onSaved }: Cont
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Rediger kontakt</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>Rediger kontakt</SheetTitle>
+        </SheetHeader>
+        <div className="space-y-4 py-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Fornavn *</Label>
@@ -120,14 +120,14 @@ export function ContactEditDialog({ open, onOpenChange, contact, onSaved }: Cont
             <Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} />
           </div>
         </div>
-        <DialogFooter>
+        <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Avbryt</Button>
           <Button onClick={save} disabled={saving || !form.first_name.trim()}>
             {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             Lagre
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

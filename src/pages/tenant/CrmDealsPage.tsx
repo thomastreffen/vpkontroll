@@ -287,13 +287,13 @@ export default function CrmDealsPage() {
         </div>
       )}
 
-      {/* Deal Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{editDeal ? "Rediger deal" : "Ny deal"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+      {/* Deal Sheet */}
+      <Sheet open={dialogOpen} onOpenChange={setDialogOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{editDeal ? "Rediger deal" : "Ny deal"}</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 py-4">
             <div className="space-y-1.5">
               <Label>Tittel *</Label>
               <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="F.eks. Daikin Altherma installasjon" />
@@ -348,15 +348,15 @@ export default function CrmDealsPage() {
               <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} placeholder="Detaljer om dealen..." />
             </div>
           </div>
-          <DialogFooter>
+          <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Avbryt</Button>
             <Button onClick={save} disabled={saving || !form.title.trim()}>
               {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               {editDeal ? "Lagre" : "Opprett"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

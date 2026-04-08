@@ -190,12 +190,12 @@ export default function CrmContactsPage() {
         </Card>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{editContact ? "Rediger kontakt" : "Ny kontakt"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+      <Sheet open={dialogOpen} onOpenChange={setDialogOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{editContact ? "Rediger kontakt" : "Ny kontakt"}</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Fornavn *</Label>
@@ -256,15 +256,15 @@ export default function CrmContactsPage() {
               <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} />
             </div>
           </div>
-          <DialogFooter>
+          <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Avbryt</Button>
             <Button onClick={save} disabled={saving || !form.first_name.trim()}>
               {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               {editContact ? "Lagre" : "Opprett"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
