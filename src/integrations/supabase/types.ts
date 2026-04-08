@@ -1098,7 +1098,9 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           estimated_hours: number | null
+          form_data: Json | null
           id: string
+          installation_template_id: string | null
           job_number: string
           job_type: Database["public"]["Enums"]["job_type"]
           notes: string | null
@@ -1124,7 +1126,9 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           estimated_hours?: number | null
+          form_data?: Json | null
           id?: string
+          installation_template_id?: string | null
           job_number: string
           job_type?: Database["public"]["Enums"]["job_type"]
           notes?: string | null
@@ -1150,7 +1154,9 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           estimated_hours?: number | null
+          form_data?: Json | null
           id?: string
+          installation_template_id?: string | null
           job_number?: string
           job_type?: Database["public"]["Enums"]["job_type"]
           notes?: string | null
@@ -1191,6 +1197,13 @@ export type Database = {
             columns: ["deal_id"]
             isOneToOne: false
             referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_installation_template_id_fkey"
+            columns: ["installation_template_id"]
+            isOneToOne: false
+            referencedRelation: "service_templates"
             referencedColumns: ["id"]
           },
           {

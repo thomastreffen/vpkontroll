@@ -1,0 +1,2 @@
+ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS form_data JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS installation_template_id UUID REFERENCES public.service_templates(id);
