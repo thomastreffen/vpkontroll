@@ -30,6 +30,7 @@ type Company = { id: string; name: string };
 
 export default function CrmContactsPage() {
   const { tenantId, user } = useAuth();
+  const navigate = useNavigate();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
