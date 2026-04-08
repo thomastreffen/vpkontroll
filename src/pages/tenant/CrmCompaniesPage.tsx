@@ -48,7 +48,7 @@ export default function CrmCompaniesPage() {
 
   const openNew = () => {
     setEditCompany(null);
-    setForm({ name: "", org_number: "", industry: "varmepumpe", website: "", phone: "", email: "", address: "", city: "", postal_code: "", notes: "" });
+    setForm({ name: "", org_number: "", industry: "varmepumpe", customer_type: "private", website: "", phone: "", email: "", address: "", city: "", postal_code: "", notes: "" });
     setDialogOpen(true);
   };
 
