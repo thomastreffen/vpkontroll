@@ -553,7 +553,15 @@ export default function JobDetailPage() {
           </SheetHeader>
           <div className="py-4">
             {templateFields.data ? (
-              <DynamicFormRenderer
+              <>
+                <DynamicFormRenderer
+                  fields={templateFields.data}
+                  values={formValues}
+                  onChange={(key, val) => setFormValues(prev => ({ ...prev, [key]: val }))}
+                />
+                <FormSignoffSection signoff={formSignoff} onChange={setFormSignoff} />
+              </>
+            ) : (
                 fields={templateFields.data}
                 values={formValues}
                 onChange={(key, val) => setFormValues(prev => ({ ...prev, [key]: val }))}
