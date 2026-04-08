@@ -70,6 +70,9 @@ export default function CompanyDetailPage() {
             {c.phone && <span className="flex items-center gap-1.5 text-muted-foreground"><Phone className="h-3.5 w-3.5" />{c.phone}</span>}
           </div>
         </div>
+        <Button variant="outline" size="sm" onClick={() => setEditCompanyOpen(true)} className="gap-1.5">
+          <Pencil className="h-3.5 w-3.5" />Rediger
+        </Button>
       </div>
 
       {/* Tabs */}
