@@ -48,6 +48,7 @@ export default function DealDetailPage() {
   const [quotes, setQuotes] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
   const [linkedJob, setLinkedJob] = useState<any>(null);
+  const [linkedAgreement, setLinkedAgreement] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   // Edit deal sheet
