@@ -86,6 +86,21 @@ export function AgreementFormDialog({
   const availableSites = externalSites || sitesQuery.data || [];
   const availableAssets = externalAssets || assetsQuery.data || [];
 
+  // Fetch service templates
+  const templatesQuery = useQuery({
+    queryKey: ["service-templates-for-agreement", tenantId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("service_templates" as any)
+        .select("id, name, is_default, use_context")
+        .eq("tenant_id", tenantId!)
+        .eq("is_active", true)
+        .order("name");
+      return (data as any[]) || [];
+    },
+    enabled: open && !!tenantId,
+  });
+
   useEffect(() => {
     if (agreement) {
       setForm({
