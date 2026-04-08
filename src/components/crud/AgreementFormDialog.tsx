@@ -100,6 +100,7 @@ export function AgreementFormDialog({
         asset_id: agreement.asset_id || "",
         company_id: agreement.company_id || "",
         custom_interval_months: agreement.custom_interval_months?.toString() || "12",
+        service_template_id: agreement.service_template_id || "",
       });
     } else {
       setForm({
