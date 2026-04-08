@@ -1044,6 +1044,79 @@ export default function DealDetailPage() {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+      {/* ── Create agreement sheet ─────────────────────────────── */}
+      <Sheet open={agreementSheetOpen} onOpenChange={setAgreementSheetOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader><SheetTitle>Opprett serviceavtale</SheetTitle></SheetHeader>
+          <div className="space-y-4 py-4">
+            <Card className="p-4 bg-muted/30">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Overføres fra deal</p>
+              <div className="space-y-2 text-sm">
+                {company && (
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-muted-foreground">Kunde:</span>
+                    <span className="font-medium">{company.name}</span>
+                  </div>
+                )}
+                {site && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-muted-foreground">Sted:</span>
+                    <span className="font-medium">{site.name || site.address}</span>
+                  </div>
+                )}
+              </div>
+            </Card>
+            <Separator />
+            {dealAssets.length > 0 && (
+              <div className="space-y-1.5">
+                <Label>Anlegg (valgfritt)</Label>
+                <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
+                  <SelectTrigger><SelectValue placeholder="Velg anlegg" /></SelectTrigger>
+                  <SelectContent>
+                    {dealAssets.map(a => (
+                      <SelectItem key={a.id} value={a.id}>{`${a.manufacturer || ""} ${a.model || ""}`.trim() || a.serial_number || a.id.slice(0, 8)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Intervall *</Label>
+                <Select value={agreementForm.interval} onValueChange={v => setAgreementForm({ ...agreementForm, interval: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(AGREEMENT_INTERVAL_LABELS).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Startdato *</Label>
+                <Input type="date" value={agreementForm.start_date} onChange={e => setAgreementForm({ ...agreementForm, start_date: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Årspris (NOK)</Label>
+              <Input type="number" value={agreementForm.annual_price} onChange={e => setAgreementForm({ ...agreementForm, annual_price: e.target.value })} placeholder="F.eks. 4500" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Omfang / beskrivelse</Label>
+              <Textarea value={agreementForm.scope_description} onChange={e => setAgreementForm({ ...agreementForm, scope_description: e.target.value })} rows={3} placeholder="Hva dekker avtalen..." />
+            </div>
+          </div>
+          <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setAgreementSheetOpen(false)}>Avbryt</Button>
+            <Button onClick={createAgreement} disabled={creatingAgreement || !agreementForm.start_date} className="gap-1.5">
+              {creatingAgreement && <Loader2 className="h-4 w-4 animate-spin" />}
+              Opprett avtale
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
