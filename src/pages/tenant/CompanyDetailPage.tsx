@@ -58,7 +58,12 @@ export default function CompanyDetailPage() {
             </Avatar>
             <div>
               <h1 className="text-2xl font-bold">{c.name}</h1>
-              <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
+                {c.customer_type && (
+                  <Badge className={`text-[10px] ${CUSTOMER_TYPE_COLORS[c.customer_type] || ""}`}>
+                    {CUSTOMER_TYPE_LABELS[c.customer_type] || c.customer_type}
+                  </Badge>
+                )}
                 {c.org_number && <span>Org: {c.org_number}</span>}
                 {c.industry && <span className="capitalize">{c.industry}</span>}
                 {c.city && <span>{c.postal_code} {c.city}</span>}

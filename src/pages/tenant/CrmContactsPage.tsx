@@ -202,7 +202,7 @@ export default function CrmContactsPage() {
       <Sheet open={dialogOpen} onOpenChange={setDialogOpen}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>{editContact ? "Rediger kontakt" : "Ny kontakt"}</SheetTitle>
+            <SheetTitle>{editContact ? "Rediger kontaktperson" : "Ny kontaktperson"}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-3">
