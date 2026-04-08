@@ -157,7 +157,7 @@ export default function CrmContactsPage() {
               <thead>
                 <tr className="border-b bg-muted/30">
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Navn</th>
-                  <th className="text-left py-3 px-4 font-medium text-muted-foreground hidden md:table-cell">Bedrift</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground hidden md:table-cell">Kunde</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground hidden sm:table-cell">E-post</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground hidden lg:table-cell">Telefon</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground hidden lg:table-cell">By</th>
