@@ -225,7 +225,7 @@ export default function CrmDealsPage() {
               </thead>
               <tbody>
                 {deals.map((d) => (
-                  <tr key={d.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => openEdit(d)}>
+                  <tr key={d.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => navigate(`/tenant/crm/deals/${d.id}`)}>
                     <td className="py-3 px-4">
                       <p className="font-medium">{d.title}</p>
                       {d.contact_name && <p className="text-xs text-muted-foreground">{d.contact_name}</p>}
