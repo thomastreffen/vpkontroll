@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Plus, Search, Building2, MoreHorizontal, Globe, Phone, Mail, Loader2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { CUSTOMER_TYPE_LABELS, CUSTOMER_TYPE_COLORS } from "@/lib/domain-labels";
 
 type Company = {
   id: string; tenant_id: string; name: string; org_number: string | null;
