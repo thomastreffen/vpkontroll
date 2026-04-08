@@ -107,9 +107,14 @@ export default function CrmCompaniesPage() {
           <h1 className="text-2xl font-bold tracking-tight">Kunder</h1>
           <p className="text-sm text-muted-foreground mt-1">{companies.length} kunder totalt</p>
         </div>
-        <Button onClick={openNew} className="gap-2">
-          <Plus className="h-4 w-4" /> Ny kunde
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate("/tenant/crm/customers/import")} className="gap-2">
+            <FileUp className="h-4 w-4" /> Importer
+          </Button>
+          <Button onClick={openNew} className="gap-2">
+            <Plus className="h-4 w-4" /> Ny kunde
+          </Button>
+        </div>
       </div>
 
       <div className="relative max-w-sm">
