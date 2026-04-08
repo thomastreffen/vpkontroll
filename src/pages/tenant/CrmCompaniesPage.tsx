@@ -110,7 +110,7 @@ export default function CrmCompaniesPage() {
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Søk bedrifter..." className="pl-9" />
+        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Søk kunder..." className="pl-9" />
       </div>
 
       {loading ? (
