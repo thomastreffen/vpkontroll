@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,7 @@ import { toast } from "sonner";
 import {
   Loader2, ArrowLeft, Building2, Contact, MapPin, Zap, Calendar, FileText,
   TrendingUp, Pencil, MessageSquare, Briefcase, Plus, ArrowRight, CheckCircle2,
-  XCircle, Eye, Send, ChevronRight, ClipboardList, Phone, Mail, ScrollText, Search,
+  XCircle, Eye, Send, ChevronRight, ClipboardList, Phone, Mail, ScrollText, Search, Save,
 } from "lucide-react";
 import {
   DEAL_STAGE_LABELS, DEAL_STAGE_COLORS, DEAL_STAGE_ORDER, DEAL_STAGE_BG,
@@ -25,6 +26,7 @@ import {
 } from "@/lib/crm-labels";
 import { ENERGY_SOURCE_LABELS, JOB_TYPE_LABELS, AGREEMENT_INTERVAL_LABELS, SITE_TYPE_LABELS, formatDate, formatDateTime } from "@/lib/domain-labels";
 import { EntityPickerDialog } from "@/components/postkontoret/EntityPickerDialog";
+import { DynamicFormRenderer, type TemplateField } from "@/components/service/DynamicFormRenderer";
 
 const JOB_TYPES = ["installation", "service", "repair", "warranty", "inspection", "decommission"];
 
@@ -106,6 +108,55 @@ export default function DealDetailPage() {
   const [newContactForm, setNewContactForm] = useState({ first_name: "", last_name: "", email: "", phone: "" });
   const [newSiteForm, setNewSiteForm] = useState({ name: "", address: "", postal_code: "", city: "", site_type: "residential" });
   const [linkSaving, setLinkSaving] = useState(false);
+
+  // Inspection form state
+  const [inspectionFormOpen, setInspectionFormOpen] = useState(false);
+  const [inspectionFormValues, setInspectionFormValues] = useState<Record<string, any>>({});
+  const [savingInspection, setSavingInspection] = useState(false);
+
+  // Fetch site_visit templates
+  const siteVisitTemplates = useQuery({
+    queryKey: ["site-visit-templates", tenantId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("service_templates")
+        .select("id, name, template_key, is_default, use_context")
+        .eq("tenant_id", tenantId!)
+        .eq("is_active", true)
+        .or("use_context.eq.site_visit,category.eq.befaring")
+        .order("name");
+      return (data as any[]) || [];
+    },
+    enabled: !!tenantId,
+  });
+
+  // Determine effective inspection template
+  const dealTemplateId = deal?.site_visit_template_id;
+  const defaultSiteVisitTemplate = siteVisitTemplates.data?.find((t: any) => t.is_default);
+  const effectiveInspectionTemplateId = dealTemplateId || defaultSiteVisitTemplate?.id || null;
+
+  // Fetch fields for the inspection template
+  const inspectionFields = useQuery({
+    queryKey: ["template-fields", effectiveInspectionTemplateId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("service_template_fields")
+        .select("*")
+        .eq("template_id", effectiveInspectionTemplateId!)
+        .order("sort_order");
+      return (data as TemplateField[]) || [];
+    },
+    enabled: !!effectiveInspectionTemplateId,
+  });
+
+  // Inspection form data from deal
+  const inspectionData = deal?.site_visit_data as any;
+  const hasInspectionForm = inspectionData?.schema_version === 1 && inspectionData?.template_id;
+  const inspectionFormStatus = !effectiveInspectionTemplateId
+    ? "no_template"
+    : hasInspectionForm
+      ? (Object.keys(inspectionData?.values || {}).length > 0 ? "filled" : "started")
+      : "not_started";
 
   /* ─── Data fetching ─────────────────────────────────────────── */
   const fetchDeal = useCallback(async () => {
@@ -565,6 +616,15 @@ export default function DealDetailPage() {
               <ArrowRight className="h-3.5 w-3.5" />{stageNext.label}
             </Button>
           )}
+          {/* Stage-specific befaring CTA */}
+          {!isClosed && (deal.stage === "site_visit" || deal.stage === "qualified") && effectiveInspectionTemplateId && !hasInspectionForm && (
+            <Button size="sm" variant="default" className="gap-1.5" onClick={() => {
+              setInspectionFormValues({});
+              setInspectionFormOpen(true);
+            }}>
+              <ClipboardList className="h-3.5 w-3.5" />Fyll ut befaringsskjema
+            </Button>
+          )}
           {!isClosed && (
             <>
               <Button variant="outline" size="sm" onClick={openCreateQuote} className="gap-1.5">
@@ -765,25 +825,106 @@ export default function DealDetailPage() {
           </div>
         </Card>
         <Card className="p-4">
-          <p className="text-xs font-medium text-muted-foreground mb-3 flex items-center gap-1.5"><Eye className="h-3.5 w-3.5" />Befaring</p>
-          {deal.site_visit_date || deal.site_visit_notes ? (
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Befaringsdato</span>
-                <span>{formatDate(deal.site_visit_date)}</span>
-              </div>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5"><Eye className="h-3.5 w-3.5" />Befaring</p>
+            {inspectionFormStatus === "filled" && (
+              <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-600">Skjema utfylt</Badge>
+            )}
+            {inspectionFormStatus === "started" && (
+              <Badge variant="secondary" className="text-[10px] bg-amber-500/10 text-amber-600">Påbegynt</Badge>
+            )}
+          </div>
+
+          {/* Date + notes */}
+          {(deal.site_visit_date || deal.site_visit_notes) && (
+            <div className="space-y-2 text-sm mb-3">
+              {deal.site_visit_date && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Befaringsdato</span>
+                  <span>{formatDate(deal.site_visit_date)}</span>
+                </div>
+              )}
               {deal.site_visit_notes && (
-                <div className="border-t pt-2 mt-2">
+                <div className="border-t pt-2">
                   <p className="text-xs text-muted-foreground font-medium mb-1">Notater</p>
                   <p className="text-sm whitespace-pre-wrap">{deal.site_visit_notes}</p>
                 </div>
               )}
             </div>
+          )}
+
+          {/* Template + form actions */}
+          {effectiveInspectionTemplateId ? (
+            <div className="space-y-2">
+              {hasInspectionForm ? (
+                <div className="space-y-2">
+                  <DynamicFormRenderer
+                    fields={inspectionFields.data || []}
+                    values={inspectionData?.values || {}}
+                    readonly
+                  />
+                  <div className="flex gap-2 pt-2 border-t">
+                    <Button size="sm" variant="outline" className="gap-1.5" onClick={() => {
+                      setInspectionFormValues(inspectionData?.values || {});
+                      setInspectionFormOpen(true);
+                    }}>
+                      <Pencil className="h-3 w-3" />Rediger skjema
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button size="sm" className="gap-1.5 w-full" onClick={() => {
+                  setInspectionFormValues({});
+                  setInspectionFormOpen(true);
+                }}>
+                  <ClipboardList className="h-3.5 w-3.5" />Fyll ut befaringsskjema
+                </Button>
+              )}
+              {/* Template selector */}
+              <div className="flex items-center gap-2 pt-1">
+                <Select
+                  value={dealTemplateId || effectiveInspectionTemplateId || ""}
+                  onValueChange={async (v) => {
+                    await supabase.from("crm_deals").update({ site_visit_template_id: v } as any).eq("id", deal.id);
+                    toast.success("Befaringsmal oppdatert");
+                    fetchDeal();
+                  }}
+                >
+                  <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Velg mal" /></SelectTrigger>
+                  <SelectContent>
+                    {(siteVisitTemplates.data || []).map((t: any) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}{t.is_default ? " (standard)" : ""}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           ) : (
-            <div className="text-sm text-muted-foreground">
-              <p>Ingen befaring registrert</p>
-              {!isClosed && (
-                <Button variant="link" size="sm" className="px-0 h-auto mt-1" onClick={openEdit}>
+            <div className="space-y-2 text-sm">
+              <p className="text-muted-foreground">Ingen befaringsmal valgt</p>
+              {(siteVisitTemplates.data || []).length > 0 ? (
+                <Select
+                  value=""
+                  onValueChange={async (v) => {
+                    await supabase.from("crm_deals").update({ site_visit_template_id: v } as any).eq("id", deal.id);
+                    toast.success("Befaringsmal valgt");
+                    fetchDeal();
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Velg befaringsmal..." /></SelectTrigger>
+                  <SelectContent>
+                    {(siteVisitTemplates.data || []).map((t: any) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Button variant="link" size="sm" className="px-0 h-auto" asChild>
+                  <Link to="/tenant/templates/new?category=befaring">Opprett befaringsmal →</Link>
+                </Button>
+              )}
+              {!deal.site_visit_date && !isClosed && (
+                <Button variant="link" size="sm" className="px-0 h-auto" onClick={openEdit}>
                   Registrer befaring →
                 </Button>
               )}
@@ -1425,6 +1566,54 @@ export default function DealDetailPage() {
             <Button variant="outline" onClick={() => setCreateSiteOpen(false)}>Avbryt</Button>
             <Button onClick={createAndLinkSite} disabled={linkSaving || !newSiteForm.address.trim()}>
               {linkSaving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Opprett og koble
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Inspection form sheet ────────────────────────────────── */}
+      <Sheet open={inspectionFormOpen} onOpenChange={setInspectionFormOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader><SheetTitle>{hasInspectionForm ? "Rediger befaringsskjema" : "Fyll ut befaringsskjema"}</SheetTitle></SheetHeader>
+          <div className="space-y-4 py-4">
+            {inspectionFields.data && inspectionFields.data.length > 0 ? (
+              <DynamicFormRenderer
+                fields={inspectionFields.data}
+                values={inspectionFormValues}
+                onChange={(key, val) => setInspectionFormValues(prev => ({ ...prev, [key]: val }))}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">Malen har ingen felter ennå.</p>
+            )}
+          </div>
+          <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setInspectionFormOpen(false)}>Avbryt</Button>
+            <Button
+              onClick={async () => {
+                if (!deal || !effectiveInspectionTemplateId) return;
+                setSavingInspection(true);
+                const template = (siteVisitTemplates.data || []).find((t: any) => t.id === effectiveInspectionTemplateId);
+                const payload = {
+                  schema_version: 1,
+                  template_id: effectiveInspectionTemplateId,
+                  template_key: template?.template_key || "",
+                  values: inspectionFormValues,
+                };
+                const { error } = await supabase.from("crm_deals").update({
+                  site_visit_data: payload,
+                  site_visit_template_id: effectiveInspectionTemplateId,
+                } as any).eq("id", deal.id);
+                setSavingInspection(false);
+                if (error) { toast.error("Kunne ikke lagre befaringsskjema"); return; }
+                toast.success("Befaringsskjema lagret");
+                setInspectionFormOpen(false);
+                fetchDeal();
+              }}
+              disabled={savingInspection}
+              className="gap-1.5"
+            >
+              {savingInspection && <Loader2 className="h-4 w-4 animate-spin" />}
+              <Save className="h-3.5 w-3.5" />Lagre
             </Button>
           </SheetFooter>
         </SheetContent>

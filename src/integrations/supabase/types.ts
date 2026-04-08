@@ -523,8 +523,10 @@ export type Database = {
           lost_reason: string | null
           owner_user_id: string | null
           site_id: string | null
+          site_visit_data: Json | null
           site_visit_date: string | null
           site_visit_notes: string | null
+          site_visit_template_id: string | null
           stage: Database["public"]["Enums"]["deal_stage"]
           tenant_id: string
           title: string
@@ -547,8 +549,10 @@ export type Database = {
           lost_reason?: string | null
           owner_user_id?: string | null
           site_id?: string | null
+          site_visit_data?: Json | null
           site_visit_date?: string | null
           site_visit_notes?: string | null
+          site_visit_template_id?: string | null
           stage?: Database["public"]["Enums"]["deal_stage"]
           tenant_id: string
           title: string
@@ -571,8 +575,10 @@ export type Database = {
           lost_reason?: string | null
           owner_user_id?: string | null
           site_id?: string | null
+          site_visit_data?: Json | null
           site_visit_date?: string | null
           site_visit_notes?: string | null
+          site_visit_template_id?: string | null
           stage?: Database["public"]["Enums"]["deal_stage"]
           tenant_id?: string
           title?: string
@@ -607,6 +613,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_sites"
             referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "crm_deals_site_visit_template_id_fkey"
+            columns: ["site_visit_template_id"]
+            isOneToOne: false
+            referencedRelation: "service_templates"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "crm_deals_tenant_id_fkey"
