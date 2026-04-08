@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAgreementDetail } from "@/hooks/useAgreementDetail";
 import { Card } from "@/components/ui/card";
@@ -5,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, Info, CalendarDays, Wrench } from "lucide-react";
+import { ScheduleEventDialog } from "@/components/crud/ScheduleEventDialog";
 import {
   AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS,
   AGREEMENT_INTERVAL_LABELS,
