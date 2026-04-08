@@ -3,13 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, FileText, Loader2, AlertTriangle, Clock, CheckCircle2, ScrollText, Building2, MapPin, TrendingUp } from "lucide-react";
+import { Search, FileText, Loader2, AlertTriangle, Clock, CheckCircle2, ScrollText, Building2, MapPin, TrendingUp, Plus } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS, AGREEMENT_INTERVAL_LABELS, formatDate } from "@/lib/domain-labels";
 import { formatCurrency } from "@/lib/crm-labels";
+import AgreementCreateSheet from "@/components/crud/AgreementCreateSheet";
 
 type DueFilter = "all" | "overdue" | "due_soon" | "ok";
 

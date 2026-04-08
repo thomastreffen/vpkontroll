@@ -101,11 +101,11 @@ export default function TemplateEditorSheet({ open, onOpenChange, template, onSa
         // Delete existing fields and re-insert
         await supabase.from("service_template_fields" as any).delete().eq("template_id", templateId);
       } else {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase
           .from("service_templates" as any)
           .insert({ tenant_id: tenantId, name: name.trim(), description: description.trim() || null, created_by: user?.id })
           .select("id")
-          .single();
+          .single() as any);
         if (error) throw error;
         templateId = data.id;
       }
