@@ -69,7 +69,7 @@ export function CompanyEditDialog({ open, onOpenChange, company, onSaved }: Prop
     }).eq("id", company.id);
     setSaving(false);
     if (error) { toast.error("Kunne ikke lagre"); return; }
-    toast.success("Bedrift oppdatert");
+    toast.success("Kunde oppdatert");
     onOpenChange(false);
     onSaved();
   };
