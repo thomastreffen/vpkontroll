@@ -21,7 +21,7 @@ import { ScheduleEventDialog } from "@/components/crud/ScheduleEventDialog";
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { job, company, contact, site, asset, technicians, checklists, documents } = useJobDetail(id);
+  const { job, company, contact, site, asset, deal, technicians, checklists, documents } = useJobDetail(id);
   const { tenantId } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
