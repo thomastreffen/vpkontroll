@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAgreementDetail } from "@/hooks/useAgreementDetail";
 import { useAuth } from "@/hooks/useAuth";
