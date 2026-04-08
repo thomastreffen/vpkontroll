@@ -267,6 +267,12 @@ export default function CompanyDetailPage() {
         companyId={id!}
         assets={assets.data?.map(a => ({ id: a.id, manufacturer: a.manufacturer, model: a.model })) || []}
       />
+      <CompanyEditDialog
+        open={editCompanyOpen}
+        onOpenChange={setEditCompanyOpen}
+        company={c}
+        onSaved={() => company.refetch()}
+      />
     </div>
   );
 }
