@@ -162,6 +162,13 @@ export default function AssetDetailPage() {
 
       <AssetFormDialog open={editOpen} onOpenChange={setEditOpen} siteId={a.site_id} asset={a} />
       <WarrantyFormDialog open={warrantyOpen} onOpenChange={setWarrantyOpen} assetId={id} companyId={company.data?.id} />
+      <AgreementFormDialog
+        open={agreementOpen}
+        onOpenChange={setAgreementOpen}
+        companyId={company.data?.id}
+        siteId={a.site_id}
+        assetId={id}
+      />
     </div>
   );
 }
