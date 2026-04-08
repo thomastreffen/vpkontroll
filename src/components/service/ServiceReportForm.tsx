@@ -44,7 +44,7 @@ export function ServiceReportForm({ initialData, onSave, onCancel, visitStatus }
     setSaving(true);
     try {
       const saveData = { ...data, completed_date: data.completed_date || format(new Date(), "yyyy-MM-dd") };
-      await onSave(saveData);
+      await onSave(saveData, markCompleted);
     } finally {
       setSaving(false);
     }
