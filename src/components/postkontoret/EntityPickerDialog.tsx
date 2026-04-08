@@ -11,19 +11,20 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search } from "lucide-react";
 
-type EntityType = "company" | "site" | "asset" | "job" | "warranty";
+type EntityType = "company" | "contact" | "site" | "asset" | "job" | "warranty";
 
 interface EntityPickerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   entityType: EntityType;
   onSelect: (id: string) => void;
-  /** Optional filter, e.g. companyId for sites/assets */
+  /** Optional filter, e.g. companyId for sites/assets/contacts */
   companyId?: string;
 }
 
 const ENTITY_LABELS: Record<EntityType, string> = {
   company: "Velg kunde",
+  contact: "Velg kontaktperson",
   site: "Velg anlegg/site",
   asset: "Velg varmepumpe",
   job: "Velg jobb",
