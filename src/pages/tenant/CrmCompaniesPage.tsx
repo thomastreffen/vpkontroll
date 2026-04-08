@@ -32,7 +32,7 @@ export default function CrmCompaniesPage() {
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
-    name: "", org_number: "", industry: "varmepumpe", website: "", phone: "",
+    name: "", org_number: "", industry: "varmepumpe", customer_type: "private", website: "", phone: "",
     email: "", address: "", city: "", postal_code: "", notes: "",
   });
 
