@@ -115,6 +115,8 @@ function AppRoutes() {
       <Route path="/tenant/crm/sites/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><SiteDetailPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/crm/customers/import" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><CustomerImportPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/templates" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><TemplatesPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/templates/new" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><TemplateBuilderPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/templates/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><TemplateBuilderPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
 
       <Route path="/" element={<Navigate to={getHomeRedirect()} replace />} />
       <Route path="*" element={<NotFound />} />
