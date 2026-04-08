@@ -545,12 +545,13 @@ export default function AgreementDetailPage() {
               </div>
 
               {dynamicFormMode === "edit" && templateFields.data ? (
-                <div className="space-y-4">
+              <div className="space-y-4">
                   <DynamicFormRenderer
                     fields={templateFields.data}
                     values={dynamicFormValues}
                     onChange={(key, val) => setDynamicFormValues(prev => ({ ...prev, [key]: val }))}
                   />
+                  <FormSignoffSection signoff={visitSignoff} onChange={setVisitSignoff} />
                   <div className="flex justify-end gap-2 pt-2 border-t">
                     <Button variant="outline" onClick={() => setDynamicFormMode(null)}>Avbryt</Button>
                     <Button
@@ -561,6 +562,7 @@ export default function AgreementDetailPage() {
                           template_id: serviceTemplateId,
                           template_key: "",
                           values: dynamicFormValues,
+                          signoff: visitSignoff,
                         };
                         const { error } = await supabase.from("service_visits").update({
                           report_data: payload as any,
