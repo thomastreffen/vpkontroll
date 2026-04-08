@@ -36,6 +36,7 @@ import JobsListPage from "@/pages/tenant/JobsListPage";
 import AssetsListPage from "@/pages/tenant/AssetsListPage";
 import AgreementsListPage from "@/pages/tenant/AgreementsListPage";
 import WarrantyListPage from "@/pages/tenant/WarrantyListPage";
+import DealDetailPage from "@/pages/tenant/DealDetailPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
