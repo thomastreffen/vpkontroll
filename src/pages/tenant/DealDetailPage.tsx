@@ -97,6 +97,15 @@ export default function DealDetailPage() {
   const [dealAssets, setDealAssets] = useState<any[]>([]);
   const [selectedAssetId, setSelectedAssetId] = useState("");
 
+  // Entity pickers for deal linking
+  const [pickerOpen, setPickerOpen] = useState<{ type: "company" | "contact" | "site"; open: boolean }>({ type: "company", open: false });
+  const [createCompanyOpen, setCreateCompanyOpen] = useState(false);
+  const [createContactOpen, setCreateContactOpen] = useState(false);
+  const [createSiteOpen, setCreateSiteOpen] = useState(false);
+  const [newCompanyForm, setNewCompanyForm] = useState({ name: "", customer_type: "private", phone: "", email: "" });
+  const [newContactForm, setNewContactForm] = useState({ first_name: "", last_name: "", email: "", phone: "" });
+  const [newSiteForm, setNewSiteForm] = useState({ name: "", address: "", postal_code: "", city: "", site_type: "residential" });
+  const [linkSaving, setLinkSaving] = useState(false);
 
   /* ─── Data fetching ─────────────────────────────────────────── */
   const fetchDeal = useCallback(async () => {
