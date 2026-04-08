@@ -26,7 +26,7 @@ export default function AssetsListPage() {
       .eq("tenant_id", tenantId)
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
-    if (statusFilter !== "all") q = q.eq("status", statusFilter);
+    if (statusFilter !== "all") q = q.eq("status", statusFilter as any);
     const { data } = await q;
     setAssets(data || []);
     setLoading(false);
