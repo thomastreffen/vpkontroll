@@ -14,7 +14,7 @@ import {
   ENERGY_SOURCE_LABELS, ASSET_STATUS_LABELS, ASSET_STATUS_COLORS,
   CUSTOMER_TYPE_LABELS, CUSTOMER_TYPE_COLORS,
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
-  AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS, AGREEMENT_INTERVAL_LABELS,
+  AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS, formatIntervalLabel,
   WARRANTY_STATUS_LABELS, WARRANTY_STATUS_COLORS,
   SITE_TYPE_LABELS, DOCUMENT_CATEGORY_LABELS,
   formatDate,
@@ -205,7 +205,7 @@ export default function CompanyDetailPage() {
                     <div>
                       <p className="font-medium text-sm">{a.agreement_number}</p>
                       <p className="text-xs text-muted-foreground">
-                        {AGREEMENT_INTERVAL_LABELS[a.interval] || a.interval} · Neste: {formatDate(a.next_visit_due)}
+                        {formatIntervalLabel(a.interval, (a as any).custom_interval_months)} · Neste: {formatDate(a.next_visit_due)}
                       </p>
                     </div>
                     <Badge className={`text-[10px] ${AGREEMENT_STATUS_COLORS[a.status] || ""}`}>

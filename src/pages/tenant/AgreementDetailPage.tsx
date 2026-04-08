@@ -16,16 +16,18 @@ import { toast } from "sonner";
 import {
   Loader2, ArrowLeft, Info, CalendarDays, Wrench, Building2, MapPin,
   Zap, Plus, CheckCircle2, Clock, AlertTriangle, Settings2, Pencil,
-  RefreshCw, ArrowRight,
+  RefreshCw, ArrowRight, FileText, Eye, Paperclip,
 } from "lucide-react";
 import { ScheduleEventDialog } from "@/components/crud/ScheduleEventDialog";
 import { AgreementFormDialog } from "@/components/crud/AgreementFormDialog";
+import { DocumentUploadSection } from "@/components/crud/DocumentUploadSection";
 import {
   AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS,
   AGREEMENT_INTERVAL_LABELS,
   VISIT_STATUS_LABELS,
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
-  formatDate, formatDateTime,
+  DOCUMENT_CATEGORY_LABELS,
+  formatDate, formatDateTime, getIntervalMonths, formatIntervalLabel,
 } from "@/lib/domain-labels";
 import { formatCurrency } from "@/lib/crm-labels";
 import { addMonths, addYears, format, isBefore, isAfter, startOfToday } from "date-fns";
@@ -42,20 +44,20 @@ function getDueStatus(nextDue: string | null): { label: string; color: string; i
 /* ─── Project future visits ────────────────────────────────────── */
 function projectFutureVisits(
   interval: string,
+  customMonths: number | null | undefined,
   nextVisitDue: string | null,
   startDate: string,
   endDate: string | null,
   existingVisitDates: Set<string>,
   maxProjections: number = 6,
 ): string[] {
-  const stepMonths = interval === "quarterly" ? 3 : interval === "semi_annual" ? 6 : 12;
+  const stepMonths = getIntervalMonths(interval, customMonths);
   const anchor = nextVisitDue ? new Date(nextVisitDue) : new Date(startDate);
   const today = startOfToday();
   const limit = endDate ? new Date(endDate) : addYears(today, 3);
   const projected: string[] = [];
   let cursor = anchor;
 
-  // Walk forward from anchor
   for (let i = 0; i < 50 && projected.length < maxProjections; i++) {
     const dateStr = format(cursor, "yyyy-MM-dd");
     if (isAfter(cursor, limit)) break;
@@ -72,7 +74,7 @@ export default function AgreementDetailPage() {
   const { tenantId, user } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { agreement, company, site, asset, visits, jobs, generationRuns } = useAgreementDetail(id);
+  const { agreement, company, site, asset, visits, jobs, generationRuns, documents } = useAgreementDetail(id);
   const [scheduleVisit, setScheduleVisit] = useState<any>(null);
   const [extraVisitOpen, setExtraVisitOpen] = useState(false);
   const [extraVisitDate, setExtraVisitDate] = useState("");
@@ -82,6 +84,7 @@ export default function AgreementDetailPage() {
   const [renewOpen, setRenewOpen] = useState(false);
   const [renewMonths, setRenewMonths] = useState("12");
   const [renewing, setRenewing] = useState(false);
+  const [visitDetailOpen, setVisitDetailOpen] = useState<any>(null);
 
   // Fetch sites/assets for edit dialog
   const [editSites, setEditSites] = useState<any[]>([]);
@@ -89,7 +92,6 @@ export default function AgreementDetailPage() {
 
   const openEdit = async () => {
     if (!agreement.data) return;
-    // Load sites and assets for the company
     const companyId = agreement.data.company_id;
     const [sitesRes, assetsRes] = await Promise.all([
       supabase.from("customer_sites").select("id, name, address").eq("company_id", companyId).is("deleted_at", null),
@@ -132,8 +134,7 @@ export default function AgreementDetailPage() {
     const base = isBefore(currentEnd, new Date()) ? new Date() : currentEnd;
     const newEnd = addMonths(base, months);
 
-    // Calculate next_visit_due from new end or interval
-    const stepMonths = a.interval === "quarterly" ? 3 : a.interval === "semi_annual" ? 6 : 12;
+    const stepMonths = getIntervalMonths(a.interval, (a as any).custom_interval_months);
     const nextDue = a.next_visit_due && isAfter(new Date(a.next_visit_due), new Date())
       ? a.next_visit_due
       : format(addMonths(base, stepMonths), "yyyy-MM-dd");
@@ -161,6 +162,7 @@ export default function AgreementDetailPage() {
   const a = agreement.data;
   const due = getDueStatus(a.next_visit_due);
   const DueIcon = due.icon;
+  const intervalLabel = formatIntervalLabel(a.interval, (a as any).custom_interval_months);
 
   // Separate visits into categories
   const allVisits = visits.data || [];
@@ -171,7 +173,7 @@ export default function AgreementDetailPage() {
 
   // Project future visits
   const existingDates = new Set(allVisits.map(v => v.scheduled_date).filter(Boolean));
-  const projectedDates = projectFutureVisits(a.interval, a.next_visit_due, a.start_date, a.end_date, existingDates);
+  const projectedDates = projectFutureVisits(a.interval, (a as any).custom_interval_months, a.next_visit_due, a.start_date, a.end_date, existingDates);
 
   return (
     <div className="space-y-6">
@@ -187,7 +189,7 @@ export default function AgreementDetailPage() {
           </div>
           <div className="flex gap-3 text-sm text-muted-foreground mt-1 flex-wrap">
             {company.data && <Link to={`/tenant/crm/companies/${company.data.id}`} className="text-primary hover:underline">{company.data.name}</Link>}
-            <span>{AGREEMENT_INTERVAL_LABELS[a.interval] || a.interval}</span>
+            <span>{intervalLabel}</span>
             {a.annual_price && <span>{formatCurrency(a.annual_price as number)}/år</span>}
           </div>
         </div>
@@ -261,9 +263,10 @@ export default function AgreementDetailPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="timeline">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="timeline" className="gap-1.5"><CalendarDays className="h-3.5 w-3.5" />Servicetidslinje ({allVisits.length})</TabsTrigger>
           <TabsTrigger value="jobs" className="gap-1.5"><Wrench className="h-3.5 w-3.5" />Jobber ({jobs.data?.length ?? 0})</TabsTrigger>
+          <TabsTrigger value="documents" className="gap-1.5"><FileText className="h-3.5 w-3.5" />Dokumenter ({documents.data?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="details" className="gap-1.5"><Info className="h-3.5 w-3.5" />Detaljer</TabsTrigger>
           <TabsTrigger value="automation" className="gap-1.5"><Settings2 className="h-3.5 w-3.5" />Automasjon</TabsTrigger>
         </TabsList>
@@ -273,17 +276,14 @@ export default function AgreementDetailPage() {
           <div className="relative pl-6 space-y-4">
             <div className="absolute left-2.5 top-2 bottom-2 w-px bg-border" />
 
-            {/* In progress */}
             {inProgressVisits.map(v => (
-              <TimelineItem key={v.id} visit={v} type="active" onSchedule={() => setScheduleVisit(v)} />
+              <TimelineItem key={v.id} visit={v} type="active" onSchedule={() => setScheduleVisit(v)} onDetail={() => setVisitDetailOpen(v)} />
             ))}
 
-            {/* Planned / upcoming */}
             {plannedVisits.map(v => (
-              <TimelineItem key={v.id} visit={v} type="upcoming" onSchedule={() => setScheduleVisit(v)} />
+              <TimelineItem key={v.id} visit={v} type="upcoming" onSchedule={() => setScheduleVisit(v)} onDetail={() => setVisitDetailOpen(v)} />
             ))}
 
-            {/* Projected future visits */}
             {projectedDates.length > 0 && (
               <>
                 <div className="relative">
@@ -295,12 +295,11 @@ export default function AgreementDetailPage() {
                   </p>
                 </div>
                 {projectedDates.map(date => (
-                  <ProjectedVisitItem key={date} date={date} interval={a.interval} />
+                  <ProjectedVisitItem key={date} date={date} intervalLabel={intervalLabel} />
                 ))}
               </>
             )}
 
-            {/* Completed */}
             {completedVisits.length > 0 && (
               <div className="relative">
                 <div className="absolute -left-6 top-1 w-5 h-5 rounded-full bg-muted flex items-center justify-center">
@@ -310,12 +309,11 @@ export default function AgreementDetailPage() {
               </div>
             )}
             {completedVisits.map(v => (
-              <TimelineItem key={v.id} visit={v} type="completed" />
+              <TimelineItem key={v.id} visit={v} type="completed" onDetail={() => setVisitDetailOpen(v)} />
             ))}
 
-            {/* Other (missed, cancelled) */}
             {otherVisits.map(v => (
-              <TimelineItem key={v.id} visit={v} type="other" />
+              <TimelineItem key={v.id} visit={v} type="other" onDetail={() => setVisitDetailOpen(v)} />
             ))}
 
             {allVisits.length === 0 && projectedDates.length === 0 && (
@@ -349,13 +347,23 @@ export default function AgreementDetailPage() {
           )}
         </TabsContent>
 
+        {/* Documents tab */}
+        <TabsContent value="documents" className="mt-4">
+          <DocumentUploadSection
+            documents={documents.data}
+            entityType="agreement"
+            entityId={id!}
+            queryKey={["agreement-documents", id!]}
+          />
+        </TabsContent>
+
         {/* Details tab */}
         <TabsContent value="details" className="mt-4">
           <Card className="p-5">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
               <Field label="Startdato" value={formatDate(a.start_date)} />
               <Field label="Sluttdato" value={formatDate(a.end_date)} />
-              <Field label="Intervall" value={AGREEMENT_INTERVAL_LABELS[a.interval] || a.interval} />
+              <Field label="Intervall" value={intervalLabel} />
               <Field label="Neste forfall" value={formatDate(a.next_visit_due)} />
               <Field label="Årspris" value={a.annual_price ? formatCurrency(a.annual_price as number) : null} />
               <Field label="Opprettet" value={formatDate(a.created_at)} />
@@ -434,6 +442,77 @@ export default function AgreementDetailPage() {
         </SheetContent>
       </Sheet>
 
+      {/* Visit detail sheet */}
+      <Sheet open={!!visitDetailOpen} onOpenChange={o => { if (!o) setVisitDetailOpen(null); }}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader><SheetTitle>Besøksdetaljer</SheetTitle></SheetHeader>
+          {visitDetailOpen && (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">{VISIT_STATUS_LABELS[visitDetailOpen.status] || visitDetailOpen.status}</Badge>
+                <span className="text-sm font-medium">{formatDate(visitDetailOpen.scheduled_date)}</span>
+              </div>
+
+              {visitDetailOpen.completed_at && (
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Fullført:</span> {formatDateTime(visitDetailOpen.completed_at)}
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Funn</p>
+                  <p className="text-sm whitespace-pre-wrap">{visitDetailOpen.findings || "Ingen funn registrert"}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Tiltak utført</p>
+                  <p className="text-sm whitespace-pre-wrap">{visitDetailOpen.actions_taken || "Ingen tiltak registrert"}</p>
+                </div>
+
+                {visitDetailOpen.next_visit_recommended && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Anbefalt neste besøk</p>
+                    <p className="text-sm">{formatDate(visitDetailOpen.next_visit_recommended)}</p>
+                  </div>
+                )}
+
+                {/* Report data (structured measurements) */}
+                {visitDetailOpen.report_data && Object.keys(visitDetailOpen.report_data).length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Målinger / skjemadata</p>
+                    <Card className="p-3 bg-muted/30">
+                      <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(visitDetailOpen.report_data, null, 2)}</pre>
+                    </Card>
+                  </div>
+                )}
+              </div>
+
+              {/* Visit documents */}
+              <div className="border-t pt-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <Paperclip className="h-3.5 w-3.5" />Vedlegg og dokumentasjon
+                </p>
+                <DocumentUploadSection
+                  documents={[]}
+                  entityType="service_visit"
+                  entityId={visitDetailOpen.id}
+                  queryKey={["visit-documents", visitDetailOpen.id]}
+                />
+              </div>
+
+              {visitDetailOpen.job_id && (
+                <div className="border-t pt-4">
+                  <Link to={`/tenant/crm/jobs/${visitDetailOpen.job_id}`} className="text-sm text-primary hover:underline flex items-center gap-1.5">
+                    <Wrench className="h-3.5 w-3.5" />Gå til tilknyttet jobb
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
       {/* Edit agreement sheet */}
       <AgreementFormDialog
         open={editOpen}
@@ -456,7 +535,7 @@ export default function AgreementDetailPage() {
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <Field label="Nåværende start" value={formatDate(a.start_date)} />
                 <Field label="Nåværende slutt" value={formatDate(a.end_date) || "Løpende"} />
-                <Field label="Intervall" value={AGREEMENT_INTERVAL_LABELS[a.interval] || a.interval} />
+                <Field label="Intervall" value={intervalLabel} />
                 <Field label="Status" value={AGREEMENT_STATUS_LABELS[a.status] || a.status} />
               </div>
             </Card>
@@ -486,7 +565,7 @@ export default function AgreementDetailPage() {
 }
 
 /* ─── Timeline item component ─────────────────────────────────── */
-function TimelineItem({ visit, type, onSchedule }: { visit: any; type: "active" | "upcoming" | "completed" | "other"; onSchedule?: () => void }) {
+function TimelineItem({ visit, type, onSchedule, onDetail }: { visit: any; type: "active" | "upcoming" | "completed" | "other"; onSchedule?: () => void; onDetail?: () => void }) {
   const dotColor = type === "active" ? "bg-amber-500" : type === "upcoming" ? "bg-blue-500" : type === "completed" ? "bg-emerald-500" : "bg-muted";
 
   return (
@@ -508,11 +587,18 @@ function TimelineItem({ visit, type, onSchedule }: { visit: any; type: "active" 
             {visit.completed_at && <p className="text-xs text-muted-foreground">Fullført: {formatDate(visit.completed_at)}</p>}
             {visit.actions_taken && <p className="text-xs text-muted-foreground mt-0.5">Tiltak: {visit.actions_taken.substring(0, 80)}</p>}
           </div>
-          {(type === "upcoming" || type === "active") && onSchedule && (
-            <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={onSchedule}>
-              <CalendarDays className="h-3 w-3" />Planlegg
-            </Button>
-          )}
+          <div className="flex gap-1.5">
+            {onDetail && (
+              <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={onDetail}>
+                <Eye className="h-3 w-3" />Detaljer
+              </Button>
+            )}
+            {(type === "upcoming" || type === "active") && onSchedule && (
+              <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={onSchedule}>
+                <CalendarDays className="h-3 w-3" />Planlegg
+              </Button>
+            )}
+          </div>
         </div>
       </Card>
     </div>
@@ -520,7 +606,7 @@ function TimelineItem({ visit, type, onSchedule }: { visit: any; type: "active" 
 }
 
 /* ─── Projected visit item (visual only) ──────────────────────── */
-function ProjectedVisitItem({ date, interval }: { date: string; interval: string }) {
+function ProjectedVisitItem({ date, intervalLabel }: { date: string; intervalLabel: string }) {
   return (
     <div className="relative">
       <div className="absolute -left-6 top-1 w-5 h-5 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
@@ -532,7 +618,7 @@ function ProjectedVisitItem({ date, interval }: { date: string; interval: string
           <Badge variant="outline" className="text-[10px] border-dashed text-muted-foreground/60">Forventet</Badge>
         </div>
         <p className="text-xs text-muted-foreground/60 mt-0.5">
-          Projisert basert på {AGREEMENT_INTERVAL_LABELS[interval as keyof typeof AGREEMENT_INTERVAL_LABELS]?.toLowerCase() || interval} intervall
+          Projisert basert på {intervalLabel.toLowerCase()} intervall
         </p>
       </div>
     </div>

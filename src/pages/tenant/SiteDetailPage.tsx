@@ -5,20 +5,23 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Building2, MapPin, Thermometer, Wrench, ShieldCheck, AlertTriangle, Pencil, User } from "lucide-react";
+import { Loader2, ArrowLeft, Building2, MapPin, Thermometer, Wrench, ShieldCheck, AlertTriangle, Pencil, User, Plus } from "lucide-react";
 import {
   ENERGY_SOURCE_LABELS, ASSET_STATUS_LABELS, ASSET_STATUS_COLORS,
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
-  AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS, AGREEMENT_INTERVAL_LABELS,
+  AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS,
+  formatIntervalLabel,
   WARRANTY_STATUS_LABELS, WARRANTY_STATUS_COLORS,
   SITE_TYPE_LABELS, formatDate,
 } from "@/lib/domain-labels";
 import { SiteFormDialog } from "@/components/crud/SiteFormDialog";
+import { AgreementFormDialog } from "@/components/crud/AgreementFormDialog";
 
 export default function SiteDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { site, company, primaryContact, assets, jobs, agreements, warrantyCases } = useSiteDetail(id);
   const [editOpen, setEditOpen] = useState(false);
+  const [agreementOpen, setAgreementOpen] = useState(false);
 
   if (site.isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -117,6 +120,11 @@ export default function SiteDetailPage() {
         </TabsContent>
 
         <TabsContent value="agreements" className="mt-4">
+          <div className="flex justify-end mb-3">
+            <Button size="sm" onClick={() => setAgreementOpen(true)} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" />Ny serviceavtale
+            </Button>
+          </div>
           {!agreements.data?.length ? <Empty text="Ingen serviceavtaler på dette stedet" /> : (
             <div className="grid gap-3">
               {agreements.data.map(a => (
@@ -125,7 +133,7 @@ export default function SiteDetailPage() {
                     <div>
                       <p className="font-medium text-sm">{a.agreement_number}</p>
                       <p className="text-xs text-muted-foreground">
-                        {AGREEMENT_INTERVAL_LABELS[a.interval] || a.interval} · Neste: {formatDate(a.next_visit_due)}
+                        {formatIntervalLabel(a.interval, (a as any).custom_interval_months)} · Neste: {formatDate(a.next_visit_due)}
                       </p>
                     </div>
                     <Badge className={`text-[10px] ${AGREEMENT_STATUS_COLORS[a.status] || ""}`}>{AGREEMENT_STATUS_LABELS[a.status] || a.status}</Badge>
@@ -167,6 +175,12 @@ export default function SiteDetailPage() {
         onOpenChange={setEditOpen}
         companyId={s.company_id}
         site={s}
+      />
+      <AgreementFormDialog
+        open={agreementOpen}
+        onOpenChange={setAgreementOpen}
+        companyId={s.company_id}
+        siteId={id}
       />
     </div>
   );

@@ -704,6 +704,7 @@ export type Database = {
       }
       documents: {
         Row: {
+          agreement_id: string | null
           asset_id: string | null
           category: Database["public"]["Enums"]["document_category"]
           created_at: string
@@ -721,6 +722,7 @@ export type Database = {
           warranty_case_id: string | null
         }
         Insert: {
+          agreement_id?: string | null
           asset_id?: string | null
           category?: Database["public"]["Enums"]["document_category"]
           created_at?: string
@@ -738,6 +740,7 @@ export type Database = {
           warranty_case_id?: string | null
         }
         Update: {
+          agreement_id?: string | null
           asset_id?: string | null
           category?: Database["public"]["Enums"]["document_category"]
           created_at?: string
@@ -1425,6 +1428,7 @@ export type Database = {
           company_id: string
           created_at: string
           created_by: string | null
+          custom_interval_months: number | null
           deleted_at: string | null
           end_date: string | null
           id: string
@@ -1445,6 +1449,7 @@ export type Database = {
           company_id: string
           created_at?: string
           created_by?: string | null
+          custom_interval_months?: number | null
           deleted_at?: string | null
           end_date?: string | null
           id?: string
@@ -1465,6 +1470,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           created_by?: string | null
+          custom_interval_months?: number | null
           deleted_at?: string | null
           end_date?: string | null
           id?: string
@@ -1561,6 +1567,7 @@ export type Database = {
           id: string
           job_id: string | null
           next_visit_recommended: string | null
+          report_data: Json | null
           scheduled_date: string | null
           site_id: string | null
           status: Database["public"]["Enums"]["visit_status"]
@@ -1580,6 +1587,7 @@ export type Database = {
           id?: string
           job_id?: string | null
           next_visit_recommended?: string | null
+          report_data?: Json | null
           scheduled_date?: string | null
           site_id?: string | null
           status?: Database["public"]["Enums"]["visit_status"]
@@ -1599,6 +1607,7 @@ export type Database = {
           id?: string
           job_id?: string | null
           next_visit_recommended?: string | null
+          report_data?: Json | null
           scheduled_date?: string | null
           site_id?: string | null
           status?: Database["public"]["Enums"]["visit_status"]
@@ -2121,6 +2130,7 @@ export type Database = {
         | "semi_annual"
         | "annual"
         | "biennial"
+        | "custom"
       agreement_status: "active" | "paused" | "expired" | "cancelled"
       app_role: "master_admin" | "tenant_admin" | "user"
       asset_status:
@@ -2349,6 +2359,7 @@ export const Constants = {
         "semi_annual",
         "annual",
         "biennial",
+        "custom",
       ],
       agreement_status: ["active", "paused", "expired", "cancelled"],
       app_role: ["master_admin", "tenant_admin", "user"],

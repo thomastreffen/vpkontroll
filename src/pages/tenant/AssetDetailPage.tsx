@@ -10,18 +10,21 @@ import {
   ENERGY_SOURCE_LABELS, ASSET_STATUS_LABELS, ASSET_STATUS_COLORS,
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
   WARRANTY_STATUS_LABELS, WARRANTY_STATUS_COLORS,
-  VISIT_STATUS_LABELS,
+  VISIT_STATUS_LABELS, AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS,
+  formatIntervalLabel,
   formatDate,
 } from "@/lib/domain-labels";
 import { AssetFormDialog } from "@/components/crud/AssetFormDialog";
 import { DocumentUploadSection } from "@/components/crud/DocumentUploadSection";
 import { WarrantyFormDialog } from "@/components/crud/WarrantyFormDialog";
+import { AgreementFormDialog } from "@/components/crud/AgreementFormDialog";
 
 export default function AssetDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { asset, site, company, serviceVisits, warrantyCases, jobs, documents } = useAssetDetail(id);
   const [editOpen, setEditOpen] = useState(false);
   const [warrantyOpen, setWarrantyOpen] = useState(false);
+  const [agreementOpen, setAgreementOpen] = useState(false);
 
   if (asset.isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -57,8 +60,15 @@ export default function AssetDetailPage() {
         </div>
       </div>
 
+      {/* Quick action: create agreement */}
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" onClick={() => setAgreementOpen(true)} className="gap-1.5">
+          <Plus className="h-3.5 w-3.5" />Ny serviceavtale
+        </Button>
+      </div>
+
       <Tabs defaultValue="info">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="info" className="gap-1.5"><Info className="h-3.5 w-3.5" />Teknisk info</TabsTrigger>
           <TabsTrigger value="visits">Servicehistorikk ({serviceVisits.data?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="jobs" className="gap-1.5"><Wrench className="h-3.5 w-3.5" />Jobber ({jobs.data?.length ?? 0})</TabsTrigger>
@@ -152,6 +162,13 @@ export default function AssetDetailPage() {
 
       <AssetFormDialog open={editOpen} onOpenChange={setEditOpen} siteId={a.site_id} asset={a} />
       <WarrantyFormDialog open={warrantyOpen} onOpenChange={setWarrantyOpen} assetId={id} companyId={company.data?.id} />
+      <AgreementFormDialog
+        open={agreementOpen}
+        onOpenChange={setAgreementOpen}
+        companyId={company.data?.id}
+        siteId={a.site_id}
+        assetId={id}
+      />
     </div>
   );
 }

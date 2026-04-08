@@ -89,6 +89,7 @@ export default function DealDetailPage() {
   const [creatingAgreement, setCreatingAgreement] = useState(false);
   const [agreementForm, setAgreementForm] = useState({
     interval: "annual", start_date: "", annual_price: "", scope_description: "",
+    custom_interval_months: "12",
   });
 
   // Assets for agreement
@@ -386,6 +387,7 @@ export default function DealDetailPage() {
       start_date: today,
       annual_price: "",
       scope_description: deal.energy_source ? `Serviceavtale for ${ENERGY_SOURCE_LABELS[deal.energy_source] || deal.energy_source}${deal.estimated_kw ? ` (${deal.estimated_kw} kW)` : ""}` : "",
+      custom_interval_months: "12",
     });
     setAgreementSheetOpen(true);
   };
@@ -406,6 +408,7 @@ export default function DealDetailPage() {
       scope_description: agreementForm.scope_description || null,
       next_visit_due: agreementForm.start_date,
       created_by: user?.id,
+      custom_interval_months: agreementForm.interval === "custom" ? parseInt(agreementForm.custom_interval_months) || null : null,
     } as any).select().single();
     setCreatingAgreement(false);
     if (error) { toast.error("Kunne ikke opprette avtale: " + error.message); return; }
@@ -1094,11 +1097,32 @@ export default function DealDetailPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {agreementForm.interval === "custom" ? (
+                <div className="space-y-1.5">
+                  <Label>Antall måneder *</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="60"
+                    value={agreementForm.custom_interval_months}
+                    onChange={e => setAgreementForm({ ...agreementForm, custom_interval_months: e.target.value })}
+                    placeholder="F.eks. 18"
+                  />
+                  <p className="text-[11px] text-muted-foreground">Service hver {agreementForm.custom_interval_months || "?"} måned</p>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <Label>Startdato *</Label>
+                  <Input type="date" value={agreementForm.start_date} onChange={e => setAgreementForm({ ...agreementForm, start_date: e.target.value })} />
+                </div>
+              )}
+            </div>
+            {agreementForm.interval === "custom" && (
               <div className="space-y-1.5">
                 <Label>Startdato *</Label>
                 <Input type="date" value={agreementForm.start_date} onChange={e => setAgreementForm({ ...agreementForm, start_date: e.target.value })} />
               </div>
-            </div>
+            )}
             <div className="space-y-1.5">
               <Label>Årspris (NOK)</Label>
               <Input type="number" value={agreementForm.annual_price} onChange={e => setAgreementForm({ ...agreementForm, annual_price: e.target.value })} placeholder="F.eks. 4500" />
