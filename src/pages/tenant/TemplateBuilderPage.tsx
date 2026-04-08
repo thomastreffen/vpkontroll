@@ -59,6 +59,7 @@ export default function TemplateBuilderPage() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
   const [hasAppliedPreset, setHasAppliedPreset] = useState(false);
+  const [isDefault, setIsDefault] = useState(false);
 
   // Load existing template
   useEffect(() => {
