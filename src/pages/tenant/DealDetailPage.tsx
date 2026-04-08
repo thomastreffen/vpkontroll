@@ -387,6 +387,7 @@ export default function DealDetailPage() {
       start_date: today,
       annual_price: "",
       scope_description: deal.energy_source ? `Serviceavtale for ${ENERGY_SOURCE_LABELS[deal.energy_source] || deal.energy_source}${deal.estimated_kw ? ` (${deal.estimated_kw} kW)` : ""}` : "",
+      custom_interval_months: "12",
     });
     setAgreementSheetOpen(true);
   };
