@@ -38,6 +38,7 @@ type Company = { id: string; name: string };
 type Contact = { id: string; first_name: string; last_name: string | null; company_id: string | null };
 
 export default function CrmDealsPage() {
+  const navigate = useNavigate();
   const { tenantId, user } = useAuth();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
