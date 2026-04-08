@@ -69,7 +69,7 @@ export default function DealDetailPage() {
     fetches.push(
       async () => { const { data } = await supabase.from("quotes").select("*").eq("deal_id", id!).is("deleted_at", null).order("version", { ascending: false }); setQuotes(data || []); },
       async () => { const { data } = await supabase.from("crm_activities").select("*").eq("deal_id", id!).order("created_at", { ascending: false }); setActivities(data || []); },
-      async () => { const { data } = await supabase.from("jobs").select("*").eq("deal_id" as any, id!).is("deleted_at", null).limit(1); setLinkedJob(data?.[0] || null); },
+      async () => { const { data } = await (supabase.from("jobs").select("*") as any).eq("deal_id", id!).is("deleted_at", null).limit(1); setLinkedJob(data?.[0] || null); },
     );
 
     await Promise.all(fetches.map(f => f()));
