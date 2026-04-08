@@ -89,7 +89,7 @@ export default function AgreementDetailPage() {
   const [renewMonths, setRenewMonths] = useState("12");
   const [renewing, setRenewing] = useState(false);
   const [visitDetailOpen, setVisitDetailOpen] = useState<any>(null);
-
+  const [reportMode, setReportMode] = useState<"view" | "edit" | null>(null);
   // Fetch sites/assets for edit dialog
   const [editSites, setEditSites] = useState<any[]>([]);
   const [editAssets, setEditAssets] = useState<any[]>([]);
