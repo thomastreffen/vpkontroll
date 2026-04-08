@@ -18,7 +18,7 @@ const moduleInfo: Record<string, { label: string; description: string; icon: typ
   },
   crm: {
     label: "CRM",
-    description: "Kontakter, bedrifter, deals og salgsoppfølging",
+    description: "Kunder, kontaktpersoner, deals og salgsoppfølging",
     icon: TrendingUp,
   },
 };
