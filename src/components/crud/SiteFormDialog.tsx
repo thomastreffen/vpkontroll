@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,12 +75,12 @@ export function SiteFormDialog({ open, onOpenChange, companyId, site }: SiteForm
   const set = (key: string, val: string) => setForm(f => ({ ...f, [key]: val }));
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? "Rediger anleggssted" : "Nytt anleggssted"}</DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-4 py-2">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="sm:max-w-lg w-full overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>{isEdit ? "Rediger anleggssted" : "Nytt anleggssted"}</SheetTitle>
+        </SheetHeader>
+        <div className="grid gap-4 py-4">
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Navn</Label><Input value={form.name} onChange={e => set("name", e.target.value)} placeholder="F.eks. Hovedkontor" /></div>
             <div>
@@ -103,13 +103,13 @@ export function SiteFormDialog({ open, onOpenChange, companyId, site }: SiteForm
           <div><Label>Adkomstinfo</Label><Input value={form.access_info} onChange={e => set("access_info", e.target.value)} placeholder="Nøkkelboks, port, etc." /></div>
           <div><Label>Notater</Label><Textarea value={form.notes} onChange={e => set("notes", e.target.value)} rows={2} /></div>
         </div>
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Avbryt</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !form.address}>
             {mutation.isPending ? "Lagrer..." : isEdit ? "Oppdater" : "Opprett"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +16,6 @@ interface AssetFormDialogProps {
   onOpenChange: (open: boolean) => void;
   siteId: string;
   asset?: any;
-  /** Available sites for site picker when creating from company context */
   sites?: { id: string; name: string | null; address: string | null }[];
 }
 
@@ -103,13 +102,12 @@ export function AssetFormDialog({ open, onOpenChange, siteId, asset, sites }: As
   const set = (key: string, val: string) => setForm(f => ({ ...f, [key]: val }));
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? "Rediger anlegg" : "Nytt anlegg"}</DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-4 py-2">
-          {/* Site picker if multiple sites */}
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="sm:max-w-lg w-full overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>{isEdit ? "Rediger anlegg" : "Nytt anlegg"}</SheetTitle>
+        </SheetHeader>
+        <div className="grid gap-4 py-4">
           {!isEdit && sites && sites.length > 0 && (
             <div>
               <Label>Anleggssted *</Label>
@@ -145,11 +143,11 @@ export function AssetFormDialog({ open, onOpenChange, siteId, asset, sites }: As
             <div><Label>Serienummer</Label><Input value={form.serial_number} onChange={e => set("serial_number", e.target.value)} /></div>
             <div><Label>Innedel modell</Label><Input value={form.indoor_unit_model} onChange={e => set("indoor_unit_model", e.target.value)} /></div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div><Label>Kuldemedium</Label><Input value={form.refrigerant_type} onChange={e => set("refrigerant_type", e.target.value)} placeholder="R32, R410A..." /></div>
             <div><Label>Mengde (kg)</Label><Input type="number" value={form.refrigerant_kg} onChange={e => set("refrigerant_kg", e.target.value)} /></div>
-            <div><Label>Utedel plassering</Label><Input value={form.outdoor_unit_location} onChange={e => set("outdoor_unit_location", e.target.value)} /></div>
           </div>
+          <div><Label>Utedel plassering</Label><Input value={form.outdoor_unit_location} onChange={e => set("outdoor_unit_location", e.target.value)} /></div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Installert dato</Label><Input type="date" value={form.installed_at} onChange={e => set("installed_at", e.target.value)} /></div>
             <div><Label>Garanti utløper</Label><Input type="date" value={form.warranty_expires_at} onChange={e => set("warranty_expires_at", e.target.value)} /></div>
@@ -169,13 +167,13 @@ export function AssetFormDialog({ open, onOpenChange, siteId, asset, sites }: As
           )}
           <div><Label>Notater</Label><Textarea value={form.notes} onChange={e => set("notes", e.target.value)} rows={2} /></div>
         </div>
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Avbryt</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !form.site_id}>
             {mutation.isPending ? "Lagrer..." : isEdit ? "Oppdater" : "Opprett"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

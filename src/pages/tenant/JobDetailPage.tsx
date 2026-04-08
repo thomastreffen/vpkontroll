@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useJobDetail } from "@/hooks/useJobDetail";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,32 +8,80 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Info, Users, ClipboardCheck, FileText, Pencil, CalendarDays, ExternalLink } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, ArrowLeft, Info, Users, ClipboardCheck, FileText, Pencil, CalendarDays, ExternalLink, X, Save } from "lucide-react";
 import {
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
-  DOCUMENT_CATEGORY_LABELS,
   formatDate, formatDateTime,
 } from "@/lib/domain-labels";
 import { CASE_PRIORITY_LABELS, CASE_PRIORITY_COLOR } from "@/lib/case-labels";
-import { JobEditDialog } from "@/components/crud/JobEditDialog";
 import { DocumentUploadSection } from "@/components/crud/DocumentUploadSection";
 import { ChecklistSection } from "@/components/crud/ChecklistSection";
 import { ScheduleEventDialog } from "@/components/crud/ScheduleEventDialog";
+import { toast } from "sonner";
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { job, company, contact, site, asset, deal, technicians, checklists, documents } = useJobDetail(id);
   const { tenantId } = useAuth();
-  const [editOpen, setEditOpen] = useState(false);
+  const qc = useQueryClient();
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [linkedEvent, setLinkedEvent] = useState<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: "", status: "planned", job_type: "installation", priority: "normal",
+    scheduled_start: "", scheduled_end: "", description: "", notes: "",
+  });
 
-  // Check if job already has a linked event
   useEffect(() => {
     if (!id || !tenantId) return;
     supabase.from("events").select("id, start_time, end_time, status").eq("job_id", id).is("deleted_at", null).limit(1)
       .then(({ data }) => { if (data && data.length > 0) setLinkedEvent(data[0]); });
   }, [id, tenantId, scheduleOpen]);
+
+  // Populate edit form when entering edit mode
+  const startEditing = () => {
+    if (!job.data) return;
+    const j = job.data;
+    setEditForm({
+      title: j.title || "",
+      status: j.status || "planned",
+      job_type: j.job_type || "installation",
+      priority: j.priority || "normal",
+      scheduled_start: j.scheduled_start ? j.scheduled_start.slice(0, 16) : "",
+      scheduled_end: j.scheduled_end ? j.scheduled_end.slice(0, 16) : "",
+      description: j.description || "",
+      notes: j.notes || "",
+    });
+    setIsEditing(true);
+  };
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("jobs").update({
+        title: editForm.title,
+        status: editForm.status as any,
+        job_type: editForm.job_type as any,
+        priority: editForm.priority as any,
+        scheduled_start: editForm.scheduled_start || null,
+        scheduled_end: editForm.scheduled_end || null,
+        description: editForm.description || null,
+        notes: editForm.notes || null,
+      }).eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Jobb oppdatert");
+      qc.invalidateQueries({ queryKey: ["job", id] });
+      setIsEditing(false);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const setField = (key: string, val: string) => setEditForm(f => ({ ...f, [key]: val }));
 
   if (job.isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -53,21 +102,42 @@ export default function JobDetailPage() {
         <div className="flex-1">
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-bold">{j.job_number}</h1>
-            <Badge className={JOB_STATUS_COLORS[j.status] || ""}>{JOB_STATUS_LABELS[j.status] || j.status}</Badge>
-            <Badge variant="outline">{JOB_TYPE_LABELS[j.job_type] || j.job_type}</Badge>
-            <span className={`text-sm font-medium ${CASE_PRIORITY_COLOR[j.priority as keyof typeof CASE_PRIORITY_COLOR] || ""}`}>
-              {CASE_PRIORITY_LABELS[j.priority as keyof typeof CASE_PRIORITY_LABELS] || j.priority}
-            </span>
-            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Pencil className="h-3 w-3 mr-1" />Rediger</Button>
-            {linkedEvent ? (
-              <Link to="/tenant/ressursplanlegger">
-                <Button variant="outline" size="sm" className="gap-1"><CalendarDays className="h-3 w-3" />Se i kalender<ExternalLink className="h-3 w-3" /></Button>
-              </Link>
+            {!isEditing && (
+              <>
+                <Badge className={JOB_STATUS_COLORS[j.status] || ""}>{JOB_STATUS_LABELS[j.status] || j.status}</Badge>
+                <Badge variant="outline">{JOB_TYPE_LABELS[j.job_type] || j.job_type}</Badge>
+                <span className={`text-sm font-medium ${CASE_PRIORITY_COLOR[j.priority as keyof typeof CASE_PRIORITY_COLOR] || ""}`}>
+                  {CASE_PRIORITY_LABELS[j.priority as keyof typeof CASE_PRIORITY_LABELS] || j.priority}
+                </span>
+              </>
+            )}
+            {isEditing ? (
+              <div className="flex gap-2">
+                <Button size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !editForm.title} className="gap-1">
+                  <Save className="h-3 w-3" />{saveMutation.isPending ? "Lagrer..." : "Lagre"}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(false)} className="gap-1">
+                  <X className="h-3 w-3" />Avbryt
+                </Button>
+              </div>
             ) : (
-              <Button variant="outline" size="sm" onClick={() => setScheduleOpen(true)} className="gap-1"><CalendarDays className="h-3 w-3" />Planlegg</Button>
+              <>
+                <Button variant="outline" size="sm" onClick={startEditing}><Pencil className="h-3 w-3 mr-1" />Rediger</Button>
+                {linkedEvent ? (
+                  <Link to="/tenant/ressursplanlegger">
+                    <Button variant="outline" size="sm" className="gap-1"><CalendarDays className="h-3 w-3" />Se i kalender<ExternalLink className="h-3 w-3" /></Button>
+                  </Link>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={() => setScheduleOpen(true)} className="gap-1"><CalendarDays className="h-3 w-3" />Planlegg</Button>
+                )}
+              </>
             )}
           </div>
-          <p className="text-lg mt-1">{j.title}</p>
+          {isEditing ? (
+            <Input value={editForm.title} onChange={e => setField("title", e.target.value)} className="text-lg mt-1 font-medium" placeholder="Tittel *" />
+          ) : (
+            <p className="text-lg mt-1">{j.title}</p>
+          )}
           <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mt-2">
             {company.data && <Link to={`/tenant/crm/companies/${company.data.id}`} className="text-primary hover:underline">{company.data.name}</Link>}
             {contact.data && <span>{contact.data.first_name} {contact.data.last_name || ""}</span>}
@@ -88,16 +158,64 @@ export default function JobDetailPage() {
 
         <TabsContent value="info" className="mt-4">
           <Card className="p-5">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-              <Field label="Planlagt start" value={formatDateTime(j.scheduled_start)} />
-              <Field label="Planlagt slutt" value={formatDateTime(j.scheduled_end)} />
-              <Field label="Faktisk start" value={formatDateTime(j.actual_start)} />
-              <Field label="Faktisk slutt" value={formatDateTime(j.actual_end)} />
-              <Field label="Estimerte timer" value={j.estimated_hours ? `${j.estimated_hours} t` : null} />
-              <Field label="Opprettet" value={formatDate(j.created_at)} />
-            </div>
-            {j.description && <p className="text-sm mt-4 border-t pt-3">{j.description}</p>}
-            {j.notes && <p className="text-sm text-muted-foreground mt-2">{j.notes}</p>}
+            {isEditing ? (
+              <div className="grid gap-4">
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Label>Status</Label>
+                    <Select value={editForm.status} onValueChange={v => setField("status", v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(JOB_STATUS_LABELS).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>{v}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Type</Label>
+                    <Select value={editForm.job_type} onValueChange={v => setField("job_type", v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(JOB_TYPE_LABELS).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>{v}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Prioritet</Label>
+                    <Select value={editForm.priority} onValueChange={v => setField("priority", v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(CASE_PRIORITY_LABELS).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>{v}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label>Planlagt start</Label><Input type="datetime-local" value={editForm.scheduled_start} onChange={e => setField("scheduled_start", e.target.value)} /></div>
+                  <div><Label>Planlagt slutt</Label><Input type="datetime-local" value={editForm.scheduled_end} onChange={e => setField("scheduled_end", e.target.value)} /></div>
+                </div>
+                <div><Label>Beskrivelse</Label><Textarea value={editForm.description} onChange={e => setField("description", e.target.value)} rows={2} /></div>
+                <div><Label>Notater</Label><Textarea value={editForm.notes} onChange={e => setField("notes", e.target.value)} rows={2} /></div>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                  <Field label="Planlagt start" value={formatDateTime(j.scheduled_start)} />
+                  <Field label="Planlagt slutt" value={formatDateTime(j.scheduled_end)} />
+                  <Field label="Faktisk start" value={formatDateTime(j.actual_start)} />
+                  <Field label="Faktisk slutt" value={formatDateTime(j.actual_end)} />
+                  <Field label="Estimerte timer" value={j.estimated_hours ? `${j.estimated_hours} t` : null} />
+                  <Field label="Opprettet" value={formatDate(j.created_at)} />
+                </div>
+                {j.description && <p className="text-sm mt-4 border-t pt-3">{j.description}</p>}
+                {j.notes && <p className="text-sm text-muted-foreground mt-2">{j.notes}</p>}
+              </>
+            )}
           </Card>
         </TabsContent>
 
@@ -131,7 +249,6 @@ export default function JobDetailPage() {
         </TabsContent>
       </Tabs>
 
-      <JobEditDialog open={editOpen} onOpenChange={setEditOpen} job={j} />
       <ScheduleEventDialog
         open={scheduleOpen}
         onOpenChange={setScheduleOpen}
