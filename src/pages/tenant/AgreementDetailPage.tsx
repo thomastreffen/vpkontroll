@@ -21,6 +21,10 @@ import {
 import { ScheduleEventDialog } from "@/components/crud/ScheduleEventDialog";
 import { AgreementFormDialog } from "@/components/crud/AgreementFormDialog";
 import { DocumentUploadSection } from "@/components/crud/DocumentUploadSection";
+import { ServiceReportForm } from "@/components/service/ServiceReportForm";
+import { ServiceReportView } from "@/components/service/ServiceReportView";
+import { createDefaultReport, ServiceReportData } from "@/lib/service-report-schema";
+import { ENERGY_SOURCE_LABELS } from "@/lib/domain-labels";
 import {
   AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS,
   AGREEMENT_INTERVAL_LABELS,
