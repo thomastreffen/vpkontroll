@@ -70,7 +70,27 @@ export const AGREEMENT_INTERVAL_LABELS: Record<string, string> = {
   semi_annual: "Halvårlig",
   annual: "Årlig",
   biennial: "Hvert 2. år",
+  custom: "Egendefinert",
 };
+
+export function getIntervalMonths(interval: string, customMonths?: number | null): number {
+  switch (interval) {
+    case "monthly": return 1;
+    case "quarterly": return 3;
+    case "semi_annual": return 6;
+    case "annual": return 12;
+    case "biennial": return 24;
+    case "custom": return customMonths || 12;
+    default: return 12;
+  }
+}
+
+export function formatIntervalLabel(interval: string, customMonths?: number | null): string {
+  if (interval === "custom" && customMonths) {
+    return `Hver ${customMonths}. måned`;
+  }
+  return AGREEMENT_INTERVAL_LABELS[interval] || interval;
+}
 
 export const WARRANTY_STATUS_LABELS: Record<string, string> = {
   open: "Åpen",
