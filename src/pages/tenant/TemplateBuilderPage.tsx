@@ -461,7 +461,24 @@ export default function TemplateBuilderPage() {
                   />
                 </div>
               </div>
-            )}
+
+              {/* Web form publish section */}
+              {category === "web" && (
+                <WebFormPublishSection
+                  isPublished={isPublished}
+                  publishKey={publishKey}
+                  webFormType={webFormType}
+                  successMessage={successMessage}
+                  onTogglePublish={(v) => { setIsPublished(v); if (v && !publishKey) setPublishKey(generatePublishKey()); markUnsaved(); }}
+                  onFormTypeChange={(v) => { setWebFormType(v); markUnsaved(); }}
+                  onSuccessMessageChange={(v) => { setSuccessMessage(v); markUnsaved(); }}
+                  isEdit={isEdit}
+                  copiedEmbed={copiedEmbed}
+                  onCopyEmbed={() => { setCopiedEmbed(true); setTimeout(() => setCopiedEmbed(false), 2000); }}
+                />
+              )}
+            </div>
+            )}  
 
             {/* AI Assist */}
             {!previewMode && (
