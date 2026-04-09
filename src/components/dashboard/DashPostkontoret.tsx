@@ -17,11 +17,13 @@ interface Props {
   casesWithoutOwner: CaseItem[];
 }
 
-const statusLabel: Record<string, string> = { new: "Ny", open: "Åpen", waiting: "Venter" };
+const statusLabel: Record<string, string> = { new: "Ny", triage: "Triage", in_progress: "Pågår", waiting_customer: "Venter", waiting_internal: "Intern" };
 const statusColor: Record<string, string> = {
   new: "bg-[hsl(var(--crm-lead))]/10 text-[hsl(var(--crm-lead))]",
-  open: "bg-[hsl(var(--crm-visit))]/10 text-[hsl(var(--crm-visit))]",
-  waiting: "bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))]",
+  in_progress: "bg-[hsl(var(--crm-visit))]/10 text-[hsl(var(--crm-visit))]",
+  waiting_customer: "bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))]",
+  waiting_internal: "bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))]",
+  triage: "bg-[hsl(var(--crm-qualified))]/10 text-[hsl(var(--crm-qualified))]",
 };
 
 export default function DashPostkontoret({ cases, casesWithoutOwner }: Props) {
