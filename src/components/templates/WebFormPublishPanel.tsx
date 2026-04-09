@@ -1,5 +1,7 @@
-import { Globe, Code, ExternalLink, Copy, Check, AlertCircle, CheckCircle2 } from "lucide-react";
-import { useState } from "react";
+import { Globe, Code, ExternalLink, Copy, Check, AlertCircle, CheckCircle2, Inbox } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
