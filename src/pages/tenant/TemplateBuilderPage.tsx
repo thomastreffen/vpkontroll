@@ -355,7 +355,7 @@ export default function TemplateBuilderPage() {
 
             {/* Canvas */}
             <div className={`bg-card rounded-lg border border-border p-5 min-h-[300px] ${previewMode ? "shadow-sm" : ""}`}>
-              <FieldCanvas
+            <FieldCanvas
                 fields={fields}
                 selectedIndex={previewMode ? null : selectedIndex}
                 onSelect={previewMode ? () => {} : setSelectedIndex}
@@ -364,6 +364,7 @@ export default function TemplateBuilderPage() {
                 onDuplicate={duplicateField}
                 onAddField={addField}
                 onInsertAt={insertAt}
+                onUpdateField={updateField}
                 previewMode={previewMode}
               />
             </div>
