@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import TemplateBuilderHeader from "@/components/templates/TemplateBuilderHeader";
 import FieldPalette from "@/components/templates/FieldPalette";
 import FieldCanvas, { type TemplateField } from "@/components/templates/FieldCanvas";
-import FieldSettingsPanel from "@/components/templates/FieldSettingsPanel";
+import FieldSettingsPanel, { FieldSettingsEmpty } from "@/components/templates/FieldSettingsPanel";
 import { getPresetSections, CATEGORY_TO_CONTEXT } from "@/lib/template-presets";
 import { setAsDefault, clearDefault } from "@/hooks/useDefaultTemplate";
 
