@@ -237,7 +237,7 @@ export function QuoteSection({
 
       const { error: dbErr } = await supabase.from("documents").insert({
         tenant_id: tenantId, deal_id: deal.id,
-        category: "report", file_name: fileName, file_path: filePath,
+        category: "quote_pdf" as any, file_name: fileName, file_path: filePath,
         file_size_bytes: blob.size, mime_type: "application/pdf",
         uploaded_by: user?.id, description: `Tilbuds-PDF ${quote.quote_number}`,
       });
