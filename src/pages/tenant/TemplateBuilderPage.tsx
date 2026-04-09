@@ -405,7 +405,7 @@ export default function TemplateBuilderPage() {
         category={category}
         useContext={useContext}
         saveStatus={saveStatus}
-        onNameChange={v => { setName(v); markUnsaved(); if (!templateKey || templateKey === slugify(name)) setTemplateKey(slugify(v)); }}
+        onNameChange={v => { setName(v); setNameError(false); markUnsaved(); if (!templateKey || templateKey === slugify(name)) setTemplateKey(slugify(v)); }}
         onCategoryChange={handleCategoryChange}
         onUseContextChange={v => { setUseContext(v); markUnsaved(); }}
         onSave={handleSave}
@@ -416,6 +416,8 @@ export default function TemplateBuilderPage() {
         onTogglePreview={() => { setPreviewMode(p => !p); setSelectedIndex(null); }}
         isDefault={isDefault}
         onToggleDefault={isEdit ? handleToggleDefault : undefined}
+        nameError={nameError}
+        nameInputRef={nameInputRef}
       />
 
       <div className="flex flex-1 min-h-0">
@@ -442,6 +444,28 @@ export default function TemplateBuilderPage() {
           <div className={`max-w-2xl mx-auto py-6 px-4 ${previewMode ? "max-w-xl" : ""}`}>
             {!previewMode && (
               <>
+              {/* Name help text for web forms */}
+              {category === "web" && !name.trim() && (
+                <p className="text-xs text-muted-foreground mb-2">
+                  Gi skjemaet et tydelig navn så du finner det igjen senere. Eksempel: «Kontaktskjema nettside», «Bestill service», «Prisforespørsel varmepumpe»
+                </p>
+              )}
+              {nameError && (
+                <p className="text-xs text-destructive mb-2 font-medium">
+                  Du må gi skjemaet et navn før det kan lagres
+                </p>
+              )}
+
+              {/* Step guide for web forms */}
+              {category === "web" && (
+                <WebFormStepGuide
+                  hasName={!!name.trim()}
+                  isSaved={isEdit && saveStatus === "saved"}
+                  hasFormType={!!webFormType}
+                  isPublished={isPublished}
+                />
+              )}
+
               <div className="mb-6 space-y-3 bg-card rounded-lg border border-border p-4">
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Beskrivelse</Label>
