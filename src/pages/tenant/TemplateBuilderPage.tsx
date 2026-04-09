@@ -90,6 +90,10 @@ export default function TemplateBuilderPage() {
       setTemplateKey(t.template_key || "");
       setUseContext(t.use_context || "");
       setIsDefault(t.is_default || false);
+      setIsPublished(t.is_published || false);
+      setPublishKey(t.publish_key || null);
+      setWebFormType(t.web_form_type || "contact");
+      setSuccessMessage(t.success_message || "Takk for din henvendelse! Vi tar kontakt så snart som mulig.");
       setHasAppliedPreset(true);
 
       const { data: fieldData } = await supabase
