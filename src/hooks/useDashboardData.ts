@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { addDays, startOfDay, endOfDay, startOfWeek, endOfWeek, format } from "date-fns";
+import { addDays, startOfWeek, endOfWeek } from "date-fns";
 
 export function useDashboardData() {
   const { tenantId } = useAuth();
@@ -29,7 +29,7 @@ export function useDashboardData() {
     queryFn: async () => {
       const { data } = await supabase
         .from("crm_deals")
-        .select("id, title, stage, value, company_id, site_visit_data, site_visit_template_id, expected_close_date, created_at")
+        .select("id, title, stage, value, company_id, contact_id, site_id, site_visit_data, site_visit_template_id, expected_close_date, created_at")
         .eq("tenant_id", tenantId!)
         .not("stage", "in", "(won,lost)");
       return data ?? [];
@@ -105,6 +105,29 @@ export function useDashboardData() {
     enabled: !!tenantId,
   });
 
+  // Company lookup for enrichment
+  const companyIds = new Set<string>();
+  deals.data?.forEach(d => { if (d.company_id) companyIds.add(d.company_id); });
+  jobs.data?.forEach(j => { if (j.company_id) companyIds.add(j.company_id); });
+  agreements.data?.forEach(a => { if (a.company_id) companyIds.add(a.company_id); });
+
+  const companies = useQuery({
+    queryKey: ["dash-companies", tenantId, Array.from(companyIds).sort().join(",")],
+    queryFn: async () => {
+      if (!companyIds.size) return {};
+      const { data } = await supabase
+        .from("crm_companies")
+        .select("id, name")
+        .in("id", Array.from(companyIds));
+      const map: Record<string, string> = {};
+      data?.forEach(c => { map[c.id] = c.name; });
+      return map;
+    },
+    enabled: !!tenantId && companyIds.size > 0,
+  });
+
+  const companyMap = companies.data ?? {};
+
   // Derived metrics
   const openCases = cases.data?.length ?? 0;
   const casesWithoutOwner = cases.data?.filter(c => !c.owner_user_id) ?? [];
@@ -141,37 +164,43 @@ export function useDashboardData() {
 
   const openWarranties = warranties.data ?? [];
 
-  // Action items
-  const actionItems: Array<{ type: string; label: string; reason: string; link: string; priority: number }> = [];
+  // Action items with severity levels
+  type Severity = "critical" | "warning" | "info";
+  const actionItems: Array<{ type: string; label: string; reason: string; link: string; priority: number; severity: Severity }> = [];
 
-  // Cases without owner
-  casesWithoutOwner.forEach(c => {
-    actionItems.push({ type: "Sak", label: c.case_number + " " + c.title, reason: "Ingen eier tildelt", link: `/tenant/postkontoret`, priority: 2 });
-  });
-
-  // Deals missing company
-  allDeals.filter(d => !d.company_id).forEach(d => {
-    actionItems.push({ type: "Deal", label: d.title, reason: "Mangler kunde", link: `/tenant/crm/deals/${d.id}`, priority: 3 });
-  });
-
-  // Deals in site_visit without site_visit_data
-  allDeals.filter(d => d.stage === "site_visit" && (!d.site_visit_data || !((d.site_visit_data as any)?.template_id))).forEach(d => {
-    actionItems.push({ type: "Deal", label: d.title, reason: "Befaring uten skjema", link: `/tenant/crm/deals/${d.id}`, priority: 2 });
-  });
-
-  // Installation jobs without form_data
-  allJobs.filter(j => j.job_type === "installation" && (!j.form_data || !((j.form_data as any)?.template_id))).forEach(j => {
-    actionItems.push({ type: "Jobb", label: j.job_number + " " + j.title, reason: "Installasjon uten skjema", link: `/tenant/crm/jobs/${j.id}`, priority: 2 });
-  });
-
-  // Service visits without report_data
-  allVisits.filter(v => !v.report_data || !((v.report_data as any)?.template_id)).forEach(v => {
-    actionItems.push({ type: "Besøk", label: `Servicebesøk`, reason: "Mangler skjema", link: v.agreement_id ? `/tenant/crm/agreements/${v.agreement_id}` : `/tenant/crm/jobs/${v.job_id}`, priority: 2 });
-  });
-
-  // Overdue agreements
+  // Overdue agreements – critical
   overdueAgreements.forEach(a => {
-    actionItems.push({ type: "Avtale", label: a.agreement_number, reason: "Forfalt besøk", link: `/tenant/crm/agreements/${a.id}`, priority: 1 });
+    actionItems.push({ type: "Avtale", label: a.agreement_number, reason: "Forfalt servicebesøk", link: `/tenant/crm/agreements/${a.id}`, priority: 1, severity: "critical" });
+  });
+
+  // Cases without owner – critical
+  casesWithoutOwner.forEach(c => {
+    actionItems.push({ type: "Sak", label: c.case_number + " " + c.title, reason: "Ingen eier tildelt", link: `/tenant/postkontoret`, priority: 1, severity: "critical" });
+  });
+
+  // Deals in site_visit without site_visit_data – warning
+  allDeals.filter(d => d.stage === "site_visit" && (!d.site_visit_data || !((d.site_visit_data as any)?.template_id))).forEach(d => {
+    actionItems.push({ type: "Deal", label: d.title, reason: "Befaring uten skjema", link: `/tenant/crm/deals/${d.id}`, priority: 2, severity: "warning" });
+  });
+
+  // Installation jobs without form_data – warning
+  allJobs.filter(j => j.job_type === "installation" && (!j.form_data || !((j.form_data as any)?.template_id))).forEach(j => {
+    actionItems.push({ type: "Jobb", label: j.job_number + " " + j.title, reason: "Installasjon uten skjema", link: `/tenant/crm/jobs/${j.id}`, priority: 2, severity: "warning" });
+  });
+
+  // Service visits without report_data – warning
+  allVisits.filter(v => !v.report_data || !((v.report_data as any)?.template_id)).forEach(v => {
+    actionItems.push({ type: "Besøk", label: `Servicebesøk`, reason: "Mangler utfylt rapport", link: v.agreement_id ? `/tenant/crm/agreements/${v.agreement_id}` : `/tenant/crm/jobs/${v.job_id}`, priority: 2, severity: "warning" });
+  });
+
+  // Deals missing company – info
+  allDeals.filter(d => !d.company_id).forEach(d => {
+    actionItems.push({ type: "Deal", label: d.title, reason: "Mangler kunde", link: `/tenant/crm/deals/${d.id}`, priority: 3, severity: "info" });
+  });
+
+  // Won deals without jobs or agreements
+  (wonDeals.data ?? []).forEach(d => {
+    actionItems.push({ type: "Deal", label: d.title, reason: "Vunnet – mangler oppfølging", link: `/tenant/crm/deals/${d.id}`, priority: 3, severity: "info" });
   });
 
   actionItems.sort((a, b) => a.priority - b.priority);
@@ -179,6 +208,9 @@ export function useDashboardData() {
   // Docs missing
   const jobsMissingForm = allJobs.filter(j => (j.job_type === "installation" || j.job_type === "service") && (!j.form_data || !((j.form_data as any)?.template_id)));
   const visitsMissingReport = allVisits.filter(v => !v.report_data || !((v.report_data as any)?.template_id));
+
+  // Deal inspection missing
+  const dealsMissingInspection = allDeals.filter(d => d.stage === "site_visit" && (!d.site_visit_data || !((d.site_visit_data as any)?.values)));
 
   return {
     loading: cases.isLoading || deals.isLoading || jobs.isLoading || visits.isLoading || agreements.isLoading || warranties.isLoading,
@@ -196,8 +228,10 @@ export function useDashboardData() {
     allAgreements,
     overdueAgreements,
     openWarranties,
-    actionItems: actionItems.slice(0, 15),
+    actionItems: actionItems.slice(0, 20),
     jobsMissingForm,
     visitsMissingReport,
+    dealsMissingInspection,
+    companyMap,
   };
 }
