@@ -118,8 +118,8 @@ function AppRoutes() {
       <Route path="/tenant/crm/customers/import" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><CustomerImportPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/templates" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><TemplatesPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/templates/new" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><TemplateBuilderPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/templates/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><TemplateBuilderPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/templates/submissions" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><FormSubmissionsPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/templates/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><TemplateBuilderPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
 
       {/* Public form route - no auth required */}
       <Route path="/forms/:publishKey" element={<PublicFormPage />} />
