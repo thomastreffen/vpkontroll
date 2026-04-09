@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import TemplateAiAssist from "@/components/templates/TemplateAiAssist";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import TemplateBuilderHeader from "@/components/templates/TemplateBuilderHeader";
@@ -199,6 +200,16 @@ export default function TemplateBuilderPage() {
     markUnsaved();
     toast.success(`${missing.length} felt lagt til`);
   }, [fields, category, markUnsaved]);
+
+  const handleAiApply = useCallback((aiFields: TemplateField[], mode: "replace" | "merge") => {
+    if (mode === "replace") {
+      setFields(aiFields.map((f, i) => ({ ...f, sort_order: i })));
+    } else {
+      setFields(prev => [...prev, ...aiFields].map((f, i) => ({ ...f, sort_order: i })));
+    }
+    setSelectedIndex(null);
+    markUnsaved();
+  }, [markUnsaved]);
 
   const updateField = useCallback((index: number, updates: Partial<TemplateField>) => {
     setFields(prev => prev.map((f, i) => i === index ? { ...f, ...updates } : f));
@@ -410,6 +421,16 @@ export default function TemplateBuilderPage() {
               </div>
             )}
 
+            {/* AI Assist */}
+            {!previewMode && (
+              <div className="mb-4">
+                <TemplateAiAssist
+                  category={category}
+                  fields={fields}
+                  onApplyFields={handleAiApply}
+                />
+              </div>
+            )}
             {previewMode && (
               <div className="mb-6 text-center">
                 <h2 className="text-lg font-semibold">{name || "Uten navn"}</h2>
