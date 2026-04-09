@@ -28,8 +28,8 @@ const statusColor: Record<string, string> = {
 
 export default function DashPostkontoret({ cases, casesWithoutOwner }: Props) {
   const navigate = useNavigate();
-  const newCount = cases.filter(c => c.status === "new").length;
-  const openCount = cases.filter(c => c.status === "open").length;
+  const newCount = cases.filter(c => c.status === "new" || c.status === "triage").length;
+  const openCount = cases.filter(c => c.status === "in_progress").length;
 
   return (
     <Card className="border-border/50">
