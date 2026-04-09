@@ -201,6 +201,16 @@ export default function TemplateBuilderPage() {
     toast.success(`${missing.length} felt lagt til`);
   }, [fields, category, markUnsaved]);
 
+  const handleAiApply = useCallback((aiFields: TemplateField[], mode: "replace" | "merge") => {
+    if (mode === "replace") {
+      setFields(aiFields.map((f, i) => ({ ...f, sort_order: i })));
+    } else {
+      setFields(prev => [...prev, ...aiFields].map((f, i) => ({ ...f, sort_order: i })));
+    }
+    setSelectedIndex(null);
+    markUnsaved();
+  }, [markUnsaved]);
+
   const updateField = useCallback((index: number, updates: Partial<TemplateField>) => {
     setFields(prev => prev.map((f, i) => i === index ? { ...f, ...updates } : f));
     markUnsaved();
