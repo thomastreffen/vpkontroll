@@ -1,5 +1,7 @@
-import { Globe, Code, ExternalLink, Copy, Check, AlertCircle, CheckCircle2 } from "lucide-react";
-import { useState } from "react";
+import { Globe, Code, ExternalLink, Copy, Check, AlertCircle, CheckCircle2, Inbox } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -27,15 +29,39 @@ interface WebFormPublishPanelProps {
   onSuccessMessageChange: (v: string) => void;
   isEdit: boolean;
   isSaved: boolean;
+  templateId?: string | null;
 }
 
 export default function WebFormPublishPanel({
   isPublished, publishKey, webFormType, successMessage,
   onTogglePublish, onFormTypeChange, onSuccessMessageChange,
-  isEdit, isSaved,
+  isEdit, isSaved, templateId,
 }: WebFormPublishPanelProps) {
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedEmbed, setCopiedEmbed] = useState(false);
+  const [submissionCount, setSubmissionCount] = useState<number | null>(null);
+  const [lastSubmission, setLastSubmission] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!templateId) return;
+    (async () => {
+      const { count } = await supabase
+        .from("form_submissions" as any)
+        .select("id", { count: "exact", head: true })
+        .eq("template_id", templateId);
+      setSubmissionCount(count ?? 0);
+
+      const { data } = await supabase
+        .from("form_submissions" as any)
+        .select("submitted_at")
+        .eq("template_id", templateId)
+        .order("submitted_at", { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) {
+        setLastSubmission((data[0] as any).submitted_at);
+      }
+    })();
+  }, [templateId]);
 
   const publicUrl = publishKey ? `${window.location.origin}/forms/${publishKey}` : null;
   const embedCode = publicUrl
@@ -171,6 +197,28 @@ export default function WebFormPublishPanel({
                 Usikker? Bruk lenken direkte, eller send koden til utvikleren din.
               </p>
             </div>
+
+            {/* Submission stats */}
+            {templateId && submissionCount !== null && (
+              <div className="pt-3 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Inbox className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">{submissionCount}</span> innsending{submissionCount !== 1 ? "er" : ""}
+                      {lastSubmission && (
+                        <> · siste {new Date(lastSubmission).toLocaleDateString("nb-NO")}</>
+                      )}
+                    </span>
+                  </div>
+                  <Link to={`/tenant/templates/submissions?template=${templateId}`}>
+                    <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1">
+                      Se innsendinger <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         ) : isPublished && !publishKey ? (
           <div className="pt-3 border-t border-border">
