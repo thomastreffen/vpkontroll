@@ -482,6 +482,27 @@ export function QuoteSection({
         saving={saving} onSave={saveQuote}
         isNewVersion={sorted.length > 0}
       />
+
+      {/* Send quote sheet */}
+      <SendDocumentSheet
+        open={sendSheetOpen}
+        onOpenChange={setSendSheetOpen}
+        context={{
+          templateKey: "quote",
+          placeholders: {
+            customer_name: company?.name,
+            contact_name: contact ? `${contact.first_name} ${contact.last_name || ""}`.trim() : undefined,
+            deal_title: deal.title,
+            site_address: site ? `${site.address || ""}, ${site.postal_code || ""} ${site.city || ""}`.trim() : undefined,
+          },
+          defaultTo: contact?.email || company?.email || undefined,
+          attachments: quotePdf.data ? [{ fileName: `Tilbud_${activeQuote?.quote_number}.pdf`, filePath: quotePdf.data.file_path }] : [],
+          dealId: deal.id,
+          companyId: deal.company_id,
+          activitySubject: `Tilbud ${activeQuote?.quote_number || ""}`,
+        }}
+        onSent={() => onRefresh()}
+      />
     </div>
   );
 }
