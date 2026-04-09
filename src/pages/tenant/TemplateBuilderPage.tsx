@@ -60,6 +60,8 @@ export default function TemplateBuilderPage() {
   const [previewMode, setPreviewMode] = useState(false);
   const [hasAppliedPreset, setHasAppliedPreset] = useState(false);
   const [isDefault, setIsDefault] = useState(false);
+  const [nameError, setNameError] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
   
   // Publish state
   const [isPublished, setIsPublished] = useState(false);
@@ -266,7 +268,13 @@ export default function TemplateBuilderPage() {
   }, [markUnsaved]);
 
   const handleSave = async () => {
-    if (!tenantId || !name.trim()) { toast.error("Malnavn er påkrevd"); return; }
+    if (!tenantId || !name.trim()) {
+      setNameError(true);
+      nameInputRef.current?.focus();
+      toast.error("Du må gi skjemaet et navn før det kan lagres");
+      return;
+    }
+    setNameError(false);
     const nonHeaders = fields.filter(f => f.field_type !== "section_header");
     if (nonHeaders.some(f => !f.label.trim())) { toast.error("Alle felt må ha en label"); return; }
     setSaving(true);
