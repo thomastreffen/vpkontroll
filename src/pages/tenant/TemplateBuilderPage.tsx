@@ -382,11 +382,7 @@ export default function TemplateBuilderPage() {
                     onChange={updates => updateField(selectedIndex!, updates)}
                   />
                 ) : (
-                  <div className="text-center py-12">
-                    <p className="text-xs text-muted-foreground">
-                      Velg et felt eller en seksjon i skjemaet for å se innstillinger
-                    </p>
-                  </div>
+                  <FieldSettingsEmpty />
                 )}
               </div>
             </ScrollArea>
