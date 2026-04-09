@@ -96,10 +96,10 @@ export function useDashboardData() {
     queryFn: async () => {
       const { data } = await supabase
         .from("warranty_cases")
-        .select("id, warranty_number, title, status, created_at")
+        .select("id, warranty_number, issue_description, status, created_at")
         .eq("tenant_id", tenantId!)
         .is("deleted_at", null)
-        .in("status", ["open", "in_progress"]);
+        .in("status", ["open", "investigating"]);
       return data ?? [];
     },
     enabled: !!tenantId,
