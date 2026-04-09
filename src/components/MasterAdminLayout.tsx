@@ -80,6 +80,22 @@ function TopBar({ user, signOut, onMenuClick, isMobile }: { user: any; signOut: 
   );
 }
 
+function RoleSwitchLink() {
+  const { isTenantAdmin } = useAuth();
+  if (!isTenantAdmin) return null;
+  return (
+    <div className="border-t border-border p-2">
+      <Link
+        to="/tenant"
+        className="flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium text-sidebar-foreground/65 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-all"
+      >
+        <ArrowRightLeft className="w-4 h-4 shrink-0" />
+        <span>Tenant Admin</span>
+      </Link>
+    </div>
+  );
+}
+
 export default function MasterAdminLayout({ children }: { children: ReactNode }) {
   const { signOut, user } = useAuth();
   const location = useLocation();
