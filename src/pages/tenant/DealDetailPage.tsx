@@ -27,6 +27,9 @@ import {
 import { ENERGY_SOURCE_LABELS, JOB_TYPE_LABELS, AGREEMENT_INTERVAL_LABELS, SITE_TYPE_LABELS, formatDate, formatDateTime } from "@/lib/domain-labels";
 import { EntityPickerDialog } from "@/components/postkontoret/EntityPickerDialog";
 import { DynamicFormRenderer, type TemplateField } from "@/components/service/DynamicFormRenderer";
+import { FormSignoffSection, DEFAULT_SIGNOFF } from "@/components/forms/FormSignoffSection";
+import { FormPdfActions } from "@/components/forms/FormPdfActions";
+import type { SignoffData } from "@/lib/form-pdf";
 
 const JOB_TYPES = ["installation", "service", "repair", "warranty", "inspection", "decommission"];
 
