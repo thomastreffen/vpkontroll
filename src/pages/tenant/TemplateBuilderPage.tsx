@@ -500,6 +500,7 @@ export default function TemplateBuilderPage() {
                   onSuccessMessageChange={(v) => { setSuccessMessage(v); markUnsaved(); }}
                   isEdit={isEdit}
                   isSaved={saveStatus === "saved"}
+                  templateId={id || null}
                 />
               )}
               </>

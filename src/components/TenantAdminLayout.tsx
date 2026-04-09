@@ -37,6 +37,7 @@ const navSections: { label: string; items: NavItem[] }[] = [
       { label: "Anlegg", href: "/tenant/crm/assets", icon: Cpu, module: "crm" },
       { label: "Serviceavtaler", href: "/tenant/crm/agreements", icon: FileText, module: "crm" },
       { label: "Skjemaer og maler", href: "/tenant/templates", icon: ClipboardList, module: "crm" },
+      { label: "Nettskjema-innsendt", href: "/tenant/templates/submissions", icon: Inbox, module: "crm" },
       { label: "Garantisaker", href: "/tenant/crm/warranties", icon: ShieldAlert, module: "crm" },
     ],
   },
