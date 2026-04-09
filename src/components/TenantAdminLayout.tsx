@@ -195,6 +195,7 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
           <span className="text-sm font-semibold">VPKontroll</span>
         </div>
         <SidebarNav location={location} hasModule={hasModule} />
+        <RoleSwitchLink />
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar user={user} signOut={signOut} isMobile={false} />
