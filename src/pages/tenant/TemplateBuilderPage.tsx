@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import TemplateBuilderHeader from "@/components/templates/TemplateBuilderHeader";
+import WebFormPublishPanel from "@/components/templates/WebFormPublishPanel";
 import FieldPalette from "@/components/templates/FieldPalette";
 import SuggestedFields from "@/components/templates/SuggestedFields";
 import FieldCanvas, { type TemplateField } from "@/components/templates/FieldCanvas";
