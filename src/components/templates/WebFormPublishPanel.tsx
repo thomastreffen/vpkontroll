@@ -29,15 +29,39 @@ interface WebFormPublishPanelProps {
   onSuccessMessageChange: (v: string) => void;
   isEdit: boolean;
   isSaved: boolean;
+  templateId?: string | null;
 }
 
 export default function WebFormPublishPanel({
   isPublished, publishKey, webFormType, successMessage,
   onTogglePublish, onFormTypeChange, onSuccessMessageChange,
-  isEdit, isSaved,
+  isEdit, isSaved, templateId,
 }: WebFormPublishPanelProps) {
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedEmbed, setCopiedEmbed] = useState(false);
+  const [submissionCount, setSubmissionCount] = useState<number | null>(null);
+  const [lastSubmission, setLastSubmission] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!templateId) return;
+    (async () => {
+      const { count } = await supabase
+        .from("form_submissions" as any)
+        .select("id", { count: "exact", head: true })
+        .eq("template_id", templateId);
+      setSubmissionCount(count ?? 0);
+
+      const { data } = await supabase
+        .from("form_submissions" as any)
+        .select("submitted_at")
+        .eq("template_id", templateId)
+        .order("submitted_at", { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) {
+        setLastSubmission((data[0] as any).submitted_at);
+      }
+    })();
+  }, [templateId]);
 
   const publicUrl = publishKey ? `${window.location.origin}/forms/${publishKey}` : null;
   const embedCode = publicUrl
