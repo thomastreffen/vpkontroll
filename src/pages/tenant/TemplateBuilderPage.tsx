@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import TemplateAiAssist from "@/components/templates/TemplateAiAssist";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import TemplateBuilderHeader from "@/components/templates/TemplateBuilderHeader";
