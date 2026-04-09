@@ -142,7 +142,7 @@ export default function WebFormPublishPanel({
                 <Button variant="outline" size="sm" className="h-9 px-3 shrink-0" asChild>
                   <a href={publicUrl!} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="h-3.5 w-3.5" />
-                    <span className="ml-1.5">Åpne</span>
+                    <span className="ml-1.5">Test skjema</span>
                   </a>
                 </Button>
               </div>

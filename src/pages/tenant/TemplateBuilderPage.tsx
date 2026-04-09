@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card } from "@/components/ui/card";
 import TemplateBuilderHeader from "@/components/templates/TemplateBuilderHeader";
 import WebFormPublishPanel from "@/components/templates/WebFormPublishPanel";
+import WebFormStepGuide from "@/components/templates/WebFormStepGuide";
 import FieldPalette from "@/components/templates/FieldPalette";
 import SuggestedFields from "@/components/templates/SuggestedFields";
 import FieldCanvas, { type TemplateField } from "@/components/templates/FieldCanvas";
