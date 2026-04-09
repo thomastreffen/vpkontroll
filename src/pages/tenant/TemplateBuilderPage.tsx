@@ -3,12 +3,17 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Globe, Code, ExternalLink, Copy, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import TemplateAiAssist from "@/components/templates/TemplateAiAssist";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
 import TemplateBuilderHeader from "@/components/templates/TemplateBuilderHeader";
 import FieldPalette from "@/components/templates/FieldPalette";
 import SuggestedFields from "@/components/templates/SuggestedFields";
@@ -17,8 +22,20 @@ import FieldSettingsPanel, { FieldSettingsEmpty } from "@/components/templates/F
 import { buildFullPreset, getSuggestedFields, CATEGORY_TO_CONTEXT, type PresetField } from "@/lib/template-presets";
 import { setAsDefault, clearDefault } from "@/hooks/useDefaultTemplate";
 
+const WEB_FORM_TYPES = [
+  { value: "contact", label: "Kontaktskjema" },
+  { value: "service", label: "Bestill service" },
+  { value: "quote", label: "Be om pris" },
+  { value: "site_visit", label: "Bestill befaring" },
+  { value: "general", label: "Generell henvendelse" },
+];
+
 function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").substring(0, 40);
+}
+
+function generatePublishKey(): string {
+  return crypto.randomUUID().replace(/-/g, "").substring(0, 16);
 }
 
 function emptyField(type: string, sortOrder: number): TemplateField {
@@ -48,6 +65,13 @@ export default function TemplateBuilderPage() {
   const [previewMode, setPreviewMode] = useState(false);
   const [hasAppliedPreset, setHasAppliedPreset] = useState(false);
   const [isDefault, setIsDefault] = useState(false);
+  
+  // Publish state
+  const [isPublished, setIsPublished] = useState(false);
+  const [publishKey, setPublishKey] = useState<string | null>(null);
+  const [webFormType, setWebFormType] = useState("contact");
+  const [successMessage, setSuccessMessage] = useState("Takk for din henvendelse! Vi tar kontakt så snart som mulig.");
+  const [copiedEmbed, setCopiedEmbed] = useState(false);
 
   // Load existing template
   useEffect(() => {
