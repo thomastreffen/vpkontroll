@@ -65,8 +65,6 @@ export default function TemplateBuilderPage() {
   const [publishKey, setPublishKey] = useState<string | null>(null);
   const [webFormType, setWebFormType] = useState("contact");
   const [successMessage, setSuccessMessage] = useState("Takk for din henvendelse! Vi tar kontakt så snart som mulig.");
-  const [copiedEmbed, setCopiedEmbed] = useState(false);
-
   // Load existing template
   useEffect(() => {
     if (!id || !tenantId) return;
