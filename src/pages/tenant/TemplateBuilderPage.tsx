@@ -23,13 +23,6 @@ import FieldSettingsPanel, { FieldSettingsEmpty } from "@/components/templates/F
 import { buildFullPreset, getSuggestedFields, CATEGORY_TO_CONTEXT, type PresetField } from "@/lib/template-presets";
 import { setAsDefault, clearDefault } from "@/hooks/useDefaultTemplate";
 
-const WEB_FORM_TYPES = [
-  { value: "contact", label: "Kontaktskjema" },
-  { value: "service", label: "Bestill service" },
-  { value: "quote", label: "Be om pris" },
-  { value: "site_visit", label: "Bestill befaring" },
-  { value: "general", label: "Generell henvendelse" },
-];
 
 function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").substring(0, 40);
