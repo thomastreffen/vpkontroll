@@ -421,6 +421,16 @@ export default function TemplateBuilderPage() {
               </div>
             )}
 
+            {/* AI Assist */}
+            {!previewMode && (
+              <div className="mb-4">
+                <TemplateAiAssist
+                  category={category}
+                  fields={fields}
+                  onApplyFields={handleAiApply}
+                />
+              </div>
+            )}
             {previewMode && (
               <div className="mb-6 text-center">
                 <h2 className="text-lg font-semibold">{name || "Uten navn"}</h2>
