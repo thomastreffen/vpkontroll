@@ -508,6 +508,9 @@ export default function JobDetailPage() {
                       categoryLabel={isServiceJob ? "Servicerapport PDF" : "Installasjonsrapport PDF"}
                       onPdfGenerated={() => qc.invalidateQueries({ queryKey: ["job-documents", id!] })}
                     />
+                    <Button variant="outline" size="sm" className="gap-1.5 mt-2" onClick={() => setSendReportOpen(true)}>
+                      <Mail className="h-3 w-3" />Send {isServiceJob ? "servicerapport" : "rapport"}
+                    </Button>
                   </div>
                 </>
               ) : effectiveTemplateId ? (
