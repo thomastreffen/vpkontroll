@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { FIELD_TYPE_META } from "./FieldPalette";
 import type { TemplateField } from "./FieldCanvas";
+import { Settings2, HelpCircle } from "lucide-react";
 
 interface Props {
   field: TemplateField;
@@ -18,71 +19,82 @@ function slugify(text: string): string {
 
 const RATING_LABELS = ["Svært dårlig", "Dårlig", "Middels", "God", "Svært god"];
 
+/* ── Empty state when no field is selected ── */
+export function FieldSettingsEmpty() {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+      <div className="h-10 w-10 rounded-xl bg-muted/50 flex items-center justify-center mb-3">
+        <Settings2 className="h-5 w-5 text-muted-foreground/40" />
+      </div>
+      <p className="text-sm font-medium text-muted-foreground/60 mb-1.5">Feltinnstillinger</p>
+      <p className="text-xs text-muted-foreground/40 max-w-[180px] leading-relaxed">
+        Velg et felt eller en seksjon i skjemaet for å se og endre innstillinger
+      </p>
+    </div>
+  );
+}
+
 export default function FieldSettingsPanel({ field, onChange }: Props) {
   const meta = FIELD_TYPE_META[field.field_type];
   const isSection = field.field_type === "section_header";
   const hasOptions = field.field_type === "dropdown" || field.field_type === "checkbox_list";
 
-  const autoKey = (label: string) => {
-    if (!field.field_key || field.field_key === slugify(field.label)) {
-      onChange({ label, field_key: slugify(label) });
-    } else {
-      onChange({ label });
-    }
-  };
-
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center gap-2 pb-2 border-b border-border">
-        {meta && <meta.icon className="h-4 w-4 text-muted-foreground" />}
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          {isSection ? "Seksjon" : meta?.label || field.field_type}
-        </p>
+      <div className="flex items-center gap-2.5 pb-3 border-b border-border">
+        {meta && <meta.icon className="h-4 w-4 text-primary/60" />}
+        <div>
+          <p className="text-xs font-semibold text-foreground">
+            {isSection ? "Seksjon" : meta?.label || field.field_type}
+          </p>
+          <p className="text-[10px] text-muted-foreground">{meta?.description}</p>
+        </div>
       </div>
 
-      {/* ── Generelt ── */}
+      {/* ── General ── */}
       <div className="space-y-3">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Generelt</p>
-
         {!isSection && (
           <div className="space-y-1.5">
-            <Label className="text-xs">Feltnøkkel (intern)</Label>
+            <Label className="text-xs text-muted-foreground">Feltnøkkel</Label>
             <Input
               value={field.field_key}
               onChange={e => onChange({ field_key: e.target.value })}
               placeholder="auto-generert"
-              className="text-xs font-mono"
+              className="text-xs font-mono h-8"
             />
-            <p className="text-[10px] text-muted-foreground">Brukes som lagringsnøkkel i utfylt data</p>
+            <p className="text-[10px] text-muted-foreground/50">Intern lagringsnøkkel</p>
           </div>
         )}
 
-        {/* Help text / subtitle */}
         <div className="space-y-1.5">
-          <Label className="text-xs">{isSection ? "Undertekst (valgfri)" : "Hjelpetekst"}</Label>
+          <Label className="text-xs text-muted-foreground">
+            <HelpCircle className="h-3 w-3 inline mr-1" />
+            {isSection ? "Undertekst" : "Hjelpetekst for utfyller"}
+          </Label>
           <Input
             value={field.help_text}
             onChange={e => onChange({ help_text: e.target.value })}
-            placeholder={isSection ? "Kort beskrivelse av seksjonen" : "Veiledning for utfyller"}
-            className="text-xs"
+            placeholder={isSection ? "Kort beskrivelse..." : "Veiledning som vises under feltet"}
+            className="text-xs h-8"
           />
         </div>
 
         {!isSection && (
-          <div className="flex items-center justify-between py-1">
-            <Label className="text-xs">Obligatorisk felt</Label>
+          <div className="flex items-center justify-between py-1.5 px-1">
+            <Label className="text-xs">Obligatorisk</Label>
             <Switch checked={field.is_required} onCheckedChange={v => onChange({ is_required: v })} />
           </div>
         )}
       </div>
 
-      {/* ── Felttype ── */}
-      <div className="space-y-3">
-        <Separator />
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Felttype</p>
+      <Separator />
+
+      {/* Felttype-bytte */}
+      <div className="space-y-2">
+        <Label className="text-xs text-muted-foreground">Bytt felttype</Label>
         <Select value={field.field_type} onValueChange={v => onChange({ field_type: v })}>
-          <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="text-xs h-8"><SelectValue /></SelectTrigger>
           <SelectContent>
             {Object.entries(FIELD_TYPE_META).map(([k, m]) => (
               <SelectItem key={k} value={k}>{m.label}</SelectItem>
@@ -91,112 +103,116 @@ export default function FieldSettingsPanel({ field, onChange }: Props) {
         </Select>
       </div>
 
-      {/* ── Type-specific settings ── */}
+      {/* ── Type-specific ── */}
 
-      {/* Measurement */}
       {field.field_type === "measurement" && (
-        <div className="space-y-3">
+        <>
           <Separator />
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Måleinnstillinger</p>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Enhet</Label>
-            <Input value={field.unit} onChange={e => onChange({ unit: e.target.value })} placeholder="°C, bar, kW..." className="text-xs" />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <Label className="text-[10px]">Min</Label>
-              <Input
-                type="number"
-                value={field.options?.min ?? ""}
-                onChange={e => onChange({ options: { ...field.options, min: e.target.value ? Number(e.target.value) : undefined } })}
-                className="h-8 text-xs"
-              />
+          <div className="space-y-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Måleinnstillinger</p>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Enhet</Label>
+              <Input value={field.unit} onChange={e => onChange({ unit: e.target.value })} placeholder="°C, bar, kW..." className="text-xs h-8" />
             </div>
-            <div className="space-y-1">
-              <Label className="text-[10px]">Maks</Label>
-              <Input
-                type="number"
-                value={field.options?.max ?? ""}
-                onChange={e => onChange({ options: { ...field.options, max: e.target.value ? Number(e.target.value) : undefined } })}
-                className="h-8 text-xs"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Rating */}
-      {field.field_type === "rating" && (
-        <div className="space-y-3">
-          <Separator />
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Vurderingsinnstillinger</p>
-          <div className="space-y-1">
-            {RATING_LABELS.map((l, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="w-4 text-right font-medium">{i + 1}</span>
-                <span>= {l}</span>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">Min</Label>
+                <Input
+                  type="number"
+                  value={field.options?.min ?? ""}
+                  onChange={e => onChange({ options: { ...field.options, min: e.target.value ? Number(e.target.value) : undefined } })}
+                  className="h-8 text-xs"
+                />
               </div>
-            ))}
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">Maks</Label>
+                <Input
+                  type="number"
+                  value={field.options?.max ?? ""}
+                  onChange={e => onChange({ options: { ...field.options, max: e.target.value ? Number(e.target.value) : undefined } })}
+                  className="h-8 text-xs"
+                />
+              </div>
+            </div>
           </div>
-          <p className="text-[10px] text-muted-foreground">Skalaen 1–5 er fast og vises med labels ved utfylling.</p>
-        </div>
+        </>
       )}
 
-      {/* Dropdown / checkbox_list — secondary note since inline is primary */}
+      {field.field_type === "rating" && (
+        <>
+          <Separator />
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Vurderingsskala</p>
+            <div className="space-y-0.5">
+              {RATING_LABELS.map((l, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground py-0.5">
+                  <span className="w-4 text-right font-medium text-foreground/70">{i + 1}</span>
+                  <span className="text-muted-foreground/60">= {l}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
       {hasOptions && (
-        <div className="space-y-3">
+        <>
           <Separator />
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            {field.field_type === "dropdown" ? "Nedtrekksvalg" : "Listevalg"}
-          </p>
-          <p className="text-[10px] text-muted-foreground">
-            Rediger alternativene direkte i skjemaet til venstre, eller lim inn her (ett per linje):
-          </p>
-          <Textarea
-            value={(field.options?.choices || []).join("\n")}
-            onChange={e => {
-              const choices = e.target.value.split("\n");
-              onChange({ options: { ...field.options, choices } });
-            }}
-            placeholder={"Valg 1\nValg 2\nValg 3"}
-            rows={4}
-            className="text-xs font-mono"
-          />
-        </div>
-      )}
-
-      {/* File */}
-      {field.field_type === "file" && (
-        <div className="space-y-3">
-          <Separator />
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Filinnstillinger</p>
-          <div className="flex items-center justify-between">
-            <Label className="text-xs">Kun bilder</Label>
-            <Switch
-              checked={field.options?.images_only || false}
-              onCheckedChange={v => onChange({ options: { ...field.options, images_only: v } })}
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Alternativer (bulk)
+            </p>
+            <p className="text-[10px] text-muted-foreground/50">
+              Rediger direkte i canvas, eller lim inn her (ett per linje):
+            </p>
+            <Textarea
+              value={(field.options?.choices || []).join("\n")}
+              onChange={e => {
+                const choices = e.target.value.split("\n");
+                onChange({ options: { ...field.options, choices } });
+              }}
+              placeholder={"Alternativ 1\nAlternativ 2\nAlternativ 3"}
+              rows={4}
+              className="text-xs font-mono"
             />
           </div>
-          <p className="text-[10px] text-muted-foreground">Begrens til bildefiler (jpg, png, heic)</p>
-        </div>
+        </>
       )}
 
-      {/* ── Standardverdi ── */}
-      {(field.field_type === "text" || field.field_type === "textarea" || field.field_type === "number") && (
-        <div className="space-y-3">
+      {field.field_type === "file" && (
+        <>
           <Separator />
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Standardverdi</p>
-          <Input
-            value={field.default_value != null ? String(field.default_value) : ""}
-            onChange={e => {
-              const v = e.target.value;
-              onChange({ default_value: field.field_type === "number" && v ? Number(v) : v || null });
-            }}
-            placeholder="Valgfri"
-            className="text-xs"
-            type={field.field_type === "number" ? "number" : "text"}
-          />
-        </div>
+          <div className="space-y-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Fil</p>
+            <div className="flex items-center justify-between px-1">
+              <Label className="text-xs">Kun bilder</Label>
+              <Switch
+                checked={field.options?.images_only || false}
+                onCheckedChange={v => onChange({ options: { ...field.options, images_only: v } })}
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground/50">Begrens til jpg, png, heic</p>
+          </div>
+        </>
+      )}
+
+      {(field.field_type === "text" || field.field_type === "textarea" || field.field_type === "number") && (
+        <>
+          <Separator />
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Standardverdi</p>
+            <Input
+              value={field.default_value != null ? String(field.default_value) : ""}
+              onChange={e => {
+                const v = e.target.value;
+                onChange({ default_value: field.field_type === "number" && v ? Number(v) : v || null });
+              }}
+              placeholder="Valgfri"
+              className="text-xs h-8"
+              type={field.field_type === "number" ? "number" : "text"}
+            />
+          </div>
+        </>
       )}
     </div>
   );
