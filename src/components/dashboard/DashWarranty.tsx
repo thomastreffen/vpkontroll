@@ -44,7 +44,7 @@ export default function DashWarranty({ warranties }: Props) {
                 onClick={() => navigate(`/tenant/crm/warranty/${w.id}`)}
               >
                 <span className="text-xs font-mono text-muted-foreground shrink-0">{w.warranty_number}</span>
-                <p className="text-sm truncate flex-1">{w.title}</p>
+                <p className="text-sm truncate flex-1">{w.issue_description}</p>
                 <span className="text-[10px] text-muted-foreground">{format(new Date(w.created_at), "d. MMM", { locale: nb })}</span>
               </div>
             ))}
