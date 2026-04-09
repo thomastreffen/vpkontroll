@@ -440,6 +440,7 @@ export default function TemplateBuilderPage() {
         <div className="flex-1 bg-muted/30 overflow-auto">
           <div className={`max-w-2xl mx-auto py-6 px-4 ${previewMode ? "max-w-xl" : ""}`}>
             {!previewMode && (
+              <>
               <div className="mb-6 space-y-3 bg-card rounded-lg border border-border p-4">
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Beskrivelse</Label>
@@ -477,8 +478,8 @@ export default function TemplateBuilderPage() {
                   onCopyEmbed={() => { setCopiedEmbed(true); setTimeout(() => setCopiedEmbed(false), 2000); }}
                 />
               )}
-            </div>
-            )}  
+              </>
+            )}
 
             {/* AI Assist */}
             {!previewMode && (
