@@ -115,6 +115,7 @@ export default function DealDetailPage() {
   // Inspection form state
   const [inspectionFormOpen, setInspectionFormOpen] = useState(false);
   const [inspectionFormValues, setInspectionFormValues] = useState<Record<string, any>>({});
+  const [inspectionSignoff, setInspectionSignoff] = useState<SignoffData>(DEFAULT_SIGNOFF);
   const [savingInspection, setSavingInspection] = useState(false);
 
   // Fetch site_visit templates
