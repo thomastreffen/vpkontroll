@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Loader2, Save, Copy, Eye, Pencil, Star, StarOff, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { CATEGORY_TO_CONTEXT, USE_CONTEXT_LABELS } from "@/lib/template-presets";
+import React from "react";
 
 const USE_AREA_OPTIONS: { value: string; label: string; description: string }[] = [
   { value: "service", label: "Servicebesøk", description: "Brukes på servicebesøk og i serviceavtaler" },
@@ -31,12 +32,14 @@ interface Props {
   onTogglePreview: () => void;
   isDefault?: boolean;
   onToggleDefault?: () => void;
+  nameError?: boolean;
+  nameInputRef?: React.RefObject<HTMLInputElement>;
 }
 
 export default function TemplateBuilderHeader({
   name, category, useContext, saveStatus, onNameChange, onCategoryChange,
   onUseContextChange, onSave, onDuplicate, saving, isEdit, previewMode, onTogglePreview,
-  isDefault, onToggleDefault,
+  isDefault, onToggleDefault, nameError, nameInputRef,
 }: Props) {
   const navigate = useNavigate();
   const activeArea = USE_AREA_OPTIONS.find(a => a.value === category);
@@ -52,12 +55,17 @@ export default function TemplateBuilderHeader({
           <ArrowLeft className="h-4 w-4" />
         </Button>
 
-        <Input
-          value={name}
-          onChange={e => onNameChange(e.target.value)}
-          placeholder="Malnavn..."
-          className="h-9 max-w-xs border-0 bg-transparent text-base font-semibold placeholder:text-muted-foreground/50 focus-visible:ring-1"
-        />
+        <div className="flex flex-col">
+          <Input
+            ref={nameInputRef}
+            value={name}
+            onChange={e => onNameChange(e.target.value)}
+            placeholder="F.eks. Kontaktskjema nettside"
+            className={`h-9 max-w-xs border-0 bg-transparent text-base font-semibold placeholder:text-muted-foreground/50 focus-visible:ring-1 ${
+              nameError ? "ring-2 ring-destructive" : ""
+            }`}
+          />
+        </div>
 
         <Select value={category} onValueChange={handleAreaChange}>
           <SelectTrigger className="h-8 w-[180px] text-xs">
@@ -73,7 +81,7 @@ export default function TemplateBuilderHeader({
         </Select>
 
         {/* Save status */}
-        <Badge variant="outline" className={`text-[10px] shrink-0 ${saveStatus === "unsaved" ? "border-amber-500/50 text-amber-600" : ""}`}>
+        <Badge variant="outline" className={`text-[10px] shrink-0 ${saveStatus === "unsaved" ? "border-amber-500/50 text-amber-600" : saveStatus === "saved" ? "border-green-500/50 text-green-600" : ""}`}>
           {saveStatus === "saving" ? "Lagrer..." : saveStatus === "saved" ? "✓ Lagret" : "● Ikke lagret"}
         </Badge>
 
@@ -120,9 +128,9 @@ export default function TemplateBuilderHeader({
           </Button>
         )}
 
-        <Button size="sm" onClick={onSave} disabled={saving || !name.trim()}>
+        <Button size="sm" onClick={onSave} disabled={saving}>
           {saving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1.5" />}
-          {isEdit ? "Lagre" : "Opprett mal"}
+          {isEdit ? "Lagre endringer" : "Opprett mal"}
         </Button>
       </div>
 

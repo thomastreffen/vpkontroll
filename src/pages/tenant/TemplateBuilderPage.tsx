@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card } from "@/components/ui/card";
 import TemplateBuilderHeader from "@/components/templates/TemplateBuilderHeader";
 import WebFormPublishPanel from "@/components/templates/WebFormPublishPanel";
+import WebFormStepGuide from "@/components/templates/WebFormStepGuide";
 import FieldPalette from "@/components/templates/FieldPalette";
 import SuggestedFields from "@/components/templates/SuggestedFields";
 import FieldCanvas, { type TemplateField } from "@/components/templates/FieldCanvas";
@@ -59,6 +60,8 @@ export default function TemplateBuilderPage() {
   const [previewMode, setPreviewMode] = useState(false);
   const [hasAppliedPreset, setHasAppliedPreset] = useState(false);
   const [isDefault, setIsDefault] = useState(false);
+  const [nameError, setNameError] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
   
   // Publish state
   const [isPublished, setIsPublished] = useState(false);
@@ -265,7 +268,13 @@ export default function TemplateBuilderPage() {
   }, [markUnsaved]);
 
   const handleSave = async () => {
-    if (!tenantId || !name.trim()) { toast.error("Malnavn er påkrevd"); return; }
+    if (!tenantId || !name.trim()) {
+      setNameError(true);
+      nameInputRef.current?.focus();
+      toast.error("Du må gi skjemaet et navn før det kan lagres");
+      return;
+    }
+    setNameError(false);
     const nonHeaders = fields.filter(f => f.field_type !== "section_header");
     if (nonHeaders.some(f => !f.label.trim())) { toast.error("Alle felt må ha en label"); return; }
     setSaving(true);
@@ -396,7 +405,7 @@ export default function TemplateBuilderPage() {
         category={category}
         useContext={useContext}
         saveStatus={saveStatus}
-        onNameChange={v => { setName(v); markUnsaved(); if (!templateKey || templateKey === slugify(name)) setTemplateKey(slugify(v)); }}
+        onNameChange={v => { setName(v); setNameError(false); markUnsaved(); if (!templateKey || templateKey === slugify(name)) setTemplateKey(slugify(v)); }}
         onCategoryChange={handleCategoryChange}
         onUseContextChange={v => { setUseContext(v); markUnsaved(); }}
         onSave={handleSave}
@@ -407,6 +416,8 @@ export default function TemplateBuilderPage() {
         onTogglePreview={() => { setPreviewMode(p => !p); setSelectedIndex(null); }}
         isDefault={isDefault}
         onToggleDefault={isEdit ? handleToggleDefault : undefined}
+        nameError={nameError}
+        nameInputRef={nameInputRef}
       />
 
       <div className="flex flex-1 min-h-0">
@@ -433,6 +444,28 @@ export default function TemplateBuilderPage() {
           <div className={`max-w-2xl mx-auto py-6 px-4 ${previewMode ? "max-w-xl" : ""}`}>
             {!previewMode && (
               <>
+              {/* Name help text for web forms */}
+              {category === "web" && !name.trim() && (
+                <p className="text-xs text-muted-foreground mb-2">
+                  Gi skjemaet et tydelig navn så du finner det igjen senere. Eksempel: «Kontaktskjema nettside», «Bestill service», «Prisforespørsel varmepumpe»
+                </p>
+              )}
+              {nameError && (
+                <p className="text-xs text-destructive mb-2 font-medium">
+                  Du må gi skjemaet et navn før det kan lagres
+                </p>
+              )}
+
+              {/* Step guide for web forms */}
+              {category === "web" && (
+                <WebFormStepGuide
+                  hasName={!!name.trim()}
+                  isSaved={isEdit && saveStatus === "saved"}
+                  hasFormType={!!webFormType}
+                  isPublished={isPublished}
+                />
+              )}
+
               <div className="mb-6 space-y-3 bg-card rounded-lg border border-border p-4">
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Beskrivelse</Label>
