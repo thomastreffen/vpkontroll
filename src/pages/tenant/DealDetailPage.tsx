@@ -30,6 +30,7 @@ import { DynamicFormRenderer, type TemplateField } from "@/components/service/Dy
 import { FormSignoffSection, DEFAULT_SIGNOFF } from "@/components/forms/FormSignoffSection";
 import { FormPdfActions } from "@/components/forms/FormPdfActions";
 import { QuoteSection } from "@/components/crm/QuoteSection";
+import { SendDocumentSheet, type SendDocumentContext } from "@/components/communication/SendDocumentSheet";
 import type { SignoffData } from "@/lib/form-pdf";
 
 const JOB_TYPES = ["installation", "service", "repair", "warranty", "inspection", "decommission"];
@@ -111,6 +112,7 @@ export default function DealDetailPage() {
   const [inspectionFormValues, setInspectionFormValues] = useState<Record<string, any>>({});
   const [inspectionSignoff, setInspectionSignoff] = useState<SignoffData>(DEFAULT_SIGNOFF);
   const [savingInspection, setSavingInspection] = useState(false);
+  const [sendInspectionOpen, setSendInspectionOpen] = useState(false);
 
   // Fetch site_visit templates
   const siteVisitTemplates = useQuery({
@@ -815,6 +817,11 @@ export default function DealDetailPage() {
                       existingPdf={dealPdfDoc.data}
                       onPdfGenerated={() => dealPdfDoc.refetch()}
                     />
+                    {dealPdfDoc.data && (
+                      <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setSendInspectionOpen(true)}>
+                        <Mail className="h-3 w-3" />Send rapport
+                      </Button>
+                    )}
                   </div>
                 </div>
               ) : (
