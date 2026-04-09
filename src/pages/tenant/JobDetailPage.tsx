@@ -587,6 +587,27 @@ export default function JobDetailPage() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Send report sheet */}
+      <SendDocumentSheet
+        open={sendReportOpen}
+        onOpenChange={setSendReportOpen}
+        context={{
+          templateKey: isServiceJob ? "service_report" : "installation_report",
+          placeholders: {
+            customer_name: company.data?.name,
+            contact_name: contact.data ? `${contact.data.first_name} ${contact.data.last_name || ""}`.trim() : undefined,
+            site_address: site.data ? `${site.data.address || ""}, ${site.data.city || ""}`.trim() : undefined,
+            report_date: formatDate(j.created_at),
+          },
+          defaultTo: contact.data?.email || company.data?.email || undefined,
+          attachments: [],
+          dealId: deal.data?.id,
+          companyId: j.company_id || undefined,
+          activitySubject: isServiceJob ? "Servicerapport" : "Installasjonsrapport",
+        }}
+        onSent={() => qc.invalidateQueries({ queryKey: ["job", id] })}
+      />
     </div>
   );
 }
