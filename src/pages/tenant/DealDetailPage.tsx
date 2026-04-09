@@ -1631,6 +1631,8 @@ export default function DealDetailPage() {
             ) : (
               <p className="text-sm text-muted-foreground">Malen har ingen felter ennå.</p>
             )}
+            <Separator />
+            <FormSignoffSection signoff={inspectionSignoff} onChange={setInspectionSignoff} />
           </div>
           <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
             <Button variant="outline" onClick={() => setInspectionFormOpen(false)}>Avbryt</Button>
@@ -1644,6 +1646,7 @@ export default function DealDetailPage() {
                   template_id: effectiveInspectionTemplateId,
                   template_key: template?.template_key || "",
                   values: inspectionFormValues,
+                  signoff: inspectionSignoff,
                 };
                 const { error } = await supabase.from("crm_deals").update({
                   site_visit_data: payload,
