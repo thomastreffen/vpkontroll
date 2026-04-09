@@ -8,7 +8,7 @@ import { nb } from "date-fns/locale";
 interface Warranty {
   id: string;
   warranty_number: string;
-  title: string;
+  issue_description: string;
   status: string;
   created_at: string;
 }
