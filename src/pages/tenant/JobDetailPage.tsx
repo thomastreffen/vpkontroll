@@ -26,6 +26,7 @@ import { ScheduleEventDialog } from "@/components/crud/ScheduleEventDialog";
 import { DynamicFormRenderer, type TemplateField } from "@/components/service/DynamicFormRenderer";
 import { FormSignoffSection, DEFAULT_SIGNOFF } from "@/components/forms/FormSignoffSection";
 import { FormPdfActions } from "@/components/forms/FormPdfActions";
+import { SendDocumentSheet } from "@/components/communication/SendDocumentSheet";
 import type { SignoffData } from "@/lib/form-pdf";
 import { toast } from "sonner";
 
@@ -57,6 +58,7 @@ export default function JobDetailPage() {
   const [savingForm, setSavingForm] = useState(false);
   const [markCompleted, setMarkCompleted] = useState(false);
   const [formSignoff, setFormSignoff] = useState<SignoffData>({ ...DEFAULT_SIGNOFF });
+  const [sendReportOpen, setSendReportOpen] = useState(false);
 
   useEffect(() => {
     if (!id || !tenantId) return;
