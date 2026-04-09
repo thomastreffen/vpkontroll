@@ -25,7 +25,7 @@ export default function TenantDashboardPage() {
         <p className="text-sm text-muted-foreground">Operativ oversikt – klikk for å gå videre</p>
       </div>
 
-      {/* Row 1 – KPI cards */}
+      {/* KPI cards */}
       <DashKpiCards
         openCases={d.openCases}
         dealsNeedAction={d.allDeals.length}
@@ -37,19 +37,24 @@ export default function TenantDashboardPage() {
         unplannedJobs={d.unplannedJobs.length}
       />
 
-      {/* Row 2 – Mini kanban */}
-      <DashMiniKanban dealsByStage={d.dealsByStage} />
-
-      {/* Row 3 – Action items */}
+      {/* Action items – most prominent */}
       <DashActionItems items={d.actionItems} />
 
-      {/* Row 4 – Drift */}
-      <DashDriftSection jobsThisWeek={d.jobsThisWeek} visitsNext14={d.visitsNext14} />
+      {/* Sales pipeline */}
+      <DashMiniKanban dealsByStage={d.dealsByStage} wonDeals={d.wonDeals} companyMap={d.companyMap} />
 
-      {/* Row 5 – Bottom grid */}
+      {/* Drift */}
+      <DashDriftSection jobsThisWeek={d.jobsThisWeek} visitsNext14={d.visitsNext14} companyMap={d.companyMap} />
+
+      {/* Bottom grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <DashDocsStatus
+          jobsMissingForm={d.jobsMissingForm}
+          visitsMissingReport={d.visitsMissingReport}
+          dealsMissingInspection={d.dealsMissingInspection}
+          companyMap={d.companyMap}
+        />
         <DashPostkontoret cases={d.casesData} casesWithoutOwner={d.casesWithoutOwner} />
-        <DashDocsStatus jobsMissingForm={d.jobsMissingForm} visitsMissingReport={d.visitsMissingReport} />
         <DashWarranty warranties={d.openWarranties} />
       </div>
     </div>
