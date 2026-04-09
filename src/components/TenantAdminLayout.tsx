@@ -175,6 +175,7 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
               <span className="text-sm font-semibold">VPKontroll</span>
             </div>
             <SidebarNav location={location} onNavigate={() => setOpen(false)} hasModule={hasModule} />
+            <RoleSwitchLink />
           </SheetContent>
         </Sheet>
         <main className="flex-1 overflow-auto">
