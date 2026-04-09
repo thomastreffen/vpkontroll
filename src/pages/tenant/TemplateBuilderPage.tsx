@@ -3,12 +3,17 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Globe, Code, ExternalLink, Copy, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import TemplateAiAssist from "@/components/templates/TemplateAiAssist";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
 import TemplateBuilderHeader from "@/components/templates/TemplateBuilderHeader";
 import FieldPalette from "@/components/templates/FieldPalette";
 import SuggestedFields from "@/components/templates/SuggestedFields";
@@ -17,8 +22,20 @@ import FieldSettingsPanel, { FieldSettingsEmpty } from "@/components/templates/F
 import { buildFullPreset, getSuggestedFields, CATEGORY_TO_CONTEXT, type PresetField } from "@/lib/template-presets";
 import { setAsDefault, clearDefault } from "@/hooks/useDefaultTemplate";
 
+const WEB_FORM_TYPES = [
+  { value: "contact", label: "Kontaktskjema" },
+  { value: "service", label: "Bestill service" },
+  { value: "quote", label: "Be om pris" },
+  { value: "site_visit", label: "Bestill befaring" },
+  { value: "general", label: "Generell henvendelse" },
+];
+
 function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").substring(0, 40);
+}
+
+function generatePublishKey(): string {
+  return crypto.randomUUID().replace(/-/g, "").substring(0, 16);
 }
 
 function emptyField(type: string, sortOrder: number): TemplateField {
@@ -48,6 +65,13 @@ export default function TemplateBuilderPage() {
   const [previewMode, setPreviewMode] = useState(false);
   const [hasAppliedPreset, setHasAppliedPreset] = useState(false);
   const [isDefault, setIsDefault] = useState(false);
+  
+  // Publish state
+  const [isPublished, setIsPublished] = useState(false);
+  const [publishKey, setPublishKey] = useState<string | null>(null);
+  const [webFormType, setWebFormType] = useState("contact");
+  const [successMessage, setSuccessMessage] = useState("Takk for din henvendelse! Vi tar kontakt så snart som mulig.");
+  const [copiedEmbed, setCopiedEmbed] = useState(false);
 
   // Load existing template
   useEffect(() => {
@@ -66,6 +90,10 @@ export default function TemplateBuilderPage() {
       setTemplateKey(t.template_key || "");
       setUseContext(t.use_context || "");
       setIsDefault(t.is_default || false);
+      setIsPublished(t.is_published || false);
+      setPublishKey(t.publish_key || null);
+      setWebFormType(t.web_form_type || "contact");
+      setSuccessMessage(t.success_message || "Takk for din henvendelse! Vi tar kontakt så snart som mulig.");
       setHasAppliedPreset(true);
 
       const { data: fieldData } = await supabase
@@ -255,11 +283,23 @@ export default function TemplateBuilderPage() {
       let templateId = id;
       const tKey = templateKey.trim() || slugify(name);
 
+      const publishFields = category === "web" ? {
+        is_published: isPublished,
+        publish_key: publishKey || (isPublished ? generatePublishKey() : null),
+        web_form_type: webFormType,
+        success_message: successMessage.trim() || null,
+      } : {};
+
       if (isEdit) {
         await supabase.from("service_templates" as any).update({
           name: name.trim(), description: description.trim() || null,
           category, template_key: tKey, use_context: useContext || null,
+          ...publishFields,
         }).eq("id", templateId);
+        // If we just generated a publish_key, store it locally
+        if (publishFields.publish_key && !publishKey) {
+          setPublishKey(publishFields.publish_key);
+        }
         await supabase.from("service_template_fields" as any).delete().eq("template_id", templateId);
       } else {
         const { data, error } = await (supabase
@@ -268,11 +308,13 @@ export default function TemplateBuilderPage() {
             tenant_id: tenantId, name: name.trim(), description: description.trim() || null,
             category, template_key: tKey, created_by: user?.id,
             use_context: useContext || null,
+            ...publishFields,
           })
           .select("id")
           .single() as any);
         if (error) throw error;
         templateId = data.id;
+        if (publishFields.publish_key) setPublishKey(publishFields.publish_key);
       }
 
       if (fields.length > 0) {
@@ -398,6 +440,7 @@ export default function TemplateBuilderPage() {
         <div className="flex-1 bg-muted/30 overflow-auto">
           <div className={`max-w-2xl mx-auto py-6 px-4 ${previewMode ? "max-w-xl" : ""}`}>
             {!previewMode && (
+              <>
               <div className="mb-6 space-y-3 bg-card rounded-lg border border-border p-4">
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Beskrivelse</Label>
@@ -419,6 +462,23 @@ export default function TemplateBuilderPage() {
                   />
                 </div>
               </div>
+
+              {/* Web form publish section */}
+              {category === "web" && (
+                <WebFormPublishSection
+                  isPublished={isPublished}
+                  publishKey={publishKey}
+                  webFormType={webFormType}
+                  successMessage={successMessage}
+                  onTogglePublish={(v) => { setIsPublished(v); if (v && !publishKey) setPublishKey(generatePublishKey()); markUnsaved(); }}
+                  onFormTypeChange={(v) => { setWebFormType(v); markUnsaved(); }}
+                  onSuccessMessageChange={(v) => { setSuccessMessage(v); markUnsaved(); }}
+                  isEdit={isEdit}
+                  copiedEmbed={copiedEmbed}
+                  onCopyEmbed={() => { setCopiedEmbed(true); setTimeout(() => setCopiedEmbed(false), 2000); }}
+                />
+              )}
+              </>
             )}
 
             {/* AI Assist */}
@@ -474,5 +534,120 @@ export default function TemplateBuilderPage() {
         )}
       </div>
     </div>
+  );
+}
+
+/* ─── Web Form Publish Section ─── */
+function WebFormPublishSection({
+  isPublished, publishKey, webFormType, successMessage,
+  onTogglePublish, onFormTypeChange, onSuccessMessageChange,
+  isEdit, copiedEmbed, onCopyEmbed,
+}: {
+  isPublished: boolean;
+  publishKey: string | null;
+  webFormType: string;
+  successMessage: string;
+  onTogglePublish: (v: boolean) => void;
+  onFormTypeChange: (v: string) => void;
+  onSuccessMessageChange: (v: string) => void;
+  isEdit: boolean;
+  copiedEmbed: boolean;
+  onCopyEmbed: () => void;
+}) {
+  const publicUrl = publishKey ? `${window.location.origin}/forms/${publishKey}` : null;
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || "";
+  const embedCode = publicUrl
+    ? `<iframe src="${publicUrl}" width="100%" height="600" frameborder="0" style="border:none; max-width:600px;"></iframe>`
+    : "";
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    onCopyEmbed();
+  };
+
+  return (
+    <Card className="mb-6 p-4 space-y-4 border-primary/20 bg-primary/5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Globe className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium">Nettskjema</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">{isPublished ? "Publisert" : "Ikke publisert"}</span>
+          <Switch checked={isPublished} onCheckedChange={onTogglePublish} />
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs">Skjematype</Label>
+        <Select value={webFormType} onValueChange={onFormTypeChange}>
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {WEB_FORM_TYPES.map(t => (
+              <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-[10px] text-muted-foreground">
+          {webFormType === "contact" && "Oppretter sak i Postkontoret"}
+          {webFormType === "service" && "Oppretter serviceforespørsel i Postkontoret"}
+          {webFormType === "quote" && "Oppretter ny lead/deal i CRM"}
+          {webFormType === "site_visit" && "Oppretter befaringsforespørsel i CRM"}
+          {webFormType === "general" && "Oppretter generell sak i Postkontoret"}
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs">Suksessmelding</Label>
+        <Textarea
+          value={successMessage}
+          onChange={e => onSuccessMessageChange(e.target.value)}
+          rows={2}
+          className="text-xs resize-none"
+        />
+      </div>
+
+      {isPublished && publishKey && (
+        <div className="space-y-3 pt-2 border-t border-border">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Direkte lenke</Label>
+            <div className="flex gap-1.5">
+              <Input value={publicUrl || ""} readOnly className="text-xs font-mono h-8 flex-1" />
+              <Button variant="outline" size="sm" className="h-8 shrink-0" onClick={() => handleCopy(publicUrl!)}>
+                {copiedEmbed ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+              </Button>
+              <Button variant="outline" size="sm" className="h-8 shrink-0" asChild>
+                <a href={publicUrl!} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-3 w-3" /></a>
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs flex items-center gap-1.5">
+              <Code className="h-3 w-3" /> Embed-kode
+            </Label>
+            <div className="relative">
+              <Textarea value={embedCode} readOnly rows={3} className="text-[10px] font-mono resize-none" />
+              <Button
+                variant="outline"
+                size="sm"
+                className="absolute top-1.5 right-1.5 h-6 text-[10px]"
+                onClick={() => handleCopy(embedCode)}
+              >
+                {copiedEmbed ? "Kopiert!" : "Kopier"}
+              </Button>
+            </div>
+          </div>
+
+          {!isEdit && (
+            <p className="text-[10px] text-amber-600">
+              Lagre malen først for å aktivere publisering.
+            </p>
+          )}
+        </div>
+      )}
+    </Card>
   );
 }

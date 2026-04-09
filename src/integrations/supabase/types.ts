@@ -933,6 +933,66 @@ export type Database = {
           },
         ]
       }
+      form_submissions: {
+        Row: {
+          created_at: string
+          created_case_id: string | null
+          created_company_id: string | null
+          created_contact_id: string | null
+          created_deal_id: string | null
+          id: string
+          payload: Json
+          source_url: string | null
+          submitted_at: string
+          template_id: string
+          tenant_id: string
+          web_form_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_case_id?: string | null
+          created_company_id?: string | null
+          created_contact_id?: string | null
+          created_deal_id?: string | null
+          id?: string
+          payload?: Json
+          source_url?: string | null
+          submitted_at?: string
+          template_id: string
+          tenant_id: string
+          web_form_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_case_id?: string | null
+          created_company_id?: string | null
+          created_contact_id?: string | null
+          created_deal_id?: string | null
+          id?: string
+          payload?: Json
+          source_url?: string | null
+          submitted_at?: string
+          template_id?: string
+          tenant_id?: string
+          web_form_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_submissions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "service_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_submissions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hvac_assets: {
         Row: {
           created_at: string
@@ -1665,11 +1725,15 @@ export type Database = {
           id: string
           is_active: boolean
           is_default: boolean
+          is_published: boolean
           name: string
+          publish_key: string | null
+          success_message: string | null
           template_key: string | null
           tenant_id: string
           updated_at: string
           use_context: string | null
+          web_form_type: string | null
         }
         Insert: {
           category?: string
@@ -1679,11 +1743,15 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_default?: boolean
+          is_published?: boolean
           name: string
+          publish_key?: string | null
+          success_message?: string | null
           template_key?: string | null
           tenant_id: string
           updated_at?: string
           use_context?: string | null
+          web_form_type?: string | null
         }
         Update: {
           category?: string
@@ -1693,11 +1761,15 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_default?: boolean
+          is_published?: boolean
           name?: string
+          publish_key?: string | null
+          success_message?: string | null
           template_key?: string | null
           tenant_id?: string
           updated_at?: string
           use_context?: string | null
+          web_form_type?: string | null
         }
         Relationships: [
           {
