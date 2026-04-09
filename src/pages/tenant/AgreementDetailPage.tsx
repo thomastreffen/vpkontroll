@@ -761,6 +761,25 @@ export default function AgreementDetailPage() {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      {/* Send service report sheet */}
+      <SendDocumentSheet
+        open={sendReportOpen}
+        onOpenChange={setSendReportOpen}
+        context={{
+          templateKey: "service_report",
+          placeholders: {
+            customer_name: company.data?.name,
+            site_address: site.data ? `${site.data.address || ""}, ${site.data.city || ""}`.trim() : undefined,
+            report_date: visitDetailOpen?.scheduled_date || new Date().toISOString().slice(0, 10),
+          },
+          defaultTo: company.data?.email || undefined,
+          attachments: [],
+          companyId: a.company_id,
+          activitySubject: `Servicerapport – ${a.agreement_number}`,
+        }}
+        onSent={() => visits.refetch()}
+      />
     </div>
   );
 }
