@@ -879,24 +879,48 @@ export default function DealDetailPage() {
           {effectiveInspectionTemplateId ? (
             <div className="space-y-2">
               {hasInspectionForm ? (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <DynamicFormRenderer
                     fields={inspectionFields.data || []}
                     values={inspectionData?.values || {}}
                     readonly
                   />
-                  <div className="flex gap-2 pt-2 border-t">
+                  {inspectionSignoffData && (
+                    <FormSignoffSection signoff={inspectionSignoffData} onChange={() => {}} readonly />
+                  )}
+                  <div className="flex flex-wrap gap-2 pt-2 border-t">
                     <Button size="sm" variant="outline" className="gap-1.5" onClick={() => {
                       setInspectionFormValues(inspectionData?.values || {});
+                      setInspectionSignoff(inspectionSignoffData || DEFAULT_SIGNOFF);
                       setInspectionFormOpen(true);
                     }}>
                       <Pencil className="h-3 w-3" />Rediger skjema
                     </Button>
+                    <FormPdfActions
+                      fields={inspectionFields.data || []}
+                      values={inspectionData?.values || {}}
+                      context={{
+                        title: "Befaringsrapport",
+                        templateName: (siteVisitTemplates.data || []).find((t: any) => t.id === effectiveInspectionTemplateId)?.name || "Befaring",
+                        customerName: company?.name,
+                        address: site ? `${site.address || ""}, ${site.postal_code || ""} ${site.city || ""}` : undefined,
+                        siteName: site?.name,
+                        date: deal.site_visit_date || new Date().toISOString().slice(0, 10),
+                        dealTitle: deal.title,
+                      }}
+                      signoff={inspectionSignoffData}
+                      entityType="deal"
+                      entityId={deal.id}
+                      categoryLabel="Befaringsrapport PDF"
+                      existingPdf={dealPdfDoc.data}
+                      onPdfGenerated={() => dealPdfDoc.refetch()}
+                    />
                   </div>
                 </div>
               ) : (
                 <Button size="sm" className="gap-1.5 w-full" onClick={() => {
                   setInspectionFormValues({});
+                  setInspectionSignoff(DEFAULT_SIGNOFF);
                   setInspectionFormOpen(true);
                 }}>
                   <ClipboardList className="h-3.5 w-3.5" />Fyll ut befaringsskjema
