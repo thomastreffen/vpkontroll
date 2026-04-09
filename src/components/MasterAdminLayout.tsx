@@ -117,6 +117,7 @@ export default function MasterAdminLayout({ children }: { children: ReactNode })
               <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded font-medium">Admin</span>
             </div>
             <SidebarNav location={location} onNavigate={() => setOpen(false)} />
+            <RoleSwitchLink />
           </SheetContent>
         </Sheet>
         <main className="flex-1 overflow-auto">
