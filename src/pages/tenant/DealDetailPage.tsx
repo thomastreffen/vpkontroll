@@ -29,6 +29,7 @@ import { EntityPickerDialog } from "@/components/postkontoret/EntityPickerDialog
 import { DynamicFormRenderer, type TemplateField } from "@/components/service/DynamicFormRenderer";
 import { FormSignoffSection, DEFAULT_SIGNOFF } from "@/components/forms/FormSignoffSection";
 import { FormPdfActions } from "@/components/forms/FormPdfActions";
+import { QuoteSection } from "@/components/crm/QuoteSection";
 import type { SignoffData } from "@/lib/form-pdf";
 
 const JOB_TYPES = ["installation", "service", "repair", "warranty", "inspection", "decommission"];
@@ -76,14 +77,7 @@ export default function DealDetailPage() {
     title: "", job_type: "installation", description: "", priority: "normal",
   });
 
-  // Create quote sheet
-  const [quoteSheetOpen, setQuoteSheetOpen] = useState(false);
-  const [creatingQuote, setCreatingQuote] = useState(false);
-  const [quoteLines, setQuoteLines] = useState<{ description: string; quantity: string; unit_price: string; unit: string }[]>([
-    { description: "", quantity: "1", unit_price: "", unit: "stk" },
-  ]);
-  const [quoteNotes, setQuoteNotes] = useState("");
-  const [quoteValidUntil, setQuoteValidUntil] = useState("");
+  // (Quote state handled by QuoteSection)
 
   // Add note
   const [noteOpen, setNoteOpen] = useState(false);
@@ -403,101 +397,7 @@ export default function DealDetailPage() {
     fetchDeal();
   };
 
-  /* ─── Create quote ──────────────────────────────────────────── */
-  const openCreateQuote = () => {
-    setQuoteLines([{ description: "", quantity: "1", unit_price: "", unit: "stk" }]);
-    setQuoteNotes("");
-    setQuoteValidUntil("");
-    setQuoteSheetOpen(true);
-  };
-
-  const addQuoteLine = () => {
-    setQuoteLines([...quoteLines, { description: "", quantity: "1", unit_price: "", unit: "stk" }]);
-  };
-
-  const updateQuoteLine = (i: number, field: string, value: string) => {
-    const updated = [...quoteLines];
-    (updated[i] as any)[field] = value;
-    setQuoteLines(updated);
-  };
-
-  const removeQuoteLine = (i: number) => {
-    if (quoteLines.length <= 1) return;
-    setQuoteLines(quoteLines.filter((_, idx) => idx !== i));
-  };
-
-  const quoteTotal = quoteLines.reduce((sum, l) => {
-    const qty = parseFloat(l.quantity) || 0;
-    const price = parseFloat(l.unit_price) || 0;
-    return sum + qty * price;
-  }, 0);
-
-  const createQuote = async () => {
-    if (!deal || !tenantId) return;
-    const validLines = quoteLines.filter(l => l.description.trim() && l.unit_price);
-    if (validLines.length === 0) { toast.error("Legg til minst én linje"); return; }
-
-    setCreatingQuote(true);
-    const vatAmount = Math.round(quoteTotal * 0.25);
-    const { data: q, error } = await supabase.from("quotes").insert({
-      tenant_id: tenantId, deal_id: deal.id, quote_number: "TEMP",
-      total_amount: quoteTotal, vat_amount: vatAmount,
-      notes: quoteNotes || null,
-      valid_until: quoteValidUntil || null,
-      created_by: user?.id,
-    } as any).select().single();
-
-    if (error || !q) { setCreatingQuote(false); toast.error("Kunne ikke opprette tilbud"); return; }
-
-    // Insert lines
-    const lineInserts = validLines.map((l, i) => ({
-      tenant_id: tenantId, quote_id: q.id, description: l.description.trim(),
-      quantity: parseFloat(l.quantity) || 1, unit_price: parseFloat(l.unit_price) || 0,
-      unit: l.unit || "stk", sort_order: i,
-      line_total: (parseFloat(l.quantity) || 1) * (parseFloat(l.unit_price) || 0),
-    }));
-    await supabase.from("quote_lines").insert(lineInserts as any);
-
-    // Log activity
-    await supabase.from("crm_activities").insert({
-      tenant_id: tenantId, deal_id: deal.id, company_id: deal.company_id,
-      type: "task", subject: `Tilbud ${q.quote_number} opprettet (${formatCurrency(quoteTotal)})`,
-      created_by: user?.id,
-    } as any);
-
-    setCreatingQuote(false);
-    toast.success(`Tilbud ${q.quote_number} opprettet`);
-    setQuoteSheetOpen(false);
-    fetchDeal();
-  };
-
-  /* ─── Quote actions ─────────────────────────────────────────── */
-  const updateQuoteStatus = async (quoteId: string, status: string, quoteNumber: string) => {
-    const updatePayload: any = { status };
-    if (status === "sent") updatePayload.sent_at = new Date().toISOString();
-    if (status === "accepted") updatePayload.accepted_at = new Date().toISOString();
-
-    const { error } = await supabase.from("quotes").update(updatePayload).eq("id", quoteId);
-    if (error) { toast.error("Kunne ikke oppdatere tilbud"); return; }
-
-    // If accepted, move deal to won
-    if (status === "accepted" && deal.stage !== "won") {
-      await changeStage("won");
-    }
-
-    // Log activity
-    if (tenantId) {
-      const statusLabel = QUOTE_STATUS_LABELS[status] || status;
-      await supabase.from("crm_activities").insert({
-        tenant_id: tenantId, deal_id: deal.id, company_id: deal.company_id,
-        type: "status_change", subject: `Tilbud ${quoteNumber} markert som ${statusLabel}`,
-        created_by: user?.id,
-      } as any);
-    }
-
-    toast.success(`Tilbud markert som ${QUOTE_STATUS_LABELS[status] || status}`);
-    fetchDeal();
-  };
+  // (Quote create/update logic now in QuoteSection component)
 
   /* ─── Add activity note ─────────────────────────────────────── */
   const saveNote = async () => {
@@ -632,7 +532,7 @@ export default function DealDetailPage() {
         <div className="flex items-center gap-3 flex-wrap">
           {!isClosed && stageNext && (
             <Button size="sm" onClick={() => {
-              if (stageNext.next === "quote_sent") { openCreateQuote(); return; }
+              if (stageNext.next === "quote_sent") { changeStage("quote_sent"); return; }
               changeStage(stageNext.next);
             }} className="gap-1.5">
               <ArrowRight className="h-3.5 w-3.5" />{stageNext.label}
@@ -649,8 +549,8 @@ export default function DealDetailPage() {
           )}
           {!isClosed && (
             <>
-              <Button variant="outline" size="sm" onClick={openCreateQuote} className="gap-1.5">
-                <FileText className="h-3.5 w-3.5" />Nytt tilbud
+              <Button variant="outline" size="sm" onClick={() => { setNoteType("note"); setNoteBody(""); setNoteOpen(true); }} className="gap-1.5">
+                <MessageSquare className="h-3.5 w-3.5" />Legg til notat
               </Button>
               <Button variant="outline" size="sm" onClick={() => { setNoteType("note"); setNoteBody(""); setNoteOpen(true); }} className="gap-1.5">
                 <MessageSquare className="h-3.5 w-3.5" />Legg til notat
@@ -994,56 +894,21 @@ export default function DealDetailPage() {
         </TabsList>
 
         <TabsContent value="quotes" className="mt-4">
-          {quotes.length === 0 ? (
-            <Card className="p-8 text-center">
-              <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground mb-3">Ingen tilbud ennå</p>
-              {!isClosed && (
-                <Button size="sm" onClick={openCreateQuote} className="gap-1.5">
-                  <Plus className="h-3.5 w-3.5" />Opprett tilbud
-                </Button>
-              )}
-            </Card>
-          ) : (
-            <div className="grid gap-3">
-              {quotes.map(q => (
-                <Card key={q.id} className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-sm">{q.quote_number} (v{q.version})</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {formatCurrency(q.total_amount)} ekskl. MVA
-                        {q.valid_until && ` · Gyldig til ${formatDate(q.valid_until)}`}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge className={`text-[10px] ${QUOTE_STATUS_COLORS[q.status] || ""}`}>
-                        {QUOTE_STATUS_LABELS[q.status] || q.status}
-                      </Badge>
-                    </div>
-                  </div>
-                  {/* Quote actions */}
-                  <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-                    {q.status === "draft" && (
-                      <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => updateQuoteStatus(q.id, "sent", q.quote_number)}>
-                        <Send className="h-3 w-3" />Marker sendt
-                      </Button>
-                    )}
-                    {(q.status === "sent" || q.status === "draft") && (
-                      <>
-                        <Button variant="outline" size="sm" className="gap-1 text-xs text-emerald-600" onClick={() => updateQuoteStatus(q.id, "accepted", q.quote_number)}>
-                          <CheckCircle2 className="h-3 w-3" />Akseptert
-                        </Button>
-                        <Button variant="ghost" size="sm" className="gap-1 text-xs text-destructive" onClick={() => updateQuoteStatus(q.id, "rejected", q.quote_number)}>
-                          <XCircle className="h-3 w-3" />Avslått
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
+          <QuoteSection
+            deal={deal}
+            quotes={quotes}
+            company={company}
+            contact={contact}
+            site={site}
+            linkedJob={linkedJob}
+            linkedAgreement={linkedAgreement}
+            isClosed={isClosed}
+            isWon={isWon}
+            onRefresh={fetchDeal}
+            onChangeStage={changeStage}
+            onOpenCreateJob={openCreateJob}
+            onOpenCreateAgreement={openCreateAgreement}
+          />
         </TabsContent>
 
         <TabsContent value="activities" className="mt-4">
@@ -1282,82 +1147,7 @@ export default function DealDetailPage() {
         </SheetContent>
       </Sheet>
 
-      {/* ── Create quote sheet ──────────────────────────────────── */}
-      <Sheet open={quoteSheetOpen} onOpenChange={setQuoteSheetOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
-          <SheetHeader><SheetTitle>Nytt tilbud</SheetTitle></SheetHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-1.5">
-              <Label>Gyldig til</Label>
-              <Input type="date" value={quoteValidUntil} onChange={e => setQuoteValidUntil(e.target.value)} />
-            </div>
-
-            <Separator />
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tilbudslinjer</p>
-              <Button variant="outline" size="sm" onClick={addQuoteLine} className="gap-1 text-xs">
-                <Plus className="h-3 w-3" />Legg til linje
-              </Button>
-            </div>
-
-            <div className="space-y-3">
-              {quoteLines.map((line, i) => (
-                <Card key={i} className="p-3">
-                  <div className="space-y-2">
-                    <Input placeholder="Beskrivelse *" value={line.description} onChange={e => updateQuoteLine(i, "description", e.target.value)} />
-                    <div className="grid grid-cols-4 gap-2">
-                      <Input type="number" placeholder="Antall" value={line.quantity} onChange={e => updateQuoteLine(i, "quantity", e.target.value)} />
-                      <Select value={line.unit} onValueChange={v => updateQuoteLine(i, "unit", v)}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="stk">stk</SelectItem>
-                          <SelectItem value="timer">timer</SelectItem>
-                          <SelectItem value="m">m</SelectItem>
-                          <SelectItem value="m2">m²</SelectItem>
-                          <SelectItem value="rs">rs</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Input type="number" placeholder="Enhetspris" value={line.unit_price} onChange={e => updateQuoteLine(i, "unit_price", e.target.value)} />
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{formatCurrency((parseFloat(line.quantity) || 0) * (parseFloat(line.unit_price) || 0))}</span>
-                        {quoteLines.length > 1 && (
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground" onClick={() => removeQuoteLine(i)}>×</Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-
-            <Separator />
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">Sum ekskl. MVA</span>
-              <span className="font-semibold text-lg">{formatCurrency(quoteTotal)}</span>
-            </div>
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">MVA (25%)</span>
-              <span>{formatCurrency(Math.round(quoteTotal * 0.25))}</span>
-            </div>
-            <div className="flex justify-between items-center text-sm font-semibold">
-              <span>Totalt inkl. MVA</span>
-              <span>{formatCurrency(Math.round(quoteTotal * 1.25))}</span>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>Notater</Label>
-              <Textarea value={quoteNotes} onChange={e => setQuoteNotes(e.target.value)} rows={2} placeholder="Vilkår, forutsetninger..." />
-            </div>
-          </div>
-          <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => setQuoteSheetOpen(false)}>Avbryt</Button>
-            <Button onClick={createQuote} disabled={creatingQuote} className="gap-1.5">
-              {creatingQuote && <Loader2 className="h-4 w-4 animate-spin" />}
-              Opprett tilbud
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+      {/* (Quote sheet now handled by QuoteSection) */}
 
       {/* ── Add note sheet ──────────────────────────────────────── */}
       <Sheet open={noteOpen} onOpenChange={setNoteOpen}>
