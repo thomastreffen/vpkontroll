@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import TemplateBuilderHeader from "@/components/templates/TemplateBuilderHeader";
 import FieldPalette from "@/components/templates/FieldPalette";
 import FieldCanvas, { type TemplateField } from "@/components/templates/FieldCanvas";
-import FieldSettingsPanel from "@/components/templates/FieldSettingsPanel";
+import FieldSettingsPanel, { FieldSettingsEmpty } from "@/components/templates/FieldSettingsPanel";
 import { getPresetSections, CATEGORY_TO_CONTEXT } from "@/lib/template-presets";
 import { setAsDefault, clearDefault } from "@/hooks/useDefaultTemplate";
 
@@ -382,11 +382,7 @@ export default function TemplateBuilderPage() {
                     onChange={updates => updateField(selectedIndex!, updates)}
                   />
                 ) : (
-                  <div className="text-center py-12">
-                    <p className="text-xs text-muted-foreground">
-                      Velg et felt eller en seksjon i skjemaet for å se innstillinger
-                    </p>
-                  </div>
+                  <FieldSettingsEmpty />
                 )}
               </div>
             </ScrollArea>
