@@ -156,11 +156,29 @@ export default function DealDetailPage() {
   // Inspection form data from deal
   const inspectionData = deal?.site_visit_data as any;
   const hasInspectionForm = inspectionData?.schema_version === 1 && inspectionData?.template_id;
+  const inspectionSignoffData = inspectionData?.signoff as SignoffData | undefined;
   const inspectionFormStatus = !effectiveInspectionTemplateId
     ? "no_template"
     : hasInspectionForm
       ? (Object.keys(inspectionData?.values || {}).length > 0 ? "filled" : "started")
       : "not_started";
+
+  // Fetch existing PDF document for this deal
+  const dealPdfDoc = useQuery({
+    queryKey: ["deal-pdf", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("documents")
+        .select("id, file_path, created_at")
+        .eq("deal_id", id!)
+        .eq("mime_type", "application/pdf")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      return data?.[0] || null;
+    },
+    enabled: !!id,
+  });
 
   /* ─── Data fetching ─────────────────────────────────────────── */
   const fetchDeal = useCallback(async () => {
