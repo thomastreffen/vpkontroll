@@ -1464,6 +1464,28 @@ export default function DealDetailPage() {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      {/* Send inspection report sheet */}
+      <SendDocumentSheet
+        open={sendInspectionOpen}
+        onOpenChange={setSendInspectionOpen}
+        context={{
+          templateKey: "inspection_report",
+          placeholders: {
+            customer_name: company?.name,
+            contact_name: contact ? `${contact.first_name} ${contact.last_name || ""}`.trim() : undefined,
+            deal_title: deal.title,
+            site_address: site ? `${site.address || ""}, ${site.postal_code || ""} ${site.city || ""}`.trim() : undefined,
+            report_date: deal.site_visit_date || new Date().toISOString().slice(0, 10),
+          },
+          defaultTo: contact?.email || company?.email || undefined,
+          attachments: dealPdfDoc.data ? [{ fileName: `Befaringsrapport_${deal.title}.pdf`, filePath: dealPdfDoc.data.file_path }] : [],
+          dealId: deal.id,
+          companyId: deal.company_id,
+          activitySubject: "Befaringsrapport",
+        }}
+        onSent={() => fetchDeal()}
+      />
     </div>
   );
 }
