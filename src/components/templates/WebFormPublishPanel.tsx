@@ -78,6 +78,10 @@ export default function WebFormPublishPanel({
       </CardHeader>
 
       <CardContent className="px-5 pb-5 space-y-4">
+        <p className="text-xs text-muted-foreground -mt-1">
+          Her gjør du skjemaet tilgjengelig på nettsiden og henter kode eller lenke.
+        </p>
+
         {/* Publish toggle */}
         <div className="flex items-center justify-between py-2 px-3 rounded-md bg-background border">
           <div>
@@ -122,6 +126,9 @@ export default function WebFormPublishPanel({
         {/* Published: show link + embed */}
         {isPublished && publishKey ? (
           <div className="space-y-4 pt-3 border-t border-border">
+            <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+              ✓ Publisert og klar til bruk på nettside. Kopier lenken eller koden under.
+            </p>
             {/* Direct link */}
             <div className="space-y-2">
               <Label className="text-xs font-medium flex items-center gap-1.5">
@@ -144,7 +151,7 @@ export default function WebFormPublishPanel({
             {/* Embed code */}
             <div className="space-y-2">
               <Label className="text-xs font-medium flex items-center gap-1.5">
-                <Code className="h-3 w-3" /> Embed-kode for nettside
+                <Code className="h-3 w-3" /> Kode du limer inn på nettsiden
               </Label>
               <div className="relative">
                 <Textarea value={embedCode} readOnly rows={3} className="text-[11px] font-mono resize-none pr-20 bg-background" />
@@ -158,7 +165,10 @@ export default function WebFormPublishPanel({
                 </Button>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Lim inn denne koden på nettsiden der skjemaet skal vises. Eller bruk lenken direkte.
+                Lim inn denne koden der skjemaet skal vises på nettsiden din.
+              </p>
+              <p className="text-[11px] text-muted-foreground/70">
+                Usikker? Bruk lenken direkte, eller send koden til utvikleren din.
               </p>
             </div>
           </div>
