@@ -466,7 +466,7 @@ export default function TemplateBuilderPage() {
 
               {/* Web form publish section */}
               {category === "web" && (
-                <WebFormPublishSection
+                <WebFormPublishPanel
                   isPublished={isPublished}
                   publishKey={publishKey}
                   webFormType={webFormType}
@@ -475,8 +475,7 @@ export default function TemplateBuilderPage() {
                   onFormTypeChange={(v) => { setWebFormType(v); markUnsaved(); }}
                   onSuccessMessageChange={(v) => { setSuccessMessage(v); markUnsaved(); }}
                   isEdit={isEdit}
-                  copiedEmbed={copiedEmbed}
-                  onCopyEmbed={() => { setCopiedEmbed(true); setTimeout(() => setCopiedEmbed(false), 2000); }}
+                  isSaved={saveStatus === "saved"}
                 />
               )}
               </>
