@@ -7,6 +7,7 @@ import {
   LayoutDashboard, Plug, LogOut, Flame, Puzzle, Users, Mail,
   CalendarDays, Menu, Search, Bell, Contact,
   Building2, TrendingUp, Shield, Briefcase, Cpu, FileText, ShieldAlert, ClipboardList,
+  ArrowRightLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -137,6 +138,22 @@ function TopBar({ user, signOut, onMenuClick, isMobile }: { user: any; signOut: 
   );
 }
 
+function RoleSwitchLink() {
+  const { isMasterAdmin } = useAuth();
+  if (!isMasterAdmin) return null;
+  return (
+    <div className="border-t border-border p-2">
+      <Link
+        to="/admin"
+        className="flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium text-sidebar-foreground/65 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-all"
+      >
+        <ArrowRightLeft className="w-4 h-4 shrink-0" />
+        <span>Master Admin</span>
+      </Link>
+    </div>
+  );
+}
+
 export default function TenantAdminLayout({ children }: { children: ReactNode }) {
   const { signOut, user } = useAuth();
   const { hasModule } = useTenantModules();
@@ -158,6 +175,7 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
               <span className="text-sm font-semibold">VPKontroll</span>
             </div>
             <SidebarNav location={location} onNavigate={() => setOpen(false)} hasModule={hasModule} />
+            <RoleSwitchLink />
           </SheetContent>
         </Sheet>
         <main className="flex-1 overflow-auto">
@@ -177,6 +195,7 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
           <span className="text-sm font-semibold">VPKontroll</span>
         </div>
         <SidebarNav location={location} hasModule={hasModule} />
+        <RoleSwitchLink />
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar user={user} signOut={signOut} isMobile={false} />
