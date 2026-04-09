@@ -283,11 +283,23 @@ export default function TemplateBuilderPage() {
       let templateId = id;
       const tKey = templateKey.trim() || slugify(name);
 
+      const publishFields = category === "web" ? {
+        is_published: isPublished,
+        publish_key: publishKey || (isPublished ? generatePublishKey() : null),
+        web_form_type: webFormType,
+        success_message: successMessage.trim() || null,
+      } : {};
+
       if (isEdit) {
         await supabase.from("service_templates" as any).update({
           name: name.trim(), description: description.trim() || null,
           category, template_key: tKey, use_context: useContext || null,
+          ...publishFields,
         }).eq("id", templateId);
+        // If we just generated a publish_key, store it locally
+        if (publishFields.publish_key && !publishKey) {
+          setPublishKey(publishFields.publish_key);
+        }
         await supabase.from("service_template_fields" as any).delete().eq("template_id", templateId);
       } else {
         const { data, error } = await (supabase
@@ -296,11 +308,13 @@ export default function TemplateBuilderPage() {
             tenant_id: tenantId, name: name.trim(), description: description.trim() || null,
             category, template_key: tKey, created_by: user?.id,
             use_context: useContext || null,
+            ...publishFields,
           })
           .select("id")
           .single() as any);
         if (error) throw error;
         templateId = data.id;
+        if (publishFields.publish_key) setPublishKey(publishFields.publish_key);
       }
 
       if (fields.length > 0) {
