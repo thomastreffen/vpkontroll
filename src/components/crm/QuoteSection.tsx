@@ -14,8 +14,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/com
 import { toast } from "sonner";
 import {
   FileText, Plus, Send, CheckCircle2, XCircle, Loader2, Download, Eye,
-  Copy, ArrowRight, Briefcase, ScrollText, ChevronDown, ChevronUp,
+  Copy, ArrowRight, Briefcase, ScrollText, ChevronDown, ChevronUp, Mail,
 } from "lucide-react";
+import { SendDocumentSheet, type SendDocumentContext } from "@/components/communication/SendDocumentSheet";
 import {
   QUOTE_STATUS_LABELS, QUOTE_STATUS_COLORS, DEAL_STAGE_LABELS,
   formatCurrency, type DealStage,
@@ -62,6 +63,7 @@ export function QuoteSection({
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
+  const [sendSheetOpen, setSendSheetOpen] = useState(false);
 
   // Sort: latest version first
   const sorted = [...quotes].sort((a, b) => b.version - a.version);
@@ -411,6 +413,11 @@ export function QuoteSection({
               <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-600 gap-1">
                 <FileText className="h-2.5 w-2.5" />PDF
               </Badge>
+            )}
+            {quotePdf.data && (
+              <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setSendSheetOpen(true)}>
+                <Mail className="h-3 w-3" />Send tilbud
+              </Button>
             )}
             <Separator orientation="vertical" className="h-5" />
             <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={openNewVersion}>
