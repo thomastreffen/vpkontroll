@@ -197,6 +197,28 @@ export default function WebFormPublishPanel({
                 Usikker? Bruk lenken direkte, eller send koden til utvikleren din.
               </p>
             </div>
+
+            {/* Submission stats */}
+            {templateId && submissionCount !== null && (
+              <div className="pt-3 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Inbox className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">{submissionCount}</span> innsending{submissionCount !== 1 ? "er" : ""}
+                      {lastSubmission && (
+                        <> · siste {new Date(lastSubmission).toLocaleDateString("nb-NO")}</>
+                      )}
+                    </span>
+                  </div>
+                  <Link to={`/tenant/templates/submissions?template=${templateId}`}>
+                    <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1">
+                      Se innsendinger <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         ) : isPublished && !publishKey ? (
           <div className="pt-3 border-t border-border">
