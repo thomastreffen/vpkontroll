@@ -18,7 +18,7 @@ export function useDashboardData() {
         .select("id, case_number, title, status, priority, owner_user_id, customer_name, created_at")
         .eq("tenant_id", tenantId!)
         .is("deleted_at", null)
-        .in("status", ["new", "open", "waiting"]);
+        .in("status", ["new", "triage", "in_progress", "waiting_customer", "waiting_internal"]);
       return data ?? [];
     },
     enabled: !!tenantId,
