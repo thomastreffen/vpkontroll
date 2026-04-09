@@ -27,6 +27,9 @@ import {
 import { ENERGY_SOURCE_LABELS, JOB_TYPE_LABELS, AGREEMENT_INTERVAL_LABELS, SITE_TYPE_LABELS, formatDate, formatDateTime } from "@/lib/domain-labels";
 import { EntityPickerDialog } from "@/components/postkontoret/EntityPickerDialog";
 import { DynamicFormRenderer, type TemplateField } from "@/components/service/DynamicFormRenderer";
+import { FormSignoffSection, DEFAULT_SIGNOFF } from "@/components/forms/FormSignoffSection";
+import { FormPdfActions } from "@/components/forms/FormPdfActions";
+import type { SignoffData } from "@/lib/form-pdf";
 
 const JOB_TYPES = ["installation", "service", "repair", "warranty", "inspection", "decommission"];
 
@@ -112,6 +115,7 @@ export default function DealDetailPage() {
   // Inspection form state
   const [inspectionFormOpen, setInspectionFormOpen] = useState(false);
   const [inspectionFormValues, setInspectionFormValues] = useState<Record<string, any>>({});
+  const [inspectionSignoff, setInspectionSignoff] = useState<SignoffData>(DEFAULT_SIGNOFF);
   const [savingInspection, setSavingInspection] = useState(false);
 
   // Fetch site_visit templates
@@ -152,11 +156,29 @@ export default function DealDetailPage() {
   // Inspection form data from deal
   const inspectionData = deal?.site_visit_data as any;
   const hasInspectionForm = inspectionData?.schema_version === 1 && inspectionData?.template_id;
+  const inspectionSignoffData = inspectionData?.signoff as SignoffData | undefined;
   const inspectionFormStatus = !effectiveInspectionTemplateId
     ? "no_template"
     : hasInspectionForm
       ? (Object.keys(inspectionData?.values || {}).length > 0 ? "filled" : "started")
       : "not_started";
+
+  // Fetch existing PDF document for this deal
+  const dealPdfDoc = useQuery({
+    queryKey: ["deal-pdf", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("documents")
+        .select("id, file_path, created_at")
+        .eq("deal_id", id!)
+        .eq("mime_type", "application/pdf")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      return data?.[0] || null;
+    },
+    enabled: !!id,
+  });
 
   /* ─── Data fetching ─────────────────────────────────────────── */
   const fetchDeal = useCallback(async () => {
@@ -857,24 +879,48 @@ export default function DealDetailPage() {
           {effectiveInspectionTemplateId ? (
             <div className="space-y-2">
               {hasInspectionForm ? (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <DynamicFormRenderer
                     fields={inspectionFields.data || []}
                     values={inspectionData?.values || {}}
                     readonly
                   />
-                  <div className="flex gap-2 pt-2 border-t">
+                  {inspectionSignoffData && (
+                    <FormSignoffSection signoff={inspectionSignoffData} onChange={() => {}} readonly />
+                  )}
+                  <div className="flex flex-wrap gap-2 pt-2 border-t">
                     <Button size="sm" variant="outline" className="gap-1.5" onClick={() => {
                       setInspectionFormValues(inspectionData?.values || {});
+                      setInspectionSignoff(inspectionSignoffData || DEFAULT_SIGNOFF);
                       setInspectionFormOpen(true);
                     }}>
                       <Pencil className="h-3 w-3" />Rediger skjema
                     </Button>
+                    <FormPdfActions
+                      fields={inspectionFields.data || []}
+                      values={inspectionData?.values || {}}
+                      context={{
+                        title: "Befaringsrapport",
+                        templateName: (siteVisitTemplates.data || []).find((t: any) => t.id === effectiveInspectionTemplateId)?.name || "Befaring",
+                        customerName: company?.name,
+                        address: site ? `${site.address || ""}, ${site.postal_code || ""} ${site.city || ""}` : undefined,
+                        siteName: site?.name,
+                        date: deal.site_visit_date || new Date().toISOString().slice(0, 10),
+                        dealTitle: deal.title,
+                      }}
+                      signoff={inspectionSignoffData}
+                      entityType="deal"
+                      entityId={deal.id}
+                      categoryLabel="Befaringsrapport PDF"
+                      existingPdf={dealPdfDoc.data}
+                      onPdfGenerated={() => dealPdfDoc.refetch()}
+                    />
                   </div>
                 </div>
               ) : (
                 <Button size="sm" className="gap-1.5 w-full" onClick={() => {
                   setInspectionFormValues({});
+                  setInspectionSignoff(DEFAULT_SIGNOFF);
                   setInspectionFormOpen(true);
                 }}>
                   <ClipboardList className="h-3.5 w-3.5" />Fyll ut befaringsskjema
@@ -1585,6 +1631,8 @@ export default function DealDetailPage() {
             ) : (
               <p className="text-sm text-muted-foreground">Malen har ingen felter ennå.</p>
             )}
+            <Separator />
+            <FormSignoffSection signoff={inspectionSignoff} onChange={setInspectionSignoff} />
           </div>
           <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
             <Button variant="outline" onClick={() => setInspectionFormOpen(false)}>Avbryt</Button>
@@ -1598,6 +1646,7 @@ export default function DealDetailPage() {
                   template_id: effectiveInspectionTemplateId,
                   template_key: template?.template_key || "",
                   values: inspectionFormValues,
+                  signoff: inspectionSignoff,
                 };
                 const { error } = await supabase.from("crm_deals").update({
                   site_visit_data: payload,
