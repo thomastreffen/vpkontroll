@@ -10,9 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import TemplateBuilderHeader from "@/components/templates/TemplateBuilderHeader";
 import FieldPalette from "@/components/templates/FieldPalette";
+import SuggestedFields from "@/components/templates/SuggestedFields";
 import FieldCanvas, { type TemplateField } from "@/components/templates/FieldCanvas";
 import FieldSettingsPanel, { FieldSettingsEmpty } from "@/components/templates/FieldSettingsPanel";
-import { getPresetSections, CATEGORY_TO_CONTEXT } from "@/lib/template-presets";
+import { buildFullPreset, getSuggestedFields, CATEGORY_TO_CONTEXT, type PresetField } from "@/lib/template-presets";
 import { setAsDefault, clearDefault } from "@/hooks/useDefaultTemplate";
 
 function slugify(text: string): string {
@@ -25,20 +26,6 @@ function emptyField(type: string, sortOrder: number): TemplateField {
     help_text: "", is_required: false, default_value: null,
     options: null, sort_order: sortOrder,
   };
-}
-
-function buildPresetFields(category: string): TemplateField[] {
-  const sections = getPresetSections(category);
-  const fields: TemplateField[] = [];
-  sections.forEach((s, i) => {
-    fields.push({
-      field_type: "section_header", field_key: slugify(s.label),
-      label: s.label, unit: "", help_text: s.help_text || "",
-      is_required: false, default_value: null, options: null,
-      sort_order: fields.length,
-    });
-  });
-  return fields;
 }
 
 export default function TemplateBuilderPage() {
@@ -96,7 +83,6 @@ export default function TemplateBuilderPage() {
     })();
   }, [id, tenantId, navigate]);
 
-  // For new templates: auto-apply preset when category changes
   useEffect(() => {
     if (!id) setLoading(false);
   }, [id]);
@@ -104,20 +90,20 @@ export default function TemplateBuilderPage() {
   const handleCategoryChange = useCallback((newCategory: string) => {
     setCategory(newCategory);
     setSaveStatus("unsaved");
-    // Auto-set use_context from category
     const ctx = CATEGORY_TO_CONTEXT[newCategory] || "";
     setUseContext(ctx);
-    // Apply preset for new templates
-    if (!isEdit && !hasAppliedPreset) {
-      setFields(buildPresetFields(newCategory));
+    // Apply full preset for new templates or when no content yet
+    if (!isEdit && fields.length <= 1) {
+      setFields(buildFullPreset(newCategory));
       setSelectedIndex(null);
+      setHasAppliedPreset(true);
     }
-  }, [isEdit, hasAppliedPreset]);
+  }, [isEdit, fields.length]);
 
   // Apply initial preset for new templates
   useEffect(() => {
     if (!isEdit && !hasAppliedPreset && fields.length === 0) {
-      setFields(buildPresetFields(category));
+      setFields(buildFullPreset(category));
       setUseContext(CATEGORY_TO_CONTEXT[category] || "");
       setHasAppliedPreset(true);
     }
@@ -141,6 +127,78 @@ export default function TemplateBuilderPage() {
     setSelectedIndex(afterIndex);
     markUnsaved();
   }, [markUnsaved]);
+
+  const addSuggestedField = useCallback((preset: PresetField) => {
+    // Find the section this field belongs to, insert after last field in that section
+    const sectionIdx = fields.findIndex(f => f.field_type === "section_header" && f.label === preset.section);
+    let insertIdx = fields.length;
+    if (sectionIdx >= 0) {
+      // Find last field in this section
+      insertIdx = sectionIdx + 1;
+      for (let i = sectionIdx + 1; i < fields.length; i++) {
+        if (fields[i].field_type === "section_header") break;
+        insertIdx = i + 1;
+      }
+    }
+    const newField: TemplateField = {
+      field_type: preset.field_type,
+      field_key: slugify(preset.label),
+      label: preset.label,
+      unit: preset.unit || "",
+      help_text: preset.help_text || "",
+      is_required: preset.is_required || false,
+      default_value: null,
+      options: preset.options || null,
+      sort_order: insertIdx,
+    };
+    setFields(prev => {
+      const updated = [...prev.slice(0, insertIdx), newField, ...prev.slice(insertIdx)];
+      return updated.map((ff, i) => ({ ...ff, sort_order: i }));
+    });
+    setSelectedIndex(insertIdx);
+    markUnsaved();
+    toast.success(`"${preset.label}" lagt til`);
+  }, [fields, markUnsaved]);
+
+  const applyFullPreset = useCallback(() => {
+    // Merge: add missing suggested fields into existing structure
+    const existingLabels = fields.map(f => f.label);
+    const missing = getSuggestedFields(category, existingLabels);
+    if (missing.length === 0) {
+      toast.info("Alle anbefalte felt er allerede lagt til");
+      return;
+    }
+    let updated = [...fields];
+    for (const pf of missing) {
+      const sectionIdx = updated.findIndex(f => f.field_type === "section_header" && f.label === pf.section);
+      let insertIdx = updated.length;
+      if (sectionIdx >= 0) {
+        insertIdx = sectionIdx + 1;
+        for (let i = sectionIdx + 1; i < updated.length; i++) {
+          if (updated[i].field_type === "section_header") break;
+          insertIdx = i + 1;
+        }
+      }
+      updated = [
+        ...updated.slice(0, insertIdx),
+        {
+          field_type: pf.field_type,
+          field_key: slugify(pf.label),
+          label: pf.label,
+          unit: pf.unit || "",
+          help_text: pf.help_text || "",
+          is_required: pf.is_required || false,
+          default_value: null,
+          options: pf.options || null,
+          sort_order: 0,
+        },
+        ...updated.slice(insertIdx),
+      ];
+    }
+    setFields(updated.map((f, i) => ({ ...f, sort_order: i })));
+    markUnsaved();
+    toast.success(`${missing.length} felt lagt til`);
+  }, [fields, category, markUnsaved]);
 
   const updateField = useCallback((index: number, updates: Partial<TemplateField>) => {
     setFields(prev => prev.map((f, i) => i === index ? { ...f, ...updates } : f));
@@ -284,6 +342,7 @@ export default function TemplateBuilderPage() {
   }
 
   const selectedField = selectedIndex !== null ? fields[selectedIndex] : null;
+  const existingLabels = fields.map(f => f.label);
 
   return (
     <div className="flex flex-col h-[calc(100vh-3.5rem)]">
@@ -306,12 +365,19 @@ export default function TemplateBuilderPage() {
       />
 
       <div className="flex flex-1 min-h-0">
-        {/* Left: Palette — hidden in preview */}
+        {/* Left: Palette + Suggested — hidden in preview */}
         {!previewMode && (
           <aside className="w-52 border-r border-border bg-card shrink-0">
             <ScrollArea className="h-full">
-              <div className="p-3">
+              <div className="p-3 space-y-6">
                 <FieldPalette onAddField={addField} />
+                <SuggestedFields
+                  category={category}
+                  existingLabels={existingLabels}
+                  onAddSuggested={addSuggestedField}
+                  onApplyFullPreset={applyFullPreset}
+                  hasContent={fields.length > 0}
+                />
               </div>
             </ScrollArea>
           </aside>
@@ -320,7 +386,6 @@ export default function TemplateBuilderPage() {
         {/* Center: Canvas */}
         <div className="flex-1 bg-muted/30 overflow-auto">
           <div className={`max-w-2xl mx-auto py-6 px-4 ${previewMode ? "max-w-xl" : ""}`}>
-            {/* Template meta (edit mode only) */}
             {!previewMode && (
               <div className="mb-6 space-y-3 bg-card rounded-lg border border-border p-4">
                 <div className="space-y-1.5">
@@ -345,7 +410,6 @@ export default function TemplateBuilderPage() {
               </div>
             )}
 
-            {/* Preview header */}
             {previewMode && (
               <div className="mb-6 text-center">
                 <h2 className="text-lg font-semibold">{name || "Uten navn"}</h2>
@@ -353,9 +417,8 @@ export default function TemplateBuilderPage() {
               </div>
             )}
 
-            {/* Canvas */}
             <div className={`bg-card rounded-lg border border-border p-5 min-h-[300px] ${previewMode ? "shadow-sm" : ""}`}>
-            <FieldCanvas
+              <FieldCanvas
                 fields={fields}
                 selectedIndex={previewMode ? null : selectedIndex}
                 onSelect={previewMode ? () => {} : setSelectedIndex}
