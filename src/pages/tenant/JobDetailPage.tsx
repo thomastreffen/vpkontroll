@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Loader2, ArrowLeft, Info, Users, ClipboardCheck, FileText, Pencil, CalendarDays, ExternalLink, X, Save, ClipboardList } from "lucide-react";
+import { Loader2, ArrowLeft, Info, Users, ClipboardCheck, FileText, Pencil, CalendarDays, ExternalLink, X, Save, ClipboardList, Mail } from "lucide-react";
 import {
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
   formatDate, formatDateTime,
@@ -26,6 +26,7 @@ import { ScheduleEventDialog } from "@/components/crud/ScheduleEventDialog";
 import { DynamicFormRenderer, type TemplateField } from "@/components/service/DynamicFormRenderer";
 import { FormSignoffSection, DEFAULT_SIGNOFF } from "@/components/forms/FormSignoffSection";
 import { FormPdfActions } from "@/components/forms/FormPdfActions";
+import { SendDocumentSheet } from "@/components/communication/SendDocumentSheet";
 import type { SignoffData } from "@/lib/form-pdf";
 import { toast } from "sonner";
 
@@ -57,6 +58,7 @@ export default function JobDetailPage() {
   const [savingForm, setSavingForm] = useState(false);
   const [markCompleted, setMarkCompleted] = useState(false);
   const [formSignoff, setFormSignoff] = useState<SignoffData>({ ...DEFAULT_SIGNOFF });
+  const [sendReportOpen, setSendReportOpen] = useState(false);
 
   useEffect(() => {
     if (!id || !tenantId) return;
@@ -506,6 +508,9 @@ export default function JobDetailPage() {
                       categoryLabel={isServiceJob ? "Servicerapport PDF" : "Installasjonsrapport PDF"}
                       onPdfGenerated={() => qc.invalidateQueries({ queryKey: ["job-documents", id!] })}
                     />
+                    <Button variant="outline" size="sm" className="gap-1.5 mt-2" onClick={() => setSendReportOpen(true)}>
+                      <Mail className="h-3 w-3" />Send {isServiceJob ? "servicerapport" : "rapport"}
+                    </Button>
                   </div>
                 </>
               ) : effectiveTemplateId ? (
@@ -582,6 +587,27 @@ export default function JobDetailPage() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Send report sheet */}
+      <SendDocumentSheet
+        open={sendReportOpen}
+        onOpenChange={setSendReportOpen}
+        context={{
+          templateKey: isServiceJob ? "service_report" : "installation_report",
+          placeholders: {
+            customer_name: company.data?.name,
+            contact_name: contact.data ? `${contact.data.first_name} ${contact.data.last_name || ""}`.trim() : undefined,
+            site_address: site.data ? `${site.data.address || ""}, ${site.data.city || ""}`.trim() : undefined,
+            report_date: formatDate(j.created_at),
+          },
+          defaultTo: contact.data?.email || company.data?.email || undefined,
+          attachments: [],
+          dealId: deal.data?.id,
+          companyId: j.company_id || undefined,
+          activitySubject: isServiceJob ? "Servicerapport" : "Installasjonsrapport",
+        }}
+        onSent={() => qc.invalidateQueries({ queryKey: ["job", id] })}
+      />
     </div>
   );
 }

@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import {
   Loader2, ArrowLeft, Info, CalendarDays, Wrench, Building2, MapPin,
   Zap, Plus, CheckCircle2, Clock, AlertTriangle, Settings2, Pencil,
-  RefreshCw, ArrowRight, FileText, Eye, Paperclip, ClipboardCheck, ClipboardList, Save,
+  RefreshCw, ArrowRight, FileText, Eye, Paperclip, ClipboardCheck, ClipboardList, Save, Mail,
 } from "lucide-react";
 import { ScheduleEventDialog } from "@/components/crud/ScheduleEventDialog";
 import { AgreementFormDialog } from "@/components/crud/AgreementFormDialog";
@@ -30,6 +30,7 @@ import { DynamicFormRenderer, type TemplateField } from "@/components/service/Dy
 import { FormSignoffSection, DEFAULT_SIGNOFF } from "@/components/forms/FormSignoffSection";
 import { FormPdfActions } from "@/components/forms/FormPdfActions";
 import type { SignoffData } from "@/lib/form-pdf";
+import { SendDocumentSheet } from "@/components/communication/SendDocumentSheet";
 import {
   AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS,
   AGREEMENT_INTERVAL_LABELS,
@@ -99,6 +100,8 @@ export default function AgreementDetailPage() {
   const [dynamicFormValues, setDynamicFormValues] = useState<Record<string, any>>({});
   const [savingDynamicForm, setSavingDynamicForm] = useState(false);
   const [visitSignoff, setVisitSignoff] = useState<SignoffData>(DEFAULT_SIGNOFF);
+  const [sendReportOpen, setSendReportOpen] = useState(false);
+  const [sendVisitId, setSendVisitId] = useState<string | null>(null);
   // Fetch sites/assets for edit dialog
   const [editSites, setEditSites] = useState<any[]>([]);
   const [editAssets, setEditAssets] = useState<any[]>([]);
@@ -651,6 +654,12 @@ export default function AgreementDetailPage() {
                         categoryLabel="Servicerapport PDF"
                         onPdfGenerated={() => visits.refetch()}
                       />
+                      <Button variant="outline" size="sm" className="gap-1.5 mt-2" onClick={() => {
+                        setSendVisitId(visitDetailOpen.id);
+                        setSendReportOpen(true);
+                      }}>
+                        <Mail className="h-3 w-3" />Send servicerapport
+                      </Button>
                     </div>
                   );
                 }
@@ -752,6 +761,25 @@ export default function AgreementDetailPage() {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      {/* Send service report sheet */}
+      <SendDocumentSheet
+        open={sendReportOpen}
+        onOpenChange={setSendReportOpen}
+        context={{
+          templateKey: "service_report",
+          placeholders: {
+            customer_name: company.data?.name,
+            site_address: site.data ? `${site.data.address || ""}, ${site.data.city || ""}`.trim() : undefined,
+            report_date: visitDetailOpen?.scheduled_date || new Date().toISOString().slice(0, 10),
+          },
+          defaultTo: company.data?.email || undefined,
+          attachments: [],
+          companyId: a.company_id,
+          activitySubject: `Servicerapport – ${a.agreement_number}`,
+        }}
+        onSent={() => visits.refetch()}
+      />
     </div>
   );
 }

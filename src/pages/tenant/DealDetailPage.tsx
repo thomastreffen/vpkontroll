@@ -30,6 +30,7 @@ import { DynamicFormRenderer, type TemplateField } from "@/components/service/Dy
 import { FormSignoffSection, DEFAULT_SIGNOFF } from "@/components/forms/FormSignoffSection";
 import { FormPdfActions } from "@/components/forms/FormPdfActions";
 import { QuoteSection } from "@/components/crm/QuoteSection";
+import { SendDocumentSheet, type SendDocumentContext } from "@/components/communication/SendDocumentSheet";
 import type { SignoffData } from "@/lib/form-pdf";
 
 const JOB_TYPES = ["installation", "service", "repair", "warranty", "inspection", "decommission"];
@@ -111,6 +112,7 @@ export default function DealDetailPage() {
   const [inspectionFormValues, setInspectionFormValues] = useState<Record<string, any>>({});
   const [inspectionSignoff, setInspectionSignoff] = useState<SignoffData>(DEFAULT_SIGNOFF);
   const [savingInspection, setSavingInspection] = useState(false);
+  const [sendInspectionOpen, setSendInspectionOpen] = useState(false);
 
   // Fetch site_visit templates
   const siteVisitTemplates = useQuery({
@@ -815,6 +817,11 @@ export default function DealDetailPage() {
                       existingPdf={dealPdfDoc.data}
                       onPdfGenerated={() => dealPdfDoc.refetch()}
                     />
+                    {dealPdfDoc.data && (
+                      <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setSendInspectionOpen(true)}>
+                        <Mail className="h-3 w-3" />Send rapport
+                      </Button>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -1457,6 +1464,28 @@ export default function DealDetailPage() {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      {/* Send inspection report sheet */}
+      <SendDocumentSheet
+        open={sendInspectionOpen}
+        onOpenChange={setSendInspectionOpen}
+        context={{
+          templateKey: "inspection_report",
+          placeholders: {
+            customer_name: company?.name,
+            contact_name: contact ? `${contact.first_name} ${contact.last_name || ""}`.trim() : undefined,
+            deal_title: deal.title,
+            site_address: site ? `${site.address || ""}, ${site.postal_code || ""} ${site.city || ""}`.trim() : undefined,
+            report_date: deal.site_visit_date || new Date().toISOString().slice(0, 10),
+          },
+          defaultTo: contact?.email || company?.email || undefined,
+          attachments: dealPdfDoc.data ? [{ fileName: `Befaringsrapport_${deal.title}.pdf`, filePath: dealPdfDoc.data.file_path }] : [],
+          dealId: deal.id,
+          companyId: deal.company_id,
+          activitySubject: "Befaringsrapport",
+        }}
+        onSent={() => fetchDeal()}
+      />
     </div>
   );
 }

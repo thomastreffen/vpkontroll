@@ -14,8 +14,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/com
 import { toast } from "sonner";
 import {
   FileText, Plus, Send, CheckCircle2, XCircle, Loader2, Download, Eye,
-  Copy, ArrowRight, Briefcase, ScrollText, ChevronDown, ChevronUp,
+  Copy, ArrowRight, Briefcase, ScrollText, ChevronDown, ChevronUp, Mail,
 } from "lucide-react";
+import { SendDocumentSheet, type SendDocumentContext } from "@/components/communication/SendDocumentSheet";
 import {
   QUOTE_STATUS_LABELS, QUOTE_STATUS_COLORS, DEAL_STAGE_LABELS,
   formatCurrency, type DealStage,
@@ -62,6 +63,7 @@ export function QuoteSection({
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
+  const [sendSheetOpen, setSendSheetOpen] = useState(false);
 
   // Sort: latest version first
   const sorted = [...quotes].sort((a, b) => b.version - a.version);
@@ -412,6 +414,11 @@ export function QuoteSection({
                 <FileText className="h-2.5 w-2.5" />PDF
               </Badge>
             )}
+            {quotePdf.data && (
+              <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setSendSheetOpen(true)}>
+                <Mail className="h-3 w-3" />Send tilbud
+              </Button>
+            )}
             <Separator orientation="vertical" className="h-5" />
             <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={openNewVersion}>
               <Copy className="h-3 w-3" />Ny versjon
@@ -474,6 +481,27 @@ export function QuoteSection({
         total={total} lineTotal={lineTotal}
         saving={saving} onSave={saveQuote}
         isNewVersion={sorted.length > 0}
+      />
+
+      {/* Send quote sheet */}
+      <SendDocumentSheet
+        open={sendSheetOpen}
+        onOpenChange={setSendSheetOpen}
+        context={{
+          templateKey: "quote",
+          placeholders: {
+            customer_name: company?.name,
+            contact_name: contact ? `${contact.first_name} ${contact.last_name || ""}`.trim() : undefined,
+            deal_title: deal.title,
+            site_address: site ? `${site.address || ""}, ${site.postal_code || ""} ${site.city || ""}`.trim() : undefined,
+          },
+          defaultTo: contact?.email || company?.email || undefined,
+          attachments: quotePdf.data ? [{ fileName: `Tilbud_${activeQuote?.quote_number}.pdf`, filePath: quotePdf.data.file_path }] : [],
+          dealId: deal.id,
+          companyId: deal.company_id,
+          activitySubject: `Tilbud ${activeQuote?.quote_number || ""}`,
+        }}
+        onSent={() => onRefresh()}
       />
     </div>
   );
