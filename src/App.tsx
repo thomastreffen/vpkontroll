@@ -42,6 +42,7 @@ import SiteDetailPage from "@/pages/tenant/SiteDetailPage";
 import CustomerImportPage from "@/pages/tenant/CustomerImportPage";
 import TemplatesPage from "@/pages/tenant/TemplatesPage";
 import TemplateBuilderPage from "@/pages/tenant/TemplateBuilderPage";
+import FormSubmissionsPage from "@/pages/tenant/FormSubmissionsPage";
 import PublicFormPage from "@/pages/PublicFormPage";
 import NotFound from "@/pages/NotFound";
 
@@ -118,6 +119,7 @@ function AppRoutes() {
       <Route path="/tenant/templates" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><TemplatesPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/templates/new" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><TemplateBuilderPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
       <Route path="/tenant/templates/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><TemplateBuilderPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
+      <Route path="/tenant/templates/submissions" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><FormSubmissionsPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
 
       {/* Public form route - no auth required */}
       <Route path="/forms/:publishKey" element={<PublicFormPage />} />
