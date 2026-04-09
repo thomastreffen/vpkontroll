@@ -1,9 +1,10 @@
+import { useState, useRef, KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowUp, ArrowDown, Trash2, Copy, Plus, GripVertical } from "lucide-react";
+import { ArrowUp, ArrowDown, Trash2, Copy, Plus, GripVertical, X, ClipboardPaste } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FIELD_TYPE_META } from "./FieldPalette";
 import { toast } from "sonner";
@@ -27,7 +28,6 @@ export interface Section {
   fields: { field: TemplateField; globalIndex: number }[];
 }
 
-/** Group flat fields into sections. Fields before any section go into an implicit first section. */
 export function groupIntoSections(fields: TemplateField[]): Section[] {
   const sections: Section[] = [];
   let current: Section | null = null;
@@ -38,7 +38,6 @@ export function groupIntoSections(fields: TemplateField[]): Section[] {
       sections.push(current);
     } else {
       if (!current) {
-        // Implicit section for orphan fields
         const implicit: TemplateField = {
           field_type: "section_header", field_key: "general", label: "Generelt",
           unit: "", help_text: "", is_required: false, default_value: null,
@@ -63,60 +62,203 @@ interface Props {
   onDuplicate: (index: number) => void;
   onAddField: (type: string) => void;
   onInsertAt: (type: string, afterIndex: number) => void;
+  onUpdateField?: (index: number, updates: Partial<TemplateField>) => void;
   previewMode?: boolean;
 }
 
-function FieldPreviewContent({ field }: { field: TemplateField }) {
-  const { field_type, label, help_text, unit, options, is_required } = field;
+/* ── Inline options editor for dropdown/checkbox_list ── */
+function InlineOptionsEditor({
+  options,
+  onChange,
+  fieldType,
+}: {
+  options: any;
+  onChange: (opts: any) => void;
+  fieldType: string;
+}) {
+  const choices: string[] = options?.choices || [];
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const labelEl = (
+  const updateChoice = (i: number, val: string) => {
+    const updated = [...choices];
+    updated[i] = val;
+    onChange({ ...options, choices: updated });
+  };
+
+  const addChoice = () => {
+    const updated = [...choices, ""];
+    onChange({ ...options, choices: updated });
+    setTimeout(() => inputRefs.current[updated.length - 1]?.focus(), 50);
+  };
+
+  const removeChoice = (i: number) => {
+    onChange({ ...options, choices: choices.filter((_, idx) => idx !== i) });
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, i: number) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (i === choices.length - 1) {
+        addChoice();
+      } else {
+        inputRefs.current[i + 1]?.focus();
+      }
+    } else if (e.key === "Backspace" && choices[i] === "" && choices.length > 1) {
+      e.preventDefault();
+      removeChoice(i);
+      setTimeout(() => inputRefs.current[Math.max(0, i - 1)]?.focus(), 50);
+    }
+  };
+
+  const handlePaste = () => {
+    navigator.clipboard.readText().then(text => {
+      const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+      if (lines.length > 0) {
+        const merged = [...choices.filter(c => c.trim()), ...lines];
+        onChange({ ...options, choices: merged });
+        toast.success(`${lines.length} alternativ(er) limt inn`);
+      }
+    }).catch(() => toast.error("Kunne ikke lese utklippstavlen"));
+  };
+
+  return (
+    <div className="mt-2 ml-1 space-y-1">
+      {choices.map((c, i) => (
+        <div key={i} className="flex items-center gap-1.5 group/opt">
+          {fieldType === "checkbox_list" ? (
+            <Checkbox disabled className="shrink-0" />
+          ) : (
+            <div className="h-3.5 w-3.5 rounded-full border-2 border-muted-foreground/30 shrink-0" />
+          )}
+          <input
+            ref={el => { inputRefs.current[i] = el; }}
+            value={c}
+            onChange={e => updateChoice(i, e.target.value)}
+            onKeyDown={e => handleKeyDown(e, i)}
+            placeholder={`Alternativ ${i + 1}`}
+            className="flex-1 text-xs bg-transparent border-0 border-b border-transparent focus:border-primary/40 outline-none py-0.5 px-0.5 placeholder:text-muted-foreground/40"
+          />
+          <button
+            onClick={e => { e.stopPropagation(); removeChoice(i); }}
+            className="h-5 w-5 flex items-center justify-center rounded text-muted-foreground/40 hover:text-destructive opacity-0 group-hover/opt:opacity-100 transition-opacity"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      ))}
+      <div className="flex items-center gap-2 pt-0.5">
+        <button
+          onClick={e => { e.stopPropagation(); addChoice(); }}
+          className="text-[10px] text-primary/70 hover:text-primary font-medium flex items-center gap-1"
+        >
+          <Plus className="h-3 w-3" /> Legg til alternativ
+        </button>
+        <button
+          onClick={e => { e.stopPropagation(); handlePaste(); }}
+          className="text-[10px] text-muted-foreground hover:text-foreground font-medium flex items-center gap-1"
+        >
+          <ClipboardPaste className="h-3 w-3" /> Lim inn flere
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Preview content for each field type ── */
+function FieldPreviewContent({
+  field,
+  isSelected,
+  onUpdateField,
+}: {
+  field: TemplateField;
+  isSelected?: boolean;
+  onUpdateField?: (updates: Partial<TemplateField>) => void;
+}) {
+  const { field_type, label, help_text, unit, options, is_required } = field;
+  const hasOptions = field_type === "dropdown" || field_type === "checkbox_list";
+
+  const labelEl = isSelected && onUpdateField ? (
+    <input
+      value={label}
+      onChange={e => onUpdateField({ label: e.target.value })}
+      placeholder="Skriv spørsmål / label..."
+      className="text-xs font-medium text-foreground bg-transparent border-0 border-b border-primary/30 outline-none w-full py-0.5"
+      onClick={e => e.stopPropagation()}
+    />
+  ) : (
     <label className="text-xs font-medium text-foreground">
-      {label || "(uten navn)"}{is_required && <span className="text-destructive ml-0.5">*</span>}
+      {label || <span className="text-muted-foreground/50 italic">Klikk for å gi feltet et navn</span>}
+      {is_required && <span className="text-destructive ml-0.5">*</span>}
     </label>
   );
 
+  const optionsEditor = hasOptions && isSelected && onUpdateField ? (
+    <InlineOptionsEditor
+      options={options}
+      onChange={opts => onUpdateField({ options: opts })}
+      fieldType={field_type}
+    />
+  ) : null;
+
   switch (field_type) {
     case "text":
-      return <div className="space-y-1">{labelEl}<Input disabled placeholder={help_text || "Tekst..."} className="h-8 text-xs bg-muted/30" /></div>;
+      return <div className="space-y-1">{labelEl}<Input disabled placeholder={help_text || "Kort tekst..."} className="h-8 text-xs bg-muted/30" /></div>;
     case "textarea":
       return <div className="space-y-1">{labelEl}<Textarea disabled placeholder={help_text || "Fritekst..."} rows={2} className="text-xs bg-muted/30 resize-none" /></div>;
     case "checkbox":
       return (
         <div className="flex items-start gap-2.5 py-0.5">
           <Checkbox disabled className="mt-0.5" />
-          <div>
+          <div className="flex-1">
             {labelEl}
             {help_text && <p className="text-[10px] text-muted-foreground">{help_text}</p>}
           </div>
         </div>
       );
     case "checkbox_list": {
-      const choices: string[] = options?.choices || ["Valg 1", "Valg 2"];
+      const choices: string[] = options?.choices || [];
       return (
         <div className="space-y-1">
           {labelEl}
-          <div className="space-y-1 pl-0.5">
-            {choices.slice(0, 4).map((c, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <Checkbox disabled />
-                <span className="text-xs text-muted-foreground">{c}</span>
-              </div>
-            ))}
-            {choices.length > 4 && <span className="text-[10px] text-muted-foreground">+ {choices.length - 4} til</span>}
-          </div>
+          {isSelected && onUpdateField ? (
+            optionsEditor
+          ) : (
+            <div className="space-y-1 pl-0.5 mt-1">
+              {choices.length === 0 ? (
+                <p className="text-[10px] text-muted-foreground/50 italic">Ingen alternativer ennå</p>
+              ) : (
+                <>
+                  {choices.slice(0, 4).map((c, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <Checkbox disabled />
+                      <span className="text-xs text-muted-foreground">{c || `Alternativ ${i + 1}`}</span>
+                    </div>
+                  ))}
+                  {choices.length > 4 && <span className="text-[10px] text-muted-foreground">+ {choices.length - 4} til</span>}
+                </>
+              )}
+            </div>
+          )}
         </div>
       );
     }
-    case "dropdown":
+    case "dropdown": {
+      const choices: string[] = options?.choices || [];
       return (
         <div className="space-y-1">
           {labelEl}
-          <Select disabled>
-            <SelectTrigger className="h-8 text-xs bg-muted/30"><SelectValue placeholder="Velg..." /></SelectTrigger>
-            <SelectContent>{(options?.choices || []).map((c: string, i: number) => <SelectItem key={i} value={c}>{c}</SelectItem>)}</SelectContent>
-          </Select>
+          {isSelected && onUpdateField ? (
+            optionsEditor
+          ) : (
+            <Select disabled>
+              <SelectTrigger className="h-8 text-xs bg-muted/30">
+                <SelectValue placeholder={choices.length > 0 ? choices[0] : "Velg..."} />
+              </SelectTrigger>
+            </Select>
+          )}
         </div>
       );
+    }
     case "number":
       return <div className="space-y-1">{labelEl}<Input disabled type="number" placeholder="0" className="h-8 text-xs bg-muted/30 w-32" /></div>;
     case "date":
@@ -180,7 +322,10 @@ function FieldToolbar({ index, total, onMove, onDuplicate, onRemove }: {
   );
 }
 
-export default function FieldCanvas({ fields, selectedIndex, onSelect, onMove, onRemove, onDuplicate, onAddField, onInsertAt, previewMode = false }: Props) {
+export default function FieldCanvas({
+  fields, selectedIndex, onSelect, onMove, onRemove, onDuplicate,
+  onAddField, onInsertAt, onUpdateField, previewMode = false,
+}: Props) {
   const sections = groupIntoSections(fields);
 
   if (fields.length === 0) {
@@ -191,17 +336,20 @@ export default function FieldCanvas({ fields, selectedIndex, onSelect, onMove, o
         </div>
         <h3 className="text-base font-semibold mb-1">Tomt skjema</h3>
         <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-          Velg en kategori ovenfor for å starte med foreslått struktur, eller legg til felt manuelt.
+          Velg bruksområde ovenfor for å starte med foreslått struktur, eller legg til felt manuelt.
         </p>
         <div className="flex flex-wrap gap-2 justify-center">
           <Button variant="outline" size="sm" onClick={() => onAddField("section_header")}>
             <Plus className="h-3.5 w-3.5 mr-1.5" /> Legg til seksjon
           </Button>
           <Button variant="outline" size="sm" onClick={() => onAddField("checkbox")}>
-            <Plus className="h-3.5 w-3.5 mr-1.5" /> Sjekkpunkt
+            <Plus className="h-3.5 w-3.5 mr-1.5" /> Ja / nei
           </Button>
           <Button variant="outline" size="sm" onClick={() => onAddField("measurement")}>
-            <Plus className="h-3.5 w-3.5 mr-1.5" /> Målefelt
+            <Plus className="h-3.5 w-3.5 mr-1.5" /> Måling
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => onAddField("checkbox_list")}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" /> Flere valg
           </Button>
         </div>
       </div>
@@ -209,7 +357,6 @@ export default function FieldCanvas({ fields, selectedIndex, onSelect, onMove, o
   }
 
   if (previewMode) {
-    // Render sections as clean form preview using DynamicFormRenderer style
     return (
       <div className="space-y-6">
         {sections.map((sec, si) => (
@@ -233,7 +380,6 @@ export default function FieldCanvas({ fields, selectedIndex, onSelect, onMove, o
   }
 
   const handleRemoveSection = (sectionGlobalIndex: number, sectionFields: { globalIndex: number }[]) => {
-    // Remove section header; move fields to previous section (just remove the header)
     onRemove(sectionGlobalIndex);
     if (sectionFields.length > 0) {
       toast.info("Feltene ble beholdt og flyttet");
@@ -247,7 +393,6 @@ export default function FieldCanvas({ fields, selectedIndex, onSelect, onMove, o
 
         return (
           <div key={si}>
-            {/* Section add button between sections */}
             {si > 0 && (
               <div className="flex justify-center py-1.5 mb-3">
                 <Button
@@ -268,7 +413,7 @@ export default function FieldCanvas({ fields, selectedIndex, onSelect, onMove, o
                 ? "border-primary/50 ring-1 ring-primary/30"
                 : "border-border"
             )}>
-              {/* Section header */}
+              {/* Section header - inline editable */}
               {sec.sectionIndex >= 0 && (
                 <div
                   className={cn(
@@ -281,10 +426,21 @@ export default function FieldCanvas({ fields, selectedIndex, onSelect, onMove, o
                 >
                   <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-semibold text-foreground truncate">
-                      {sec.section.label || "Ny seksjon"}
-                    </h3>
-                    {sec.section.help_text && (
+                    {isSectionSelected && onUpdateField ? (
+                      <input
+                        value={sec.section.label}
+                        onChange={e => onUpdateField(sec.sectionIndex, { label: e.target.value })}
+                        placeholder="Seksjonsoverskrift..."
+                        className="text-sm font-semibold text-foreground bg-transparent border-0 border-b border-primary/30 outline-none w-full"
+                        onClick={e => e.stopPropagation()}
+                        autoFocus
+                      />
+                    ) : (
+                      <h3 className="text-sm font-semibold text-foreground truncate">
+                        {sec.section.label || <span className="text-muted-foreground/50">Ny seksjon</span>}
+                      </h3>
+                    )}
+                    {sec.section.help_text && !isSectionSelected && (
                       <p className="text-[10px] text-muted-foreground truncate">{sec.section.help_text}</p>
                     )}
                   </div>
@@ -339,9 +495,12 @@ export default function FieldCanvas({ fields, selectedIndex, onSelect, onMove, o
                         {meta?.label || field.field_type}
                       </div>
 
-                      <FieldPreviewContent field={field} />
+                      <FieldPreviewContent
+                        field={field}
+                        isSelected={isSelected}
+                        onUpdateField={onUpdateField ? (updates) => onUpdateField(globalIndex, updates) : undefined}
+                      />
 
-                      {/* Toolbar */}
                       <FieldToolbar
                         index={globalIndex}
                         total={fields.length}
@@ -359,7 +518,6 @@ export default function FieldCanvas({ fields, selectedIndex, onSelect, onMove, o
                   </p>
                 )}
 
-                {/* Add field button inside section */}
                 <div className="flex justify-center pt-1 pb-1">
                   <Button
                     variant="ghost"
@@ -381,7 +539,6 @@ export default function FieldCanvas({ fields, selectedIndex, onSelect, onMove, o
         );
       })}
 
-      {/* Add section at bottom */}
       <div className="flex justify-center pt-2">
         <Button
           variant="ghost"

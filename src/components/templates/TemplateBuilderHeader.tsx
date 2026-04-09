@@ -2,27 +2,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Loader2, Save, Copy, Eye, Pencil, Star, StarOff } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Copy, Eye, Pencil, Star, StarOff, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { USE_CONTEXT_LABELS } from "@/lib/template-presets";
+import { CATEGORY_TO_CONTEXT, USE_CONTEXT_LABELS } from "@/lib/template-presets";
 
-const CATEGORY_LABELS: Record<string, string> = {
-  service: "Service",
-  installation: "Installasjon",
-  inspection: "Befaring",
-  crm: "Salg og CRM",
-  web: "Nettside",
-  warranty: "Garanti/reklamasjon",
-};
-
-const CONTEXT_HELP: Record<string, string> = {
-  service_visit: "Denne malen brukes i servicebesøk",
-  installation_job: "Denne malen brukes i installasjonsjobber",
-  site_visit: "Denne malen brukes ved befaring",
-  crm_form: "Denne malen brukes i salg og CRM",
-  web_form: "Denne malen brukes som nettskjema",
-  warranty_case: "Denne malen brukes i garantisaker",
-};
+const USE_AREA_OPTIONS: { value: string; label: string; description: string }[] = [
+  { value: "service", label: "Servicebesøk", description: "Brukes på servicebesøk og i serviceavtaler" },
+  { value: "installation", label: "Installasjonsjobb", description: "Brukes i installasjonsjobber under fanen Skjema" },
+  { value: "inspection", label: "Befaring", description: "Brukes på deal/befaring i salgsflyten" },
+  { value: "crm", label: "Salgsoppfølging", description: "Brukes i salg og CRM-oppfølging" },
+  { value: "web", label: "Nettskjema", description: "Brukes som skjema på nettside for leadfangst" },
+  { value: "warranty", label: "Garanti / reklamasjon", description: "Brukes i garanti- og reklamasjonssaker" },
+];
 
 interface Props {
   name: string;
@@ -48,7 +39,11 @@ export default function TemplateBuilderHeader({
   isDefault, onToggleDefault,
 }: Props) {
   const navigate = useNavigate();
-  const helpText = useContext ? CONTEXT_HELP[useContext] : null;
+  const activeArea = USE_AREA_OPTIONS.find(a => a.value === category);
+
+  const handleAreaChange = (value: string) => {
+    onCategoryChange(value);
+  };
 
   return (
     <header className="border-b border-border bg-card shrink-0">
@@ -64,32 +59,22 @@ export default function TemplateBuilderHeader({
           className="h-9 max-w-xs border-0 bg-transparent text-base font-semibold placeholder:text-muted-foreground/50 focus-visible:ring-1"
         />
 
-        <Select value={category} onValueChange={onCategoryChange}>
-          <SelectTrigger className="h-8 w-[140px] text-xs">
-            <SelectValue />
+        <Select value={category} onValueChange={handleAreaChange}>
+          <SelectTrigger className="h-8 w-[180px] text-xs">
+            <SelectValue placeholder="Velg bruksområde..." />
           </SelectTrigger>
           <SelectContent>
-            {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={useContext || "_none"} onValueChange={v => onUseContextChange(v === "_none" ? "" : v)}>
-          <SelectTrigger className="h-8 w-[160px] text-xs">
-            <SelectValue placeholder="Brukskontekst..." />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="_none">Ingen kontekst</SelectItem>
-            {Object.entries(USE_CONTEXT_LABELS).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v}</SelectItem>
+            {USE_AREA_OPTIONS.map(opt => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
         {/* Save status */}
-        <Badge variant="outline" className="text-[10px] shrink-0">
-          {saveStatus === "saving" ? "Lagrer..." : saveStatus === "saved" ? "✓ Lagret" : "Ikke lagret"}
+        <Badge variant="outline" className={`text-[10px] shrink-0 ${saveStatus === "unsaved" ? "border-amber-500/50 text-amber-600" : ""}`}>
+          {saveStatus === "saving" ? "Lagrer..." : saveStatus === "saved" ? "✓ Lagret" : "● Ikke lagret"}
         </Badge>
 
         {/* Default badge */}
@@ -140,9 +125,15 @@ export default function TemplateBuilderHeader({
           {isEdit ? "Lagre" : "Opprett mal"}
         </Button>
       </div>
-      {helpText && (
-        <div className="px-4 pb-2">
-          <p className="text-[11px] text-muted-foreground">{helpText}</p>
+
+      {/* Context explanation strip */}
+      {activeArea && (
+        <div className="px-4 pb-2.5 flex items-center gap-2">
+          <Info className="h-3.5 w-3.5 text-primary/60 shrink-0" />
+          <p className="text-[11px] text-muted-foreground">
+            <span className="font-medium text-foreground/80">{activeArea.label}:</span>{" "}
+            {activeArea.description}
+          </p>
         </div>
       )}
     </header>

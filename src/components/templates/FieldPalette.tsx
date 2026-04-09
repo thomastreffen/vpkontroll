@@ -1,21 +1,20 @@
-import { Button } from "@/components/ui/button";
 import {
   Type, AlignLeft, CheckSquare, ListChecks, ChevronDown,
-  Hash, Calendar, Star, Gauge, ImageIcon, Heading,
+  Hash, Calendar, Star, Gauge, ImageIcon, Heading, CircleDot,
 } from "lucide-react";
 
 export const FIELD_TYPE_META: Record<string, { label: string; icon: typeof Type; description: string }> = {
   section_header: { label: "Seksjon", icon: Heading, description: "Gruppér felter visuelt" },
-  text: { label: "Tekstfelt", icon: Type, description: "Kort tekst, navn, referanser" },
-  textarea: { label: "Tekstområde", icon: AlignLeft, description: "Fritekst, notater, beskrivelse" },
-  checkbox: { label: "Sjekkpunkt", icon: CheckSquare, description: "Ja/nei, utført/ikke utført" },
-  checkbox_list: { label: "Sjekkliste", icon: ListChecks, description: "Flere valg fra en liste" },
-  dropdown: { label: "Nedtrekksliste", icon: ChevronDown, description: "Velg ett alternativ" },
-  number: { label: "Tallfelt", icon: Hash, description: "Tall, mengde, antall" },
+  text: { label: "Kort tekst", icon: Type, description: "Navn, referanser, korte svar" },
+  textarea: { label: "Lang tekst", icon: AlignLeft, description: "Notater, beskrivelser, fritekst" },
+  checkbox: { label: "Ja / nei", icon: CheckSquare, description: "Utført, bekreftet, godkjent" },
+  checkbox_list: { label: "Flere valg", icon: ListChecks, description: "Velg én eller flere fra en liste" },
+  dropdown: { label: "Nedtrekksliste", icon: ChevronDown, description: "Velg ett alternativ fra en meny" },
+  number: { label: "Tall", icon: Hash, description: "Mengde, antall, verdi" },
   date: { label: "Dato", icon: Calendar, description: "Datovelger" },
-  rating: { label: "Vurdering", icon: Star, description: "Tilstand 1–5" },
-  measurement: { label: "Måling", icon: Gauge, description: "Verdi + enhet (bar, °C...)" },
-  file: { label: "Fil/bilde", icon: ImageIcon, description: "Last opp dokumentasjon" },
+  rating: { label: "Vurdering 1–5", icon: Star, description: "Tilstandsvurdering eller karakter" },
+  measurement: { label: "Måling med enhet", icon: Gauge, description: "Verdi + enhet (bar, °C, kW...)" },
+  file: { label: "Fil / bilde", icon: ImageIcon, description: "Last opp dokumentasjon" },
 };
 
 interface Props {

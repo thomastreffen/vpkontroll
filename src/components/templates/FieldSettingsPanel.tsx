@@ -21,6 +21,7 @@ const RATING_LABELS = ["Svært dårlig", "Dårlig", "Middels", "God", "Svært go
 export default function FieldSettingsPanel({ field, onChange }: Props) {
   const meta = FIELD_TYPE_META[field.field_type];
   const isSection = field.field_type === "section_header";
+  const hasOptions = field.field_type === "dropdown" || field.field_type === "checkbox_list";
 
   const autoKey = (label: string) => {
     if (!field.field_key || field.field_key === slugify(field.label)) {
@@ -43,16 +44,6 @@ export default function FieldSettingsPanel({ field, onChange }: Props) {
       {/* ── Generelt ── */}
       <div className="space-y-3">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Generelt</p>
-
-        <div className="space-y-1.5">
-          <Label className="text-xs">{isSection ? "Seksjonsoverskrift" : "Label / beskrivelse"}</Label>
-          <Input
-            value={field.label}
-            onChange={e => autoKey(e.target.value)}
-            placeholder={isSection ? "f.eks. Generelt" : "Beskrivelse av felt"}
-            className="text-sm"
-          />
-        </div>
 
         {!isSection && (
           <div className="space-y-1.5">
@@ -151,26 +142,26 @@ export default function FieldSettingsPanel({ field, onChange }: Props) {
         </div>
       )}
 
-      {/* Dropdown / checkbox_list */}
-      {(field.field_type === "dropdown" || field.field_type === "checkbox_list") && (
+      {/* Dropdown / checkbox_list — secondary note since inline is primary */}
+      {hasOptions && (
         <div className="space-y-3">
           <Separator />
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             {field.field_type === "dropdown" ? "Nedtrekksvalg" : "Listevalg"}
           </p>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Valg (ett per linje)</Label>
-            <Textarea
-              value={(field.options?.choices || []).join("\n")}
-              onChange={e => {
-                const choices = e.target.value.split("\n");
-                onChange({ options: { ...field.options, choices } });
-              }}
-              placeholder={"Valg 1\nValg 2\nValg 3"}
-              rows={4}
-              className="text-xs font-mono"
-            />
-          </div>
+          <p className="text-[10px] text-muted-foreground">
+            Rediger alternativene direkte i skjemaet til venstre, eller lim inn her (ett per linje):
+          </p>
+          <Textarea
+            value={(field.options?.choices || []).join("\n")}
+            onChange={e => {
+              const choices = e.target.value.split("\n");
+              onChange({ options: { ...field.options, choices } });
+            }}
+            placeholder={"Valg 1\nValg 2\nValg 3"}
+            rows={4}
+            className="text-xs font-mono"
+          />
         </div>
       )}
 
