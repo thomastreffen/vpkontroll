@@ -100,6 +100,13 @@ function SidebarNav({
 
   return (
     <nav className="flex-1 overflow-y-auto py-2">
+      {visibleSections.length === 0 && !collapsed && (
+        <div className="px-4 py-6 text-center">
+          <p className="text-xs text-sidebar-foreground/50 leading-relaxed">
+            Du har ikke fått tildelt tilganger ennå. Kontakt din administrator.
+          </p>
+        </div>
+      )}
       {visibleSections.map((section) => (
         <div key={section.label} className="mb-1">
           {!collapsed && (
