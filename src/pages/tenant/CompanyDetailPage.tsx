@@ -24,10 +24,12 @@ import { AssetFormDialog } from "@/components/crud/AssetFormDialog";
 import { AgreementFormDialog } from "@/components/crud/AgreementFormDialog";
 import { WarrantyFormDialog } from "@/components/crud/WarrantyFormDialog";
 import { CompanyEditDialog } from "@/components/crud/CompanyEditDialog";
+import { useCanDo } from "@/hooks/useCanDo";
 
 export default function CompanyDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { company, contacts, sites, assets, deals, jobs, agreements, warrantyCases, documents } = useCompanyDetail(id);
+  const { canDo } = useCanDo();
 
   const [siteDialog, setSiteDialog] = useState<{ open: boolean; site?: any }>({ open: false });
   const [assetDialog, setAssetDialog] = useState<{ open: boolean; asset?: any }>({ open: false });
@@ -76,9 +78,11 @@ export default function CompanyDetailPage() {
             {c.phone && <span className="flex items-center gap-1.5 text-muted-foreground"><Phone className="h-3.5 w-3.5" />{c.phone}</span>}
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setEditCompanyOpen(true)} className="gap-1.5">
-          <Pencil className="h-3.5 w-3.5" />Rediger
-        </Button>
+        {canDo("companies.edit") && (
+          <Button variant="outline" size="sm" onClick={() => setEditCompanyOpen(true)} className="gap-1.5">
+            <Pencil className="h-3.5 w-3.5" />Rediger
+          </Button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -117,7 +121,9 @@ export default function CompanyDetailPage() {
 
         <TabsContent value="sites" className="mt-4">
           <div className="flex justify-end mb-3">
-            <Button size="sm" onClick={() => setSiteDialog({ open: true })}><Plus className="h-3.5 w-3.5 mr-1" />Nytt sted</Button>
+            {canDo("sites.create") && (
+              <Button size="sm" onClick={() => setSiteDialog({ open: true })}><Plus className="h-3.5 w-3.5 mr-1" />Nytt sted</Button>
+            )}
           </div>
           {sites.data?.length === 0 ? <EmptyState text="Ingen anleggssteder" /> : (
             <div className="grid gap-3">
@@ -142,9 +148,11 @@ export default function CompanyDetailPage() {
 
         <TabsContent value="assets" className="mt-4">
           <div className="flex justify-end mb-3">
-            <Button size="sm" onClick={() => setAssetDialog({ open: true })} disabled={!sites.data?.length}>
-              <Plus className="h-3.5 w-3.5 mr-1" />Nytt anlegg
-            </Button>
+            {canDo("assets.create") && (
+              <Button size="sm" onClick={() => setAssetDialog({ open: true })} disabled={!sites.data?.length}>
+                <Plus className="h-3.5 w-3.5 mr-1" />Nytt anlegg
+              </Button>
+            )}
           </div>
           {assets.data?.length === 0 ? <EmptyState text="Ingen anlegg" /> : (
             <div className="grid gap-3">
@@ -195,9 +203,11 @@ export default function CompanyDetailPage() {
 
         <TabsContent value="agreements" className="mt-4">
           <div className="flex justify-end mb-3">
-            <Button size="sm" onClick={() => setAgreementDialog({ open: true })} className="gap-1.5">
-              <ScrollText className="h-3.5 w-3.5" />Ny serviceavtale
-            </Button>
+            {canDo("agreements.create") && (
+              <Button size="sm" onClick={() => setAgreementDialog({ open: true })} className="gap-1.5">
+                <ScrollText className="h-3.5 w-3.5" />Ny serviceavtale
+              </Button>
+            )}
           </div>
           {agreements.data?.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-14 px-6 text-center max-w-sm mx-auto">
@@ -208,9 +218,11 @@ export default function CompanyDetailPage() {
               <p className="text-xs text-muted-foreground leading-relaxed mb-4">
                 Opprett en serviceavtale for å sette opp periodisk vedlikehold med faste intervaller. Avtalen styrer automatisk generering av servicebesøk.
               </p>
-              <Button size="sm" onClick={() => setAgreementDialog({ open: true })} className="gap-1.5">
-                <Plus className="h-3.5 w-3.5" />Opprett serviceavtale
-              </Button>
+               {canDo("agreements.create") && (
+                 <Button size="sm" onClick={() => setAgreementDialog({ open: true })} className="gap-1.5">
+                   <Plus className="h-3.5 w-3.5" />Opprett serviceavtale
+                 </Button>
+               )}
             </div>
           ) : (
             <div className="grid gap-3">
@@ -235,7 +247,9 @@ export default function CompanyDetailPage() {
 
         <TabsContent value="warranty" className="mt-4">
           <div className="flex justify-end mb-3">
-            <Button size="sm" onClick={() => setWarrantyDialog(true)}><Plus className="h-3.5 w-3.5 mr-1" />Ny garantisak</Button>
+            {canDo("warranties.create") && (
+              <Button size="sm" onClick={() => setWarrantyDialog(true)}><Plus className="h-3.5 w-3.5 mr-1" />Ny garantisak</Button>
+            )}
           </div>
           {warrantyCases.data?.length === 0 ? <EmptyState text="Ingen garantisaker" /> : (
             <div className="grid gap-3">
