@@ -346,7 +346,7 @@ export default function PostkontoretPage() {
                       caseTitle={selectedCase.title}
                       onUpdated={() => fetchCases()}
                     />
-                    {!selectedCase.assigned_to_user_id && (
+                    {!selectedCase.assigned_to_user_id && canDo("cases.edit") && (
                       <Button size="sm" onClick={() => assignToMe(selectedCase)} className="gap-1.5">
                         <UserCheck className="h-4 w-4" />
                         Tildel meg

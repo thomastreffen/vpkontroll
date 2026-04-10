@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCanDo } from "@/hooks/useCanDo";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
@@ -24,6 +25,7 @@ interface DocumentUploadSectionProps {
 
 export function DocumentUploadSection({ documents, entityType, entityId, queryKey }: DocumentUploadSectionProps) {
   const { tenantId, user } = useAuth();
+  const { canDo } = useCanDo();
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -106,28 +108,30 @@ export function DocumentUploadSection({ documents, entityType, entityId, queryKe
   return (
     <div className="space-y-3">
       {/* Upload bar */}
-      <div className="flex items-center gap-2">
-        <Select value={category} onValueChange={v => setCategory(v as DocCategory)}>
-          <SelectTrigger className="w-40 h-8 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(DOCUMENT_CATEGORY_LABELS).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => fileRef.current?.click()}
-          disabled={uploading}
-        >
-          {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1" />}
-          Last opp
-        </Button>
-        <input ref={fileRef} type="file" className="hidden" onChange={handleFileChange} />
-      </div>
+      {canDo("documents.upload") && (
+        <div className="flex items-center gap-2">
+          <Select value={category} onValueChange={v => setCategory(v as DocCategory)}>
+            <SelectTrigger className="w-40 h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(DOCUMENT_CATEGORY_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1" />}
+            Last opp
+          </Button>
+          <input ref={fileRef} type="file" className="hidden" onChange={handleFileChange} />
+        </div>
+      )}
 
       {/* Document list */}
       {!documents?.length ? (
@@ -156,14 +160,16 @@ export function DocumentUploadSection({ documents, entityType, entityId, queryKe
               >
                 <ExternalLink className="h-3.5 w-3.5" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
-                onClick={() => softDeleteMutation.mutate(d.id)}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              {canDo("documents.delete") && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
+                  onClick={() => softDeleteMutation.mutate(d.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
             </Card>
           ))}
         </div>

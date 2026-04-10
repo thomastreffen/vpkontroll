@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useCanDo } from "@/hooks/useCanDo";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,7 @@ const STAGE_NEXT: Partial<Record<DealStage, { label: string; next: DealStage }>>
 export default function DealDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { tenantId, user } = useAuth();
+  const { canDo } = useCanDo();
   const navigate = useNavigate();
 
   const [deal, setDeal] = useState<any>(null);
@@ -499,9 +501,11 @@ export default function DealDetailPage() {
             {deal.expected_close_date && <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />Forventet: {formatDate(deal.expected_close_date)}</span>}
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={openEdit} className="gap-1.5">
-          <Pencil className="h-3.5 w-3.5" />Rediger
-        </Button>
+        {canDo("deals.edit") && (
+          <Button variant="outline" size="sm" onClick={openEdit} className="gap-1.5">
+            <Pencil className="h-3.5 w-3.5" />Rediger
+          </Button>
+        )}
       </div>
 
       {/* ── Stage progress bar ──────────────────────────────────── */}
@@ -513,8 +517,8 @@ export default function DealDetailPage() {
             <div key={s} className="flex items-center gap-1 flex-shrink-0">
               {i > 0 && <ChevronRight className="h-3 w-3 text-muted-foreground/40" />}
               <button
-                onClick={() => !isClosed && changeStage(s)}
-                disabled={isClosed}
+                onClick={() => !isClosed && canDo("deals.edit") && changeStage(s)}
+                disabled={isClosed || !canDo("deals.edit")}
                 className={`px-3 py-1 rounded-full text-[11px] font-medium transition-colors ${
                   isActive ? "text-primary-foreground" : isPast ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground hover:bg-muted/80"
                 }`}
@@ -532,7 +536,7 @@ export default function DealDetailPage() {
       {/* ── Stage-aware action bar ──────────────────────────────── */}
       <Card className="p-4">
         <div className="flex items-center gap-3 flex-wrap">
-          {!isClosed && stageNext && (
+          {!isClosed && stageNext && canDo("deals.edit") && (
             <Button size="sm" onClick={() => {
               if (stageNext.next === "quote_sent") { changeStage("quote_sent"); return; }
               changeStage(stageNext.next);
@@ -554,10 +558,7 @@ export default function DealDetailPage() {
               <Button variant="outline" size="sm" onClick={() => { setNoteType("note"); setNoteBody(""); setNoteOpen(true); }} className="gap-1.5">
                 <MessageSquare className="h-3.5 w-3.5" />Legg til notat
               </Button>
-              <Button variant="outline" size="sm" onClick={() => { setNoteType("note"); setNoteBody(""); setNoteOpen(true); }} className="gap-1.5">
-                <MessageSquare className="h-3.5 w-3.5" />Legg til notat
-              </Button>
-              {!linkedJob && (
+              {!linkedJob && canDo("jobs.create") && (
                 <Button variant="outline" size="sm" onClick={openCreateJob} className="gap-1.5">
                   <Briefcase className="h-3.5 w-3.5" />Opprett jobb
                 </Button>
@@ -597,17 +598,17 @@ export default function DealDetailPage() {
             );
           })()}
 
-          {!isClosed && deal.stage !== "lost" && (
+          {!isClosed && deal.stage !== "lost" && canDo("deals.edit") && (
             <Button variant="ghost" size="sm" onClick={() => changeStage("lost")} className="gap-1.5 text-destructive hover:text-destructive ml-auto">
               <XCircle className="h-3.5 w-3.5" />Marker tapt
             </Button>
           )}
-          {isLost && (
+          {isLost && canDo("deals.edit") && (
             <Button variant="outline" size="sm" onClick={() => changeStage("lead")} className="gap-1.5">
               Gjenåpne deal
             </Button>
           )}
-          {isWon && !linkedJob && (
+          {isWon && !linkedJob && canDo("jobs.create") && (
             <Button size="sm" onClick={openCreateJob} className="gap-1.5">
               <Briefcase className="h-3.5 w-3.5" />Opprett jobb
             </Button>

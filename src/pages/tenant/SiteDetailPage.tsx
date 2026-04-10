@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useCanDo } from "@/hooks/useCanDo";
 import { useSiteDetail } from "@/hooks/useSiteDetail";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ import { AgreementFormDialog } from "@/components/crud/AgreementFormDialog";
 export default function SiteDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { site, company, primaryContact, assets, jobs, agreements, warrantyCases } = useSiteDetail(id);
+  const { canDo } = useCanDo();
   const [editOpen, setEditOpen] = useState(false);
   const [agreementOpen, setAgreementOpen] = useState(false);
 
@@ -66,9 +68,11 @@ export default function SiteDetailPage() {
           </div>
           {s.access_info && <p className="text-sm text-muted-foreground mt-2">Tilgang: {s.access_info}</p>}
         </div>
-        <Button variant="outline" size="sm" onClick={() => setEditOpen(true)} className="gap-1.5">
-          <Pencil className="h-3.5 w-3.5" />Rediger
-        </Button>
+        {canDo("sites.edit") && (
+          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)} className="gap-1.5">
+            <Pencil className="h-3.5 w-3.5" />Rediger
+          </Button>
+        )}
       </div>
 
       <Tabs defaultValue="assets">
@@ -120,11 +124,13 @@ export default function SiteDetailPage() {
         </TabsContent>
 
         <TabsContent value="agreements" className="mt-4">
-          <div className="flex justify-end mb-3">
-            <Button size="sm" onClick={() => setAgreementOpen(true)} className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" />Ny serviceavtale
-            </Button>
-          </div>
+          {canDo("agreements.create") && (
+            <div className="flex justify-end mb-3">
+              <Button size="sm" onClick={() => setAgreementOpen(true)} className="gap-1.5">
+                <Plus className="h-3.5 w-3.5" />Ny serviceavtale
+              </Button>
+            </div>
+          )}
           {!agreements.data?.length ? <Empty text="Ingen serviceavtaler på dette stedet" /> : (
             <div className="grid gap-3">
               {agreements.data.map(a => (

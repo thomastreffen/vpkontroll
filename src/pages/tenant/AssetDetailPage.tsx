@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useCanDo } from "@/hooks/useCanDo";
 import { useAssetDetail } from "@/hooks/useAssetDetail";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,7 @@ import { AgreementFormDialog } from "@/components/crud/AgreementFormDialog";
 export default function AssetDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { asset, site, company, serviceVisits, warrantyCases, jobs, documents } = useAssetDetail(id);
+  const { canDo } = useCanDo();
   const [editOpen, setEditOpen] = useState(false);
   const [warrantyOpen, setWarrantyOpen] = useState(false);
   const [agreementOpen, setAgreementOpen] = useState(false);
@@ -46,7 +48,7 @@ export default function AssetDetailPage() {
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold">{a.manufacturer} {a.model || ""}</h1>
             <Badge className={ASSET_STATUS_COLORS[a.status] || ""}>{ASSET_STATUS_LABELS[a.status] || a.status}</Badge>
-            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Pencil className="h-3 w-3 mr-1" />Rediger</Button>
+            {canDo("assets.edit") && <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Pencil className="h-3 w-3 mr-1" />Rediger</Button>}
           </div>
           <div className="flex gap-3 text-sm text-muted-foreground mt-1">
             <span>{ENERGY_SOURCE_LABELS[a.energy_source] || a.energy_source}</span>
@@ -61,11 +63,13 @@ export default function AssetDetailPage() {
       </div>
 
       {/* Quick action: create agreement */}
-      <div className="flex gap-2">
-        <Button variant="outline" size="sm" onClick={() => setAgreementOpen(true)} className="gap-1.5">
-          <Plus className="h-3.5 w-3.5" />Ny serviceavtale
-        </Button>
-      </div>
+      {canDo("agreements.create") && (
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setAgreementOpen(true)} className="gap-1.5">
+            <Plus className="h-3.5 w-3.5" />Ny serviceavtale
+          </Button>
+        </div>
+      )}
 
       <Tabs defaultValue="info">
         <TabsList className="flex-wrap h-auto gap-1">
@@ -130,9 +134,11 @@ export default function AssetDetailPage() {
         </TabsContent>
 
         <TabsContent value="warranty" className="mt-4">
-          <div className="flex justify-end mb-3">
-            <Button size="sm" onClick={() => setWarrantyOpen(true)}><Plus className="h-3.5 w-3.5 mr-1" />Ny garantisak</Button>
-          </div>
+          {canDo("warranty.create") && (
+            <div className="flex justify-end mb-3">
+              <Button size="sm" onClick={() => setWarrantyOpen(true)}><Plus className="h-3.5 w-3.5 mr-1" />Ny garantisak</Button>
+            </div>
+          )}
           {!warrantyCases.data?.length ? <Empty text="Ingen garantisaker" /> : (
             <div className="grid gap-3">
               {warrantyCases.data.map(w => (

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useCanDo } from "@/hooks/useCanDo";
 import { useWarrantyDetail } from "@/hooks/useWarrantyDetail";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ import { DocumentUploadSection } from "@/components/crud/DocumentUploadSection";
 export default function WarrantyDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { warranty, company, asset, linkedCase, jobs, documents } = useWarrantyDetail(id);
+  const { canDo } = useCanDo();
   const [editOpen, setEditOpen] = useState(false);
   const [createJobOpen, setCreateJobOpen] = useState(false);
 
@@ -43,8 +45,8 @@ export default function WarrantyDetailPage() {
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-bold">{w.warranty_number}</h1>
             <Badge className={WARRANTY_STATUS_COLORS[w.status] || ""}>{WARRANTY_STATUS_LABELS[w.status] || w.status}</Badge>
-            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Pencil className="h-3 w-3 mr-1" />Rediger</Button>
-            <Button variant="outline" size="sm" onClick={() => setCreateJobOpen(true)}><Plus className="h-3 w-3 mr-1" />Opprett jobb</Button>
+            {canDo("warranty.edit") && <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Pencil className="h-3 w-3 mr-1" />Rediger</Button>}
+            {canDo("jobs.create") && <Button variant="outline" size="sm" onClick={() => setCreateJobOpen(true)}><Plus className="h-3 w-3 mr-1" />Opprett jobb</Button>}
           </div>
           <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mt-2">
             {company.data && <Link to={`/tenant/crm/companies/${company.data.id}`} className="text-primary hover:underline">{company.data.name}</Link>}
@@ -100,7 +102,7 @@ export default function WarrantyDetailPage() {
           {!jobs.data?.length ? (
             <div className="text-center py-10">
               <p className="text-sm text-muted-foreground mb-3">Ingen relaterte jobber</p>
-              <Button size="sm" onClick={() => setCreateJobOpen(true)}><Plus className="h-3.5 w-3.5 mr-1" />Opprett reparasjonsjobb</Button>
+              {canDo("jobs.create") && <Button size="sm" onClick={() => setCreateJobOpen(true)}><Plus className="h-3.5 w-3.5 mr-1" />Opprett reparasjonsjobb</Button>}
             </div>
           ) : (
             <div className="grid gap-3">

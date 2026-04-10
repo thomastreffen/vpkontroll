@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useCanDo } from "@/hooks/useCanDo";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -41,6 +42,7 @@ export function CaseActions({
   onUpdated,
 }: CaseActionsProps) {
   const { tenantId } = useAuth();
+  const { canDo } = useCanDo();
   const navigate = useNavigate();
   const [warrantyOpen, setWarrantyOpen] = useState(false);
 
@@ -101,6 +103,9 @@ export function CaseActions({
     setWarrantyOpen(false);
   };
 
+  const hasAnyAction = canDo("deals.create") || canDo("jobs.create") || canDo("warranty.create");
+  if (!hasAnyAction) return null;
+
   return (
     <>
       <DropdownMenu>
@@ -111,19 +116,25 @@ export function CaseActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={createDeal} className="gap-2">
-            <TrendingUp className="h-4 w-4" />
-            Ny deal
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={createJob} className="gap-2">
-            <Briefcase className="h-4 w-4" />
-            Ny jobb
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setWarrantyOpen(true)} className="gap-2">
-            <ShieldAlert className="h-4 w-4" />
-            Ny garantisak
-          </DropdownMenuItem>
+          {canDo("deals.create") && (
+            <DropdownMenuItem onClick={createDeal} className="gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Ny deal
+            </DropdownMenuItem>
+          )}
+          {canDo("jobs.create") && (
+            <DropdownMenuItem onClick={createJob} className="gap-2">
+              <Briefcase className="h-4 w-4" />
+              Ny jobb
+            </DropdownMenuItem>
+          )}
+          {(canDo("deals.create") || canDo("jobs.create")) && canDo("warranty.create") && <DropdownMenuSeparator />}
+          {canDo("warranty.create") && (
+            <DropdownMenuItem onClick={() => setWarrantyOpen(true)} className="gap-2">
+              <ShieldAlert className="h-4 w-4" />
+              Ny garantisak
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
