@@ -27,6 +27,7 @@ import {
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
   VISIT_STATUS_LABELS,
 } from "@/lib/domain-labels";
+import { useCanDo } from "@/hooks/useCanDo";
 
 type Technician = {
   id: string; tenant_id: string; name: string; phone: string | null;
@@ -47,6 +48,7 @@ const HOUR_HEIGHT = 60;
 
 export default function RessursplanleggerPage() {
   const { user, tenantId } = useAuth();
+  const { canDo } = useCanDo();
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -230,7 +232,9 @@ export default function RessursplanleggerPage() {
           <h1 className="text-3xl font-bold tracking-tight">Ressursplanlegger</h1>
           <p className="text-muted-foreground mt-1">Planlegg og administrer jobber og teknikere</p>
         </div>
-        <Button onClick={() => openNewEvent()} className="gap-2"><Plus className="h-4 w-4" />Ny hendelse</Button>
+        {canDo("ressursplan.schedule") && (
+          <Button onClick={() => openNewEvent()} className="gap-2"><Plus className="h-4 w-4" />Ny hendelse</Button>
+        )}
       </div>
 
       <div className="flex items-center gap-2">
