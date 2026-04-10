@@ -35,7 +35,7 @@ export default function OnboardingChecklist() {
         { count: docCount },
       ] = await Promise.all([
         supabase.from("profiles").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId),
-        supabase.from("tenant_modules").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("is_enabled", true),
+        supabase.from("tenant_modules").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("is_active", true),
         supabase.from("technicians").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("is_active", true),
         supabase.from("crm_companies").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).is("deleted_at", null),
         supabase.from("mailboxes").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("is_enabled", true),
