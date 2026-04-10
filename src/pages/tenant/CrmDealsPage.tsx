@@ -223,9 +223,11 @@ export default function CrmDealsPage() {
                       </div>
                     </Card>
                   ))}
-                  <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground gap-1" onClick={() => openNew(stage)}>
-                    <Plus className="h-3 w-3" /> Legg til
-                  </Button>
+                  {canDo("deals.create") && (
+                    <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground gap-1" onClick={() => openNew(stage)}>
+                      <Plus className="h-3 w-3" /> Legg til
+                    </Button>
+                  )}
                 </div>
               </div>
             );
