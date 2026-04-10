@@ -517,6 +517,28 @@ export default function RessursplanleggerPage() {
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>{editEvent ? "Rediger hendelse" : "Ny hendelse"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
+            {/* Job picker */}
+            <div className="space-y-1.5">
+              <Label>Koble til jobb</Label>
+              <Select value={formJobId || "__none__"} onValueChange={handleJobSelect}>
+                <SelectTrigger><SelectValue placeholder="Velg jobb..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Ingen jobb (frittstående)</SelectItem>
+                  {jobsLoading ? (
+                    <SelectItem value="__loading__" disabled>Laster...</SelectItem>
+                  ) : (
+                    availableJobs.map((j: any) => (
+                      <SelectItem key={j.id} value={j.id}>
+                        {j.job_number} – {j.title} {j.company?.name ? `(${j.company.name})` : ""}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              {formJobId && (
+                <p className="text-[11px] text-muted-foreground">Kunde og adresse er fylt inn fra jobben. Du kan overstyre manuelt.</p>
+              )}
+            </div>
             <div className="space-y-1.5">
               <Label>Tittel *</Label>
               <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="F.eks. Installasjon varmepumpe" />
