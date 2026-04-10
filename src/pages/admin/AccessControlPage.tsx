@@ -3,10 +3,19 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Shield, Users, ChevronRight, LayoutGrid, Zap } from "lucide-react";
-import { MODULE_PERMISSION_KEYS, getPermLabel } from "@/lib/permission-labels";
+import { Button } from "@/components/ui/button";
+import {
+  Collapsible, CollapsibleContent, CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Loader2, Shield, Users, ChevronDown, ChevronRight, LayoutGrid, Zap, Building2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { PERMISSION_LABELS, MODULE_PERMISSION_KEYS, PERMISSION_CATEGORIES } from "@/lib/permission-labels";
+import { cn } from "@/lib/utils";
 
 export default function MasterAccessControlPage() {
+  const [expandedTenant, setExpandedTenant] = useState<string | null>(null);
+  const [expandedRole, setExpandedRole] = useState<string | null>(null);
+
   const { data: tenants } = useQuery({
     queryKey: ["tenants"],
     queryFn: async () => {
@@ -16,96 +25,166 @@ export default function MasterAccessControlPage() {
     },
   });
 
-  const { data: allRoles, isLoading } = useQuery({
-    queryKey: ["all-tenant-roles"],
+  const { data: allData, isLoading } = useQuery({
+    queryKey: ["all-tenant-roles-full"],
     queryFn: async () => {
-      const [{ data: roles }, { data: perms }, { data: assignments }] = await Promise.all([
+      const [{ data: roles }, { data: perms }, { data: assignments }, { data: profiles }] = await Promise.all([
         supabase.from("tenant_roles").select("*").order("name"),
         supabase.from("tenant_role_permissions").select("*"),
         supabase.from("tenant_user_role_assignments").select("*"),
+        supabase.from("profiles").select("user_id, full_name, email, tenant_id"),
       ]);
-      return { roles: roles || [], perms: perms || [], assignments: assignments || [] };
+      return { roles: roles || [], perms: perms || [], assignments: assignments || [], profiles: profiles || [] };
     },
   });
-
-  const getRolesForTenant = (tenantId: string) => {
-    if (!allRoles) return [];
-    const roles = allRoles.roles.filter((r: any) => r.tenant_id === tenantId);
-    return roles.map((r: any) => {
-      const permCount = allRoles.perms.filter((p: any) => p.role_id === r.id).length;
-      const userCount = allRoles.assignments.filter((a: any) => a.role_id === r.id).length;
-      const moduleCount = allRoles.perms
-        .filter((p: any) => p.role_id === r.id && MODULE_PERMISSION_KEYS.includes(p.permission_key) && p.allowed)
-        .length;
-      return { ...r, permCount, userCount, moduleCount };
-    });
-  };
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
 
+  const getRolesForTenant = (tenantId: string) => {
+    if (!allData) return [];
+    return allData.roles
+      .filter((r: any) => r.tenant_id === tenantId)
+      .map((r: any) => {
+        const rolePerms = allData.perms.filter((p: any) => p.role_id === r.id && p.allowed);
+        const userCount = allData.assignments.filter((a: any) => a.role_id === r.id).length;
+        const users = allData.assignments
+          .filter((a: any) => a.role_id === r.id)
+          .map((a: any) => allData.profiles.find((p: any) => p.user_id === a.user_id))
+          .filter(Boolean);
+        return { ...r, rolePerms, userCount, users };
+      });
+  };
+
+  // Summary stats
+  const totalRoles = allData?.roles.length ?? 0;
+  const systemRoles = allData?.roles.filter((r: any) => r.is_system_role).length ?? 0;
+  const usersWithRoles = new Set(allData?.assignments.map((a: any) => a.user_id) ?? []).size;
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Tilgangsstyring</h1>
-        <p className="text-muted-foreground mt-1">Oversikt over roller og rettigheter per tenant</p>
+        <h1 className="text-2xl font-bold tracking-tight">Tilgangsstyring</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Oversikt over roller, rettigheter og brukertildelinger</p>
       </div>
 
+      {/* Summary */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Totalt roller", value: totalRoles, icon: Shield },
+          { label: "Systemroller", value: systemRoles, icon: LayoutGrid },
+          { label: "Brukere med roller", value: usersWithRoles, icon: Users },
+          { label: "Tenants", value: tenants?.length ?? 0, icon: Building2 },
+        ].map((s) => (
+          <Card key={s.label} className="border-border/50">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-muted"><s.icon className="w-4 h-4 text-muted-foreground" /></div>
+              <div>
+                <p className="text-xl font-bold">{s.value}</p>
+                <p className="text-xs text-muted-foreground">{s.label}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Per-tenant roles */}
       {!tenants?.length ? (
         <Card className="border-border/50">
           <CardContent className="p-12 text-center">
             <Shield className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
-            <p className="text-muted-foreground">Ingen tenants å vise tilgangsstyring for</p>
+            <p className="text-muted-foreground">Ingen tenants</p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {tenants.map((tenant) => {
             const roles = getRolesForTenant(tenant.id);
+            const isExpanded = expandedTenant === tenant.id;
             const totalUsers = new Set(
-              (allRoles?.assignments || []).filter((a: any) => a.tenant_id === tenant.id).map((a: any) => a.user_id)
+              (allData?.assignments || []).filter((a: any) => a.tenant_id === tenant.id).map((a: any) => a.user_id)
             ).size;
 
             return (
-              <Card key={tenant.id} className="border-border/50">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">{tenant.name}</CardTitle>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Badge variant="outline" className="text-[10px]">{roles.length} roller</Badge>
-                      <Badge variant="outline" className="text-[10px]">{totalUsers} brukere med roller</Badge>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {!roles.length ? (
-                    <p className="text-sm text-muted-foreground py-4 text-center">Ingen roller konfigurert ennå.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {roles.map((r: any) => (
-                        <div key={r.id} className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-muted/30">
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium">{r.name}</span>
-                              <Badge variant={r.is_system_role ? "secondary" : "outline"} className="text-[10px]">
-                                {r.is_system_role ? "System" : "Egendefinert"}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1"><LayoutGrid className="h-3 w-3" />{r.moduleCount} moduler</span>
-                              <span>·</span>
-                              <span className="flex items-center gap-1"><Zap className="h-3 w-3" />{r.permCount} rett.</span>
-                              <span>·</span>
-                              <span className="flex items-center gap-1"><Users className="h-3 w-3" />{r.userCount} brukere</span>
-                            </div>
-                          </div>
+              <Collapsible key={tenant.id} open={isExpanded} onOpenChange={(o) => setExpandedTenant(o ? tenant.id : null)}>
+                <Card className="border-border/50">
+                  <CollapsibleTrigger asChild>
+                    <CardContent className="p-4 cursor-pointer hover:bg-muted/30 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                          <Link to={`/admin/tenants/${tenant.id}`} className="font-medium text-sm hover:text-primary" onClick={(e) => e.stopPropagation()}>
+                            {tenant.name}
+                          </Link>
                         </div>
-                      ))}
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[10px]">{roles.length} roller</Badge>
+                          <Badge variant="outline" className="text-[10px]">{totalUsers} brukere</Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="px-4 pb-4 space-y-2">
+                      {!roles.length ? (
+                        <p className="text-sm text-muted-foreground text-center py-4">Ingen roller konfigurert</p>
+                      ) : (
+                        roles.map((r: any) => {
+                          const isRoleExpanded = expandedRole === r.id;
+                          return (
+                            <Collapsible key={r.id} open={isRoleExpanded} onOpenChange={(o) => setExpandedRole(o ? r.id : null)}>
+                              <CollapsibleTrigger asChild>
+                                <div className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
+                                  <div className="flex items-center gap-2">
+                                    {isRoleExpanded ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
+                                    <span className="text-sm font-medium">{r.name}</span>
+                                    <Badge variant={r.is_system_role ? "secondary" : "outline"} className="text-[10px]">
+                                      {r.is_system_role ? "System" : "Egendefinert"}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                    <span className="flex items-center gap-1"><Zap className="h-3 w-3" />{r.rolePerms.length} rett.</span>
+                                    <span className="flex items-center gap-1"><Users className="h-3 w-3" />{r.userCount} brukere</span>
+                                  </div>
+                                </div>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <div className="ml-6 mt-2 space-y-3">
+                                  {/* Users in this role */}
+                                  {r.users.length > 0 && (
+                                    <div>
+                                      <p className="text-xs font-medium text-muted-foreground mb-1">Brukere:</p>
+                                      <div className="flex flex-wrap gap-1">
+                                        {r.users.map((u: any) => (
+                                          <Badge key={u.user_id} variant="outline" className="text-[10px]">
+                                            {u.full_name || u.email}
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {/* Permissions grouped by category */}
+                                  <div>
+                                    <p className="text-xs font-medium text-muted-foreground mb-1">Rettigheter:</p>
+                                    <div className="flex flex-wrap gap-1">
+                                      {r.rolePerms.map((p: any) => (
+                                        <Badge key={p.permission_key} variant="outline" className="text-[10px] bg-accent/5">
+                                          {PERMISSION_LABELS[p.permission_key]?.label ?? p.permission_key}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              </CollapsibleContent>
+                            </Collapsible>
+                          );
+                        })
+                      )}
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
             );
           })}
         </div>
