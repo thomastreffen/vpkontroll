@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAgreementDetail } from "@/hooks/useAgreementDetail";
 import { useAuth } from "@/hooks/useAuth";
+import { useCanDo } from "@/hooks/useCanDo";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -83,6 +84,7 @@ export default function AgreementDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { tenantId, user } = useAuth();
   const navigate = useNavigate();
+  const { canDo } = useCanDo();
   const qc = useQueryClient();
   const { agreement, company, site, asset, visits, jobs, generationRuns, documents } = useAgreementDetail(id);
   const [scheduleVisit, setScheduleVisit] = useState<any>(null);
@@ -227,12 +229,16 @@ export default function AgreementDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={openEdit} className="gap-1.5">
-            <Pencil className="h-3.5 w-3.5" />Rediger
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setRenewOpen(true)} className="gap-1.5">
-            <RefreshCw className="h-3.5 w-3.5" />Forny
-          </Button>
+          {canDo("agreements.edit") && (
+            <Button variant="outline" size="sm" onClick={openEdit} className="gap-1.5">
+              <Pencil className="h-3.5 w-3.5" />Rediger
+            </Button>
+          )}
+          {canDo("agreements.edit") && (
+            <Button variant="outline" size="sm" onClick={() => setRenewOpen(true)} className="gap-1.5">
+              <RefreshCw className="h-3.5 w-3.5" />Forny
+            </Button>
+          )}
         </div>
       </div>
 
@@ -247,10 +253,12 @@ export default function AgreementDetailPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setExtraVisitOpen(true)} className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" />Ekstra servicebesøk
-            </Button>
-            {plannedVisits.length > 0 && (
+            {canDo("agreements.edit") && (
+              <Button variant="outline" size="sm" onClick={() => setExtraVisitOpen(true)} className="gap-1.5">
+                <Plus className="h-3.5 w-3.5" />Ekstra servicebesøk
+              </Button>
+            )}
+            {plannedVisits.length > 0 && canDo("ressursplan.schedule") && (
               <Button size="sm" onClick={() => setScheduleVisit(plannedVisits[0])} className="gap-1.5">
                 <CalendarDays className="h-3.5 w-3.5" />Planlegg i kalender
               </Button>
