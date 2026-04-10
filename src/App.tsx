@@ -97,7 +97,8 @@ function AppRoutes() {
     if (isMasterAdmin) return "/admin";
     // Both tenant admins and regular tenant members go to /tenant
     if (isTenantAdmin || tenantId) return "/tenant";
-    return "/login";
+    // User is authenticated but has no tenant – show a helpful page instead of login loop
+    return "/no-tenant";
   };
 
   return (
