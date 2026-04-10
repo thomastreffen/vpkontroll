@@ -94,6 +94,7 @@ const FILTER_OPTIONS: { key: FilterType; label: string; icon: React.ElementType 
 export default function PostkontoretPage() {
   const { user, tenantId } = useAuth();
   const { canDo } = useCanDo();
+  const navigate = useNavigate();
   const [cases, setCases] = useState<Case[]>([]);
   const [items, setItems] = useState<CaseItem[]>([]);
   const [loading, setLoading] = useState(true);
