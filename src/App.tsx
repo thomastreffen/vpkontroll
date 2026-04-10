@@ -48,8 +48,31 @@ import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
+/** Wrapper for operative tenant routes – requires tenant membership, not admin role */
+function TenantRoute({ children, module, permission }: { children: React.ReactNode; module?: string; permission?: string }) {
+  const inner = module ? (
+    <ModuleRouteGuard module={module} permission={permission}>{children}</ModuleRouteGuard>
+  ) : (
+    children
+  );
+  return (
+    <ProtectedRoute requireRole="tenant_member">
+      <TenantAdminLayout>{inner}</TenantAdminLayout>
+    </ProtectedRoute>
+  );
+}
+
+/** Wrapper for admin-only tenant routes – requires tenant_admin role */
+function TenantAdminRoute({ children }: { children: React.ReactNode }) {
+  return (
+    <ProtectedRoute requireRole="tenant_admin">
+      <TenantAdminLayout>{children}</TenantAdminLayout>
+    </ProtectedRoute>
+  );
+}
+
 function AppRoutes() {
-  const { user, loading, isPasswordRecovery, isMasterAdmin, isTenantAdmin } = useAuth();
+  const { user, loading, isPasswordRecovery, isMasterAdmin, isTenantAdmin, tenantId } = useAuth();
 
   if (loading) {
     return (
@@ -72,7 +95,8 @@ function AppRoutes() {
     if (!user) return "/login";
     if (isMasterAdmin && isTenantAdmin) return "/select-role";
     if (isMasterAdmin) return "/admin";
-    if (isTenantAdmin) return "/tenant";
+    // Both tenant admins and regular tenant members go to /tenant
+    if (isTenantAdmin || tenantId) return "/tenant";
     return "/login";
   };
 
@@ -83,43 +107,45 @@ function AppRoutes() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/select-role" element={user ? <RoleSelectorPage /> : <Navigate to="/login" replace />} />
 
-      {/* Master Admin routes */}
+      {/* Master Admin routes – require master_admin role */}
       <Route path="/admin" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><DashboardPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/tenants" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><TenantsPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/modules" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><ModulesPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/integrations" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><IntegrationsPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/access-control" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminAccessControlPage /></MasterAdminLayout></ProtectedRoute>} />
 
-      {/* Tenant Admin routes */}
-      <Route path="/tenant" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantDashboardPage /></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/postkontoret" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="postkontoret"><PostkontoretPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/ressursplanlegger" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="ressursplanlegger"><RessursplanleggerPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/modules" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantModulesPage /></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/integrations" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantIntegrationsPage /></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/users" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantUsersPage /></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/access-control" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><TenantAccessControlPage /></TenantAdminLayout></ProtectedRoute>} />
+      {/* Tenant: Operative routes – open for all tenant members */}
+      <Route path="/tenant" element={<TenantRoute><TenantDashboardPage /></TenantRoute>} />
+      <Route path="/tenant/postkontoret" element={<TenantRoute module="postkontoret" permission="module.postkontoret"><PostkontoretPage /></TenantRoute>} />
+      <Route path="/tenant/ressursplanlegger" element={<TenantRoute module="ressursplanlegger" permission="module.ressursplanlegger"><RessursplanleggerPage /></TenantRoute>} />
 
-      {/* CRM routes */}
-      <Route path="/tenant/crm/contacts" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><CrmContactsPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/crm/companies" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><CrmCompaniesPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/crm/deals" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><CrmDealsPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/crm/jobs" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><JobsListPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/crm/assets" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><AssetsListPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/crm/agreements" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><AgreementsListPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/crm/warranties" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><WarrantyListPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/crm/companies/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><CompanyDetailPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/crm/assets/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><AssetDetailPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/crm/jobs/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><JobDetailPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/crm/agreements/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><AgreementDetailPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/crm/warranty/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><WarrantyDetailPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/crm/deals/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><DealDetailPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/crm/contacts/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><ContactDetailPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/crm/sites/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><SiteDetailPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/crm/customers/import" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><CustomerImportPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/templates" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><TemplatesPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/templates/new" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><TemplateBuilderPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/templates/submissions" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><FormSubmissionsPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
-      <Route path="/tenant/templates/:id" element={<ProtectedRoute requireRole="tenant_admin"><TenantAdminLayout><ModuleRouteGuard module="crm"><TemplateBuilderPage /></ModuleRouteGuard></TenantAdminLayout></ProtectedRoute>} />
+      {/* CRM routes – open for tenant members with module + permission checks */}
+      <Route path="/tenant/crm/contacts" element={<TenantRoute module="crm" permission="module.crm"><CrmContactsPage /></TenantRoute>} />
+      <Route path="/tenant/crm/companies" element={<TenantRoute module="crm" permission="module.crm"><CrmCompaniesPage /></TenantRoute>} />
+      <Route path="/tenant/crm/deals" element={<TenantRoute module="crm" permission="module.crm"><CrmDealsPage /></TenantRoute>} />
+      <Route path="/tenant/crm/jobs" element={<TenantRoute module="crm" permission="module.crm"><JobsListPage /></TenantRoute>} />
+      <Route path="/tenant/crm/assets" element={<TenantRoute module="crm" permission="module.crm"><AssetsListPage /></TenantRoute>} />
+      <Route path="/tenant/crm/agreements" element={<TenantRoute module="crm" permission="module.crm"><AgreementsListPage /></TenantRoute>} />
+      <Route path="/tenant/crm/warranties" element={<TenantRoute module="crm" permission="module.crm"><WarrantyListPage /></TenantRoute>} />
+      <Route path="/tenant/crm/companies/:id" element={<TenantRoute module="crm" permission="module.crm"><CompanyDetailPage /></TenantRoute>} />
+      <Route path="/tenant/crm/assets/:id" element={<TenantRoute module="crm" permission="module.crm"><AssetDetailPage /></TenantRoute>} />
+      <Route path="/tenant/crm/jobs/:id" element={<TenantRoute module="crm" permission="module.crm"><JobDetailPage /></TenantRoute>} />
+      <Route path="/tenant/crm/agreements/:id" element={<TenantRoute module="crm" permission="module.crm"><AgreementDetailPage /></TenantRoute>} />
+      <Route path="/tenant/crm/warranty/:id" element={<TenantRoute module="crm" permission="module.crm"><WarrantyDetailPage /></TenantRoute>} />
+      <Route path="/tenant/crm/deals/:id" element={<TenantRoute module="crm" permission="module.crm"><DealDetailPage /></TenantRoute>} />
+      <Route path="/tenant/crm/contacts/:id" element={<TenantRoute module="crm" permission="module.crm"><ContactDetailPage /></TenantRoute>} />
+      <Route path="/tenant/crm/sites/:id" element={<TenantRoute module="crm" permission="module.crm"><SiteDetailPage /></TenantRoute>} />
+      <Route path="/tenant/crm/customers/import" element={<TenantRoute module="crm" permission="module.crm"><CustomerImportPage /></TenantRoute>} />
+      <Route path="/tenant/templates" element={<TenantRoute module="crm" permission="module.crm"><TemplatesPage /></TenantRoute>} />
+      <Route path="/tenant/templates/new" element={<TenantRoute module="crm" permission="module.crm"><TemplateBuilderPage /></TenantRoute>} />
+      <Route path="/tenant/templates/submissions" element={<TenantRoute module="crm" permission="module.crm"><FormSubmissionsPage /></TenantRoute>} />
+      <Route path="/tenant/templates/:id" element={<TenantRoute module="crm" permission="module.crm"><TemplateBuilderPage /></TenantRoute>} />
+
+      {/* Tenant: Admin-only routes – require tenant_admin role */}
+      <Route path="/tenant/modules" element={<TenantAdminRoute><TenantModulesPage /></TenantAdminRoute>} />
+      <Route path="/tenant/integrations" element={<TenantAdminRoute><TenantIntegrationsPage /></TenantAdminRoute>} />
+      <Route path="/tenant/users" element={<TenantAdminRoute><TenantUsersPage /></TenantAdminRoute>} />
+      <Route path="/tenant/access-control" element={<TenantAdminRoute><TenantAccessControlPage /></TenantAdminRoute>} />
 
       {/* Public form route - no auth required */}
       <Route path="/forms/:publishKey" element={<PublicFormPage />} />
