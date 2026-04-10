@@ -156,8 +156,8 @@ export default function CrmContactsPage() {
             icon={User}
             title="Ingen kontaktpersoner ennå"
             description="Legg til kontaktpersoner for å knytte dem til kunder, deals og jobber. Du kan også opprette kontaktpersoner direkte fra en kundeside."
-            actionLabel="Ny kontaktperson"
-            onAction={openNew}
+            actionLabel={canDo("contacts.create") ? "Ny kontaktperson" : undefined}
+            onAction={canDo("contacts.create") ? openNew : undefined}
             hint="Tips: Opprett kunden først, så legger du til kontaktpersoner derfra."
           />
         )
