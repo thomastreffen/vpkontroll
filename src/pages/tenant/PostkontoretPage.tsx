@@ -4,6 +4,7 @@ import { EmailComposeForm } from "@/components/postkontoret/EmailComposeForm";
 import { CaseLinkingSection } from "@/components/postkontoret/CaseLinkingSection";
 import { CaseActions } from "@/components/postkontoret/CaseActions";
 import { useAuth } from "@/hooks/useAuth";
+import { useCanDo } from "@/hooks/useCanDo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -91,6 +92,7 @@ const FILTER_OPTIONS: { key: FilterType; label: string; icon: React.ElementType 
 
 export default function PostkontoretPage() {
   const { user, tenantId } = useAuth();
+  const { canDo } = useCanDo();
   const [cases, setCases] = useState<Case[]>([]);
   const [items, setItems] = useState<CaseItem[]>([]);
   const [loading, setLoading] = useState(true);

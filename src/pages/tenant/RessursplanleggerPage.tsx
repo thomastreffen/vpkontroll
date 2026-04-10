@@ -281,7 +281,7 @@ export default function RessursplanleggerPage() {
             <div className="grid grid-cols-5 gap-px bg-border">
               {weekDays.map((day) => (
                 <div key={day.toISOString()} className="bg-card relative cursor-pointer" style={{ height: HOURS.length * HOUR_HEIGHT }}
-                  onClick={() => openNewEvent(day)}>
+                  onClick={() => canDo("ressursplan.schedule") && openNewEvent(day)}>
                   {HOURS.map((hour) => (
                     <div key={hour} className="absolute left-0 right-0 border-t border-border/30" style={{ top: (hour - HOURS[0]) * HOUR_HEIGHT }}>
                       {day === weekDays[0] && (
