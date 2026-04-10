@@ -4,11 +4,17 @@ import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   children: ReactNode;
-  requireRole?: "master_admin" | "tenant_admin";
+  /** 
+   * "master_admin" – only master admins
+   * "tenant_admin" – only tenant admins (or master admins)
+   * "tenant_member" – any authenticated user with a tenant_id
+   * undefined – any authenticated user
+   */
+  requireRole?: "master_admin" | "tenant_admin" | "tenant_member";
 }
 
 export default function ProtectedRoute({ children, requireRole }: Props) {
-  const { user, loading, isMasterAdmin, isTenantAdmin } = useAuth();
+  const { user, loading, isMasterAdmin, isTenantAdmin, tenantId } = useAuth();
 
   if (loading) {
     return (
@@ -37,6 +43,17 @@ export default function ProtectedRoute({ children, requireRole }: Props) {
         <div className="text-center">
           <h2 className="text-xl font-bold mb-2">Ingen tilgang</h2>
           <p className="text-muted-foreground">Du har ikke tenant admin-tilgang.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (requireRole === "tenant_member" && !tenantId && !isMasterAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center">
+          <h2 className="text-xl font-bold mb-2">Ingen tilgang</h2>
+          <p className="text-muted-foreground">Du er ikke tilknyttet en bedrift. Kontakt administrator.</p>
         </div>
       </div>
     );
