@@ -6,6 +6,7 @@ import DashDriftSection from "@/components/dashboard/DashDriftSection";
 import DashDocsStatus from "@/components/dashboard/DashDocsStatus";
 import DashPostkontoret from "@/components/dashboard/DashPostkontoret";
 import DashWarranty from "@/components/dashboard/DashWarranty";
+import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 
 export default function TenantDashboardPage() {
   const d = useDashboardData();
@@ -24,6 +25,9 @@ export default function TenantDashboardPage() {
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-sm text-muted-foreground">Operativ oversikt – klikk for å gå videre</p>
       </div>
+
+      {/* Onboarding checklist – hidden when all done */}
+      <OnboardingChecklist />
 
       {/* KPI cards */}
       <DashKpiCards

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailComposeForm } from "@/components/postkontoret/EmailComposeForm";
 import { CaseLinkingSection } from "@/components/postkontoret/CaseLinkingSection";
@@ -93,6 +94,7 @@ const FILTER_OPTIONS: { key: FilterType; label: string; icon: React.ElementType 
 export default function PostkontoretPage() {
   const { user, tenantId } = useAuth();
   const { canDo } = useCanDo();
+  const navigate = useNavigate();
   const [cases, setCases] = useState<Case[]>([]);
   const [items, setItems] = useState<CaseItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -263,9 +265,19 @@ export default function PostkontoretPage() {
                 {[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full" />)}
               </div>
             ) : filtered.length === 0 ? (
-              <div className="text-center py-12">
+              <div className="text-center py-12 px-4">
                 <Inbox className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-                <p className="text-sm text-muted-foreground">Ingen saker funnet</p>
+                <p className="text-sm font-medium mb-1">Ingen saker funnet</p>
+                <p className="text-xs text-muted-foreground mb-3">
+                  {cases.length === 0
+                    ? "Koble en mailboks under Integrasjoner for å motta henvendelser automatisk, eller opprett en sak manuelt."
+                    : "Prøv et annet filter eller søkeord."}
+                </p>
+                {cases.length === 0 && (
+                  <Button variant="outline" size="sm" className="text-xs" onClick={() => navigate("/tenant/integrations")}>
+                    <Mail className="h-3.5 w-3.5 mr-1.5" /> Sett opp mailboks
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="space-y-1.5">

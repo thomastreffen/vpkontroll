@@ -35,19 +35,32 @@ export default function TechnicianDashboardPage() {
   const [docsData, setDocsData] = useState<any[]>([]);
   const [technicianId, setTechnicianId] = useState<string | null>(null);
 
-  // Find this user's technician record
+  // Find this user's technician record – prefer user_id match, fallback to email
   useEffect(() => {
     if (!tenantId || !user) return;
-    supabase
-      .from("technicians")
-      .select("id")
-      .eq("tenant_id", tenantId)
-      .eq("is_active", true)
-      .or(`email.eq.${user.email}`)
-      .limit(1)
-      .then(({ data }) => {
-        if (data?.[0]) setTechnicianId(data[0].id);
-      });
+    const findTechnician = async () => {
+      // Try user_id match first (robust)
+      const { data: byUserId } = await supabase
+        .from("technicians")
+        .select("id")
+        .eq("tenant_id", tenantId)
+        .eq("is_active", true)
+        .eq("user_id", user.id)
+        .limit(1);
+      if (byUserId?.[0]) { setTechnicianId(byUserId[0].id); return; }
+      // Fallback to email match
+      if (user.email) {
+        const { data: byEmail } = await supabase
+          .from("technicians")
+          .select("id")
+          .eq("tenant_id", tenantId)
+          .eq("is_active", true)
+          .eq("email", user.email)
+          .limit(1);
+        if (byEmail?.[0]) setTechnicianId(byEmail[0].id);
+      }
+    };
+    findTechnician();
   }, [tenantId, user]);
 
   const fetchDayEvents = useCallback(async () => {
