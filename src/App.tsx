@@ -17,6 +17,7 @@ import TenantsPage from "@/pages/admin/TenantsPage";
 import ModulesPage from "@/pages/admin/ModulesPage";
 import IntegrationsPage from "@/pages/admin/IntegrationsPage";
 import AdminAccessControlPage from "@/pages/admin/AccessControlPage";
+import TenantDetailPage from "@/pages/admin/TenantDetailPage";
 import TenantDashboardPage from "@/pages/tenant/TenantDashboardPage";
 import TenantModulesPage from "@/pages/tenant/TenantModulesPage";
 import TenantIntegrationsPage from "@/pages/tenant/TenantIntegrationsPage";
