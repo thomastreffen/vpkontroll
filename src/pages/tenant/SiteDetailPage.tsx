@@ -131,9 +131,6 @@ export default function SiteDetailPage() {
               </Button>
             </div>
           )}
-          {!canDo("agreements.create") && (
-            <div className="mb-3" />
-          </div>
           {!agreements.data?.length ? <Empty text="Ingen serviceavtaler på dette stedet" /> : (
             <div className="grid gap-3">
               {agreements.data.map(a => (
