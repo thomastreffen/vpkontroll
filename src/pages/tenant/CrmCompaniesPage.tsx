@@ -15,6 +15,7 @@ import { Plus, Search, Building2, MoreHorizontal, Globe, Phone, Mail, Loader2, F
 import { EmptyState } from "@/components/ui/empty-state";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CUSTOMER_TYPE_LABELS, CUSTOMER_TYPE_COLORS } from "@/lib/domain-labels";
+import { useCanDo } from "@/hooks/useCanDo";
 
 type Company = {
   id: string; tenant_id: string; name: string; org_number: string | null;
@@ -26,6 +27,7 @@ type Company = {
 
 export default function CrmCompaniesPage() {
   const { tenantId, user } = useAuth();
+  const { canDo } = useCanDo();
   const navigate = useNavigate();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,7 +92,14 @@ export default function CrmCompaniesPage() {
       }
       setDialogOpen(false);
       fetchData();
-    } catch { toast.error("Kunne ikke lagre"); }
+    } catch (err: any) {
+      const msg = err?.message || "";
+      if (msg.includes("row-level security") || msg.includes("policy")) {
+        toast.error("Du har ikke tilgang til å utføre denne handlingen.");
+      } else {
+        toast.error("Kunne ikke lagre");
+      }
+    }
     finally { setSaving(false); }
   };
 
@@ -107,14 +116,16 @@ export default function CrmCompaniesPage() {
           <h1 className="text-2xl font-bold tracking-tight">Kunder</h1>
           <p className="text-sm text-muted-foreground mt-1">{companies.length} kunder totalt</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate("/tenant/crm/customers/import")} className="gap-2">
-            <FileUp className="h-4 w-4" /> Importer
-          </Button>
-          <Button onClick={openNew} className="gap-2">
-            <Plus className="h-4 w-4" /> Ny kunde
-          </Button>
-        </div>
+        {canDo("companies.create") && (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate("/tenant/crm/customers/import")} className="gap-2">
+              <FileUp className="h-4 w-4" /> Importer
+            </Button>
+            <Button onClick={openNew} className="gap-2">
+              <Plus className="h-4 w-4" /> Ny kunde
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="relative max-w-sm">
