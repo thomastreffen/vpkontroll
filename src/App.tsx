@@ -46,6 +46,7 @@ import FormSubmissionsPage from "@/pages/tenant/FormSubmissionsPage";
 import PublicFormPage from "@/pages/PublicFormPage";
 import NotFound from "@/pages/NotFound";
 import NoTenantPage from "@/pages/NoTenantPage";
+import TechnicianDashboardPage from "@/pages/tenant/TechnicianDashboardPage";
 
 const queryClient = new QueryClient();
 
@@ -121,6 +122,7 @@ function AppRoutes() {
       <Route path="/tenant" element={<TenantRoute><TenantDashboardPage /></TenantRoute>} />
       <Route path="/tenant/postkontoret" element={<TenantRoute module="postkontoret" permission="module.postkontoret"><PostkontoretPage /></TenantRoute>} />
       <Route path="/tenant/ressursplanlegger" element={<TenantRoute module="ressursplanlegger" permission="module.ressursplanlegger"><RessursplanleggerPage /></TenantRoute>} />
+      <Route path="/tenant/mine-oppdrag" element={<TenantRoute><TechnicianDashboardPage /></TenantRoute>} />
 
       {/* CRM routes – open for tenant members with module + permission checks */}
       <Route path="/tenant/crm/contacts" element={<TenantRoute module="crm" permission="module.crm"><CrmContactsPage /></TenantRoute>} />
