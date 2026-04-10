@@ -198,6 +198,7 @@ export default function RessursplanleggerPage() {
           title: formTitle.trim(), customer: formCustomer || null,
           address: formAddress || null, description: formDescription || null,
           start_time: startTime.toISOString(), end_time: endTime.toISOString(),
+          job_id: formJobId || null,
         } as any).eq("id", editEvent.id);
 
         await supabase.from("event_technicians").delete().eq("event_id", editEvent.id);
@@ -212,7 +213,7 @@ export default function RessursplanleggerPage() {
           tenant_id: tenantId, title: formTitle.trim(), customer: formCustomer || null,
           address: formAddress || null, description: formDescription || null,
           start_time: startTime.toISOString(), end_time: endTime.toISOString(),
-          created_by: user?.id,
+          created_by: user?.id, job_id: formJobId || null,
         } as any).select("id").single();
 
         if (newEvent && formTechIds.length > 0) {
