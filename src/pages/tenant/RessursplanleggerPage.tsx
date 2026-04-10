@@ -67,7 +67,10 @@ export default function RessursplanleggerPage() {
   const [formStartTime, setFormStartTime] = useState("08:00");
   const [formEndTime, setFormEndTime] = useState("16:00");
   const [formTechIds, setFormTechIds] = useState<string[]>([]);
+  const [formJobId, setFormJobId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [availableJobs, setAvailableJobs] = useState<any[]>([]);
+  const [jobsLoading, setJobsLoading] = useState(false);
 
   const weekStart = startOfWeek(referenceDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(referenceDate, { weekStartsOn: 1 });
@@ -129,11 +132,42 @@ export default function RessursplanleggerPage() {
     return events.filter((e) => e.technician_ids.includes(selectedTechId));
   }, [events, selectedTechId]);
 
+  // Fetch available jobs for linking
+  const fetchAvailableJobs = useCallback(async () => {
+    if (!tenantId) return;
+    setJobsLoading(true);
+    const { data } = await supabase
+      .from("jobs")
+      .select("id, job_number, title, status, company:crm_companies(name), site:customer_sites(address, city)")
+      .eq("tenant_id", tenantId)
+      .is("deleted_at", null)
+      .in("status", ["planned", "scheduled", "in_progress", "on_hold"])
+      .order("created_at", { ascending: false })
+      .limit(50);
+    setAvailableJobs(data || []);
+    setJobsLoading(false);
+  }, [tenantId]);
+
+  const handleJobSelect = (jobId: string) => {
+    if (jobId === "__none__") {
+      setFormJobId(null);
+      return;
+    }
+    const job = availableJobs.find((j: any) => j.id === jobId);
+    if (!job) return;
+    setFormJobId(jobId);
+    setFormTitle(`${job.job_number} – ${job.title}`);
+    setFormCustomer(job.company?.name || "");
+    setFormAddress(job.site ? [job.site.address, job.site.city].filter(Boolean).join(", ") : "");
+  };
+
   const openNewEvent = (day?: Date) => {
     setEditEvent(null);
     setFormTitle(""); setFormCustomer(""); setFormAddress(""); setFormDescription("");
     setFormDate(format(day || new Date(), "yyyy-MM-dd"));
     setFormStartTime("08:00"); setFormEndTime("16:00"); setFormTechIds([]);
+    setFormJobId(null);
+    fetchAvailableJobs();
     setDialogOpen(true);
   };
 
@@ -147,6 +181,8 @@ export default function RessursplanleggerPage() {
     setFormStartTime(format(parseISO(event.start_time), "HH:mm"));
     setFormEndTime(format(parseISO(event.end_time), "HH:mm"));
     setFormTechIds(event.technician_ids);
+    setFormJobId(event.job_id || null);
+    fetchAvailableJobs();
     setDialogOpen(true);
   };
 
