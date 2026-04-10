@@ -45,6 +45,7 @@ import TemplateBuilderPage from "@/pages/tenant/TemplateBuilderPage";
 import FormSubmissionsPage from "@/pages/tenant/FormSubmissionsPage";
 import PublicFormPage from "@/pages/PublicFormPage";
 import NotFound from "@/pages/NotFound";
+import NoTenantPage from "@/pages/NoTenantPage";
 
 const queryClient = new QueryClient();
 
@@ -97,7 +98,8 @@ function AppRoutes() {
     if (isMasterAdmin) return "/admin";
     // Both tenant admins and regular tenant members go to /tenant
     if (isTenantAdmin || tenantId) return "/tenant";
-    return "/login";
+    // User is authenticated but has no tenant – show a helpful page instead of login loop
+    return "/no-tenant";
   };
 
   return (
@@ -106,6 +108,7 @@ function AppRoutes() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/select-role" element={user ? <RoleSelectorPage /> : <Navigate to="/login" replace />} />
+      <Route path="/no-tenant" element={user ? <NoTenantPage /> : <Navigate to="/login" replace />} />
 
       {/* Master Admin routes – require master_admin role */}
       <Route path="/admin" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><DashboardPage /></MasterAdminLayout></ProtectedRoute>} />

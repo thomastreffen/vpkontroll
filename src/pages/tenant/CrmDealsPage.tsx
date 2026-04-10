@@ -19,6 +19,7 @@ import {
   GripVertical, List, LayoutGrid,
 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useCanDo } from "@/hooks/useCanDo";
 import {
   DEAL_STAGE_LABELS, DEAL_STAGE_ORDER, DEAL_STAGE_BG,
   PIPELINE_STAGES, formatCurrency, type DealStage,
@@ -41,6 +42,7 @@ type Contact = { id: string; first_name: string; last_name: string | null; compa
 export default function CrmDealsPage() {
   const navigate = useNavigate();
   const { tenantId, user } = useAuth();
+  const { canDo } = useCanDo();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -121,7 +123,14 @@ export default function CrmDealsPage() {
       }
       setDialogOpen(false);
       fetchAll();
-    } catch { toast.error("Kunne ikke lagre"); }
+    } catch (err: any) {
+      const msg = err?.message || "";
+      if (msg.includes("row-level security") || msg.includes("policy")) {
+        toast.error("Du har ikke tilgang til å utføre denne handlingen.");
+      } else {
+        toast.error("Kunne ikke lagre");
+      }
+    }
     finally { setSaving(false); }
   };
 
@@ -163,9 +172,11 @@ export default function CrmDealsPage() {
               <List className="h-3.5 w-3.5" /> Liste
             </Button>
           </div>
-          <Button onClick={() => openNew()} className="gap-2">
-            <Plus className="h-4 w-4" /> Ny deal
-          </Button>
+          {canDo("deals.create") && (
+            <Button onClick={() => openNew()} className="gap-2">
+              <Plus className="h-4 w-4" /> Ny deal
+            </Button>
+          )}
         </div>
       </div>
 
@@ -174,8 +185,8 @@ export default function CrmDealsPage() {
           icon={TrendingUp}
           title="Ingen deals ennå"
           description="Deals representerer salgsmuligheter. Opprett en deal fra en kundeside eller legg til en ny her for å starte salgsprosessen."
-          actionLabel="Ny deal"
-          onAction={() => openNew()}
+          actionLabel={canDo("deals.create") ? "Ny deal" : undefined}
+          onAction={canDo("deals.create") ? () => openNew() : undefined}
           hint="Kunde → Deal → Tilbud → Jobb"
         />
       ) : view === "pipeline" ? (
@@ -212,9 +223,11 @@ export default function CrmDealsPage() {
                       </div>
                     </Card>
                   ))}
-                  <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground gap-1" onClick={() => openNew(stage)}>
-                    <Plus className="h-3 w-3" /> Legg til
-                  </Button>
+                  {canDo("deals.create") && (
+                    <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground gap-1" onClick={() => openNew(stage)}>
+                      <Plus className="h-3 w-3" /> Legg til
+                    </Button>
+                  )}
                 </div>
               </div>
             );

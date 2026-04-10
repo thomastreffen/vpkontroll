@@ -17,6 +17,7 @@ import {
   User, MapPin, Loader2,
 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useCanDo } from "@/hooks/useCanDo";
 
 type Contact = {
   id: string; tenant_id: string; company_id: string | null;
@@ -31,6 +32,7 @@ type Company = { id: string; name: string };
 
 export default function CrmContactsPage() {
   const { tenantId, user } = useAuth();
+  const { canDo } = useCanDo();
   const navigate = useNavigate();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -106,7 +108,14 @@ export default function CrmContactsPage() {
       }
       setDialogOpen(false);
       fetch();
-    } catch { toast.error("Kunne ikke lagre"); }
+    } catch (err: any) {
+      const msg = err?.message || "";
+      if (msg.includes("row-level security") || msg.includes("policy")) {
+        toast.error("Du har ikke tilgang til å utføre denne handlingen.");
+      } else {
+        toast.error("Kunne ikke lagre");
+      }
+    }
     finally { setSaving(false); }
   };
 
@@ -125,9 +134,11 @@ export default function CrmContactsPage() {
           <h1 className="text-2xl font-bold tracking-tight">Kontaktpersoner</h1>
           <p className="text-sm text-muted-foreground mt-1">{contacts.length} kontaktpersoner totalt</p>
         </div>
-        <Button onClick={openNew} className="gap-2">
-          <Plus className="h-4 w-4" /> Ny kontaktperson
-        </Button>
+        {canDo("contacts.create") && (
+          <Button onClick={openNew} className="gap-2">
+            <Plus className="h-4 w-4" /> Ny kontaktperson
+          </Button>
+        )}
       </div>
 
       <div className="relative max-w-sm">
@@ -145,8 +156,8 @@ export default function CrmContactsPage() {
             icon={User}
             title="Ingen kontaktpersoner ennå"
             description="Legg til kontaktpersoner for å knytte dem til kunder, deals og jobber. Du kan også opprette kontaktpersoner direkte fra en kundeside."
-            actionLabel="Ny kontaktperson"
-            onAction={openNew}
+            actionLabel={canDo("contacts.create") ? "Ny kontaktperson" : undefined}
+            onAction={canDo("contacts.create") ? openNew : undefined}
             hint="Tips: Opprett kunden først, så legger du til kontaktpersoner derfra."
           />
         )

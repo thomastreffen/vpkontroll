@@ -29,6 +29,7 @@ import { FormPdfActions } from "@/components/forms/FormPdfActions";
 import { SendDocumentSheet } from "@/components/communication/SendDocumentSheet";
 import type { SignoffData } from "@/lib/form-pdf";
 import { toast } from "sonner";
+import { useCanDo } from "@/hooks/useCanDo";
 
 /* ─── Form data structure ──────────────────────────────────────── */
 interface FormDataPayload {
@@ -42,6 +43,7 @@ export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { job, company, contact, site, asset, deal, technicians, checklists, documents } = useJobDetail(id);
   const { tenantId } = useAuth();
+  const { canDo } = useCanDo();
   const qc = useQueryClient();
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [linkedEvent, setLinkedEvent] = useState<any>(null);
@@ -296,14 +298,16 @@ export default function JobDetailPage() {
               </div>
             ) : (
               <>
-                <Button variant="outline" size="sm" onClick={startEditing}><Pencil className="h-3 w-3 mr-1" />Rediger</Button>
+                {canDo("jobs.edit") && (
+                  <Button variant="outline" size="sm" onClick={startEditing}><Pencil className="h-3 w-3 mr-1" />Rediger</Button>
+                )}
                 {linkedEvent ? (
                   <Link to="/tenant/ressursplanlegger">
                     <Button variant="outline" size="sm" className="gap-1"><CalendarDays className="h-3 w-3" />Se i kalender<ExternalLink className="h-3 w-3" /></Button>
                   </Link>
-                ) : (
+                ) : canDo("ressursplan.schedule") ? (
                   <Button variant="outline" size="sm" onClick={() => setScheduleOpen(true)} className="gap-1"><CalendarDays className="h-3 w-3" />Planlegg</Button>
-                )}
+                ) : null}
               </>
             )}
           </div>
