@@ -143,8 +143,8 @@ export default function CrmCompaniesPage() {
             icon={Building2}
             title="Ingen kunder ennå"
             description="Start med å legge til din første kunde – enten privatkunde eller bedrift. Kunden er utgangspunktet for kontaktpersoner, anlegg, deals og jobber."
-            actionLabel="Ny kunde"
-            onAction={openNew}
+            actionLabel={canDo("companies.create") ? "Ny kunde" : undefined}
+            onAction={canDo("companies.create") ? openNew : undefined}
             hint="Kunde → Kontaktperson → Anleggssted → Anlegg → Deal → Jobb"
           />
         )
