@@ -17,6 +17,7 @@ import TenantsPage from "@/pages/admin/TenantsPage";
 import ModulesPage from "@/pages/admin/ModulesPage";
 import IntegrationsPage from "@/pages/admin/IntegrationsPage";
 import AdminAccessControlPage from "@/pages/admin/AccessControlPage";
+import TenantDetailPage from "@/pages/admin/TenantDetailPage";
 import TenantDashboardPage from "@/pages/tenant/TenantDashboardPage";
 import TenantModulesPage from "@/pages/tenant/TenantModulesPage";
 import TenantIntegrationsPage from "@/pages/tenant/TenantIntegrationsPage";
@@ -114,6 +115,7 @@ function AppRoutes() {
       {/* Master Admin routes – require master_admin role */}
       <Route path="/admin" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><DashboardPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/tenants" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><TenantsPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/tenants/:id" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><TenantDetailPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/modules" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><ModulesPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/integrations" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><IntegrationsPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/access-control" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminAccessControlPage /></MasterAdminLayout></ProtectedRoute>} />
