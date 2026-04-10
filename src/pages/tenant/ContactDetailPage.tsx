@@ -15,10 +15,12 @@ import {
   SITE_TYPE_LABELS, formatDate,
 } from "@/lib/domain-labels";
 import { ContactEditDialog } from "@/components/crud/ContactEditDialog";
+import { useCanDo } from "@/hooks/useCanDo";
 
 export default function ContactDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { contact, company, sites, deals, jobs, activities } = useContactDetail(id);
+  const { canDo } = useCanDo();
   const [editOpen, setEditOpen] = useState(false);
 
   if (contact.isLoading) {
@@ -65,9 +67,11 @@ export default function ContactDetailPage() {
             {c.city && <span className="flex items-center gap-1.5 text-muted-foreground"><MapPin className="h-3.5 w-3.5" />{c.address ? `${c.address}, ` : ""}{c.postal_code} {c.city}</span>}
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setEditOpen(true)} className="gap-1.5">
-          <Pencil className="h-3.5 w-3.5" />Rediger
-        </Button>
+        {canDo("contacts.edit") && (
+          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)} className="gap-1.5">
+            <Pencil className="h-3.5 w-3.5" />Rediger
+          </Button>
+        )}
       </div>
 
       <Tabs defaultValue="overview">
