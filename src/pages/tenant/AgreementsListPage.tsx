@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS, AGREEMENT_INTERVAL_LABELS, formatDate } from "@/lib/domain-labels";
 import { formatCurrency } from "@/lib/crm-labels";
 import AgreementCreateSheet from "@/components/crud/AgreementCreateSheet";
+import { useCanDo } from "@/hooks/useCanDo";
 
 type DueFilter = "all" | "overdue" | "due_soon" | "ok";
 
@@ -25,6 +26,7 @@ function getDueBadge(nextDue: string | null): { label: string; className: string
 
 export default function AgreementsListPage() {
   const { tenantId } = useAuth();
+  const { canDo } = useCanDo();
   const navigate = useNavigate();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,9 +79,11 @@ export default function AgreementsListPage() {
             {dueSoonCount > 0 && <span className="text-amber-600 font-medium"> · {dueSoonCount} snart</span>}
           </p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" /> Ny serviceavtale
-        </Button>
+        {canDo("agreements.create") && (
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" /> Ny serviceavtale
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-3">
