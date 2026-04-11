@@ -34,19 +34,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const fetchUserMeta = async (userId: string) => {
-    const [rolesResult, profileResult] = await Promise.all([
-      supabase.from("user_roles").select("role").eq("user_id", userId),
-      supabase.from("profiles").select("tenant_id").eq("user_id", userId).single(),
-    ]);
-    if (rolesResult.data) {
-      setRoles(rolesResult.data.map((r) => r.role as AppRole));
-    }
-    if (profileResult.data) {
-      setTenantId(profileResult.data.tenant_id);
+    try {
+      const [rolesResult, profileResult] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", userId),
+        supabase.from("profiles").select("tenant_id").eq("user_id", userId).single(),
+      ]);
+      if (rolesResult.data) {
+        setRoles(rolesResult.data.map((r) => r.role as AppRole));
+      }
+      if (profileResult.data) {
+        setTenantId(profileResult.data.tenant_id);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
+    let initialLoad = true;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setSession(session);
@@ -55,22 +61,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsPasswordRecovery(true);
         }
         if (session?.user) {
+          // Use setTimeout to avoid blocking the auth callback, but don't set loading=false here
+          // fetchUserMeta will set loading=false when done
+          if (!initialLoad) {
+            setLoading(true);
+          }
           setTimeout(() => fetchUserMeta(session.user.id), 0);
         } else {
           setRoles([]);
           setTenantId(null);
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      initialLoad = false;
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchUserMeta(session.user.id);
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
