@@ -11,10 +11,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { provider, credential_id } = await req.json();
+    const { provider, credential_id, tenant_id } = await req.json();
 
-    if (!provider || !credential_id) {
-      return new Response(JSON.stringify({ error: "provider and credential_id required" }), {
+    if (!provider) {
+      return new Response(JSON.stringify({ error: "provider required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -24,7 +24,58 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Fetch the credential to get client_id and tenant_domain
+    const redirectUri = `${supabaseUrl}/functions/v1/oauth-callback`;
+
+    // ----- Google shared app (no credential_id needed) -----
+    if (provider === "google" && !credential_id) {
+      const centralClientId = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID");
+      if (!centralClientId) {
+        return new Response(JSON.stringify({ error: "Google OAuth not configured on platform" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (!tenant_id) {
+        return new Response(JSON.stringify({ error: "tenant_id required for shared Google flow" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const state = btoa(JSON.stringify({ tenant_id, provider: "google", shared: true }));
+
+      const scopes = [
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/gmail.send",
+        "https://www.googleapis.com/auth/calendar",
+        "https://www.googleapis.com/auth/contacts.readonly",
+      ];
+
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        new URLSearchParams({
+          client_id: centralClientId,
+          response_type: "code",
+          redirect_uri: redirectUri,
+          scope: scopes.join(" "),
+          state,
+          access_type: "offline",
+          prompt: "consent",
+        }).toString();
+
+      return new Response(JSON.stringify({ auth_url: authUrl, redirect_uri: redirectUri }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ----- Per-tenant credential flow (Microsoft or custom Google) -----
+    if (!credential_id) {
+      return new Response(JSON.stringify({ error: "credential_id required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: cred, error: credErr } = await supabase
       .from("tenant_credentials")
       .select("*")
@@ -45,9 +96,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const redirectUri = `${supabaseUrl}/functions/v1/oauth-callback`;
-
-    // State parameter encodes credential_id for the callback
     const state = btoa(JSON.stringify({ credential_id: cred.id }));
 
     let authUrl: string;
