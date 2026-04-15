@@ -21,10 +21,9 @@ Deno.serve(async (req) => {
       return htmlResponse(`<h1>Ugyldig forespørsel</h1><p>Mangler code eller state.</p>`);
     }
 
-    let credentialId: string;
+    let stateData: any;
     try {
-      const parsed = JSON.parse(atob(stateParam));
-      credentialId = parsed.credential_id;
+      stateData = JSON.parse(atob(stateParam));
     } catch {
       return htmlResponse(`<h1>Ugyldig state</h1>`);
     }
@@ -32,6 +31,91 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
+    const redirectUri = `${supabaseUrl}/functions/v1/oauth-callback`;
+
+    // ---- Shared Google flow ----
+    if (stateData.shared && stateData.provider === "google") {
+      const centralClientId = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID");
+      const centralClientSecret = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET");
+      if (!centralClientId || !centralClientSecret) {
+        return htmlResponse(`<h1>Serverfeil</h1><p>Google OAuth ikke konfigurert.</p>`);
+      }
+
+      const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          client_id: centralClientId,
+          client_secret: centralClientSecret,
+          code,
+          redirect_uri: redirectUri,
+          grant_type: "authorization_code",
+        }),
+      });
+      const tokenData = await tokenRes.json();
+
+      if (tokenData.error) {
+        console.error("Shared Google token error:", tokenData);
+        return htmlResponse(`
+          <h1>Token-feil</h1>
+          <p>${escapeHtml(tokenData.error_description || tokenData.error)}</p>
+          <script>window.opener?.postMessage({ type: 'oauth-error', error: 'token_exchange_failed' }, '*'); window.close();</script>
+        `);
+      }
+
+      const expiresAt = tokenData.expires_in
+        ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
+        : null;
+
+      // Upsert credential for this tenant
+      const { data: existing } = await supabase
+        .from("tenant_credentials")
+        .select("id")
+        .eq("tenant_id", stateData.tenant_id)
+        .eq("provider", "google")
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from("tenant_credentials")
+          .update({
+            access_token_encrypted: tokenData.access_token,
+            refresh_token_encrypted: tokenData.refresh_token || undefined,
+            token_expires_at: expiresAt,
+            status: "connected",
+            last_verified_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+      } else {
+        await supabase.from("tenant_credentials").insert({
+          tenant_id: stateData.tenant_id,
+          provider: "google",
+          access_token_encrypted: tokenData.access_token,
+          refresh_token_encrypted: tokenData.refresh_token,
+          token_expires_at: expiresAt,
+          status: "connected",
+          last_verified_at: new Date().toISOString(),
+          scopes: [
+            "gmail.readonly",
+            "gmail.send",
+            "calendar",
+            "contacts.readonly",
+          ],
+        });
+      }
+
+      return htmlResponse(`
+        <h1>✅ Google tilkoblet!</h1>
+        <p>Du kan lukke dette vinduet og gå tilbake.</p>
+        <script>window.opener?.postMessage({ type: 'oauth-success' }, '*'); setTimeout(() => window.close(), 2000);</script>
+      `);
+    }
+
+    // ---- Per-tenant credential flow ----
+    const credentialId = stateData.credential_id;
+    if (!credentialId) {
+      return htmlResponse(`<h1>Ugyldig state</h1>`);
+    }
 
     const { data: cred, error: credErr } = await supabase
       .from("tenant_credentials")
@@ -43,9 +127,6 @@ Deno.serve(async (req) => {
       return htmlResponse(`<h1>Credential ikke funnet</h1>`);
     }
 
-    const redirectUri = `${supabaseUrl}/functions/v1/oauth-callback`;
-
-    // Exchange code for tokens
     let tokenData: any;
 
     if (cred.provider === "microsoft") {
@@ -88,7 +169,6 @@ Deno.serve(async (req) => {
       `);
     }
 
-    // Store tokens
     const expiresAt = tokenData.expires_in
       ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
       : null;

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -20,7 +21,7 @@ import type { Tables } from "@/integrations/supabase/types";
 type Credential = Tables<"tenant_credentials">;
 type Provider = Credential["provider"];
 
-const providerInfo: Record<Provider, { label: string; abbr: string; description: string; scopes: string[] }> = {
+const providerInfo: Record<Provider, { label: string; abbr: string; description: string; scopes: string[]; shared?: boolean }> = {
   microsoft: {
     label: "Microsoft 365",
     abbr: "MS",
@@ -32,6 +33,7 @@ const providerInfo: Record<Provider, { label: string; abbr: string; description:
     abbr: "G",
     description: "Gmail, Google Calendar og Google Kontakter",
     scopes: ["gmail.readonly", "gmail.send", "calendar", "contacts.readonly"],
+    shared: true,
   },
 };
 
@@ -79,6 +81,21 @@ export default function TenantIntegrationsPage() {
     return () => window.removeEventListener("message", handler);
   }, [queryClient]);
 
+  // --- Shared Google connect (no credentials needed) ---
+  const googleConnectMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("oauth-start", {
+        body: { provider: "google", tenant_id: tenantId },
+      });
+      if (error) throw error;
+      if (data?.auth_url) {
+        window.open(data.auth_url, "oauth-popup", "width=600,height=700,popup=yes");
+      }
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  // --- Per-tenant credential upsert (Microsoft) ---
   const upsertMutation = useMutation({
     mutationFn: async () => {
       if (!tenantId || !editProvider) return;
@@ -188,26 +205,12 @@ export default function TenantIntegrationsPage() {
         </p>
       </div>
 
-      {/* Redirect URI info */}
-      <Card className="border-border/50 bg-muted/30">
-        <CardContent className="p-4">
-          <p className="text-xs font-medium mb-1.5">OAuth Redirect URI (legg inn i din app-registrering):</p>
-          <div className="flex items-center gap-2">
-            <code className="flex-1 text-xs bg-background px-3 py-2 rounded-md border border-border truncate">
-              {redirectUri}
-            </code>
-            <Button variant="outline" size="icon" className="shrink-0" onClick={copyRedirectUri}>
-              <Copy className="w-3.5 h-3.5" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {(Object.entries(providerInfo) as [Provider, typeof providerInfo.microsoft][]).map(([provider, info]) => {
           const cred = getCredential(provider);
           const sc = statusConfig[cred?.status ?? "disconnected"];
           const isConnected = cred?.status === "connected";
+          const isShared = info.shared;
           const hasCreds = !!cred?.client_id;
 
           return (
@@ -229,19 +232,20 @@ export default function TenantIntegrationsPage() {
                     <sc.icon className="w-4 h-4" />
                     <span className="text-sm font-medium">{sc.label}</span>
                   </div>
-                  <Badge variant="outline" className="text-xs">
-                    {hasCreds ? "Konfigurert" : "Ikke satt opp"}
-                  </Badge>
+                  {isShared && !isConnected && (
+                    <Badge variant="secondary" className="text-[10px]">Ett-klikk</Badge>
+                  )}
+                  {!isShared && (
+                    <Badge variant="outline" className="text-xs">
+                      {hasCreds ? "Konfigurert" : "Ikke satt opp"}
+                    </Badge>
+                  )}
                 </div>
 
-                {cred?.client_id && (
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    <p>Client ID: {cred.client_id.slice(0, 8)}...{cred.client_id.slice(-4)}</p>
-                    {cred.tenant_domain && <p>Domene: {cred.tenant_domain}</p>}
-                    {cred.last_verified_at && (
-                      <p>Sist verifisert: {new Date(cred.last_verified_at).toLocaleString("nb-NO")}</p>
-                    )}
-                  </div>
+                {cred?.last_verified_at && (
+                  <p className="text-xs text-muted-foreground">
+                    Sist verifisert: {new Date(cred.last_verified_at).toLocaleString("nb-NO")}
+                  </p>
                 )}
 
                 <div className="flex flex-col gap-2">
@@ -256,6 +260,16 @@ export default function TenantIntegrationsPage() {
                       <Unplug className="w-4 h-4 mr-2" />
                       Koble fra
                     </Button>
+                  ) : isShared ? (
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={() => googleConnectMutation.mutate()}
+                      disabled={googleConnectMutation.isPending}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Koble til med Google
+                    </Button>
                   ) : hasCreds ? (
                     <Button
                       size="sm"
@@ -268,18 +282,20 @@ export default function TenantIntegrationsPage() {
                     </Button>
                   ) : null}
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => openEdit(provider)}
-                  >
-                    {hasCreds ? (
-                      <><Settings className="w-4 h-4 mr-2" />Endre credentials</>
-                    ) : (
-                      <><Plus className="w-4 h-4 mr-2" />Sett opp credentials</>
-                    )}
-                  </Button>
+                  {!isShared && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => openEdit(provider)}
+                    >
+                      {hasCreds ? (
+                        <><Settings className="w-4 h-4 mr-2" />Endre credentials</>
+                      ) : (
+                        <><Plus className="w-4 h-4 mr-2" />Sett opp credentials</>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -287,12 +303,16 @@ export default function TenantIntegrationsPage() {
         })}
       </div>
 
+      {/* Microsoft credentials dialog */}
       <Dialog open={!!editProvider} onOpenChange={(o) => { if (!o) closeEdit(); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {editProvider ? providerInfo[editProvider].label : ""} — Credentials
             </DialogTitle>
+            <DialogDescription>
+              Legg inn app-registrering fra Azure/Google Cloud Console
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={(e) => { e.preventDefault(); upsertMutation.mutate(); }} className="space-y-4">
             <div className="space-y-2">
@@ -328,22 +348,14 @@ export default function TenantIntegrationsPage() {
               />
             </div>
 
-            {editProvider && (
-              <div className="rounded-lg bg-muted/50 p-3">
-                <p className="text-xs font-medium mb-1.5">Nødvendige scopes:</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {providerInfo[editProvider].scopes.map((scope) => (
-                    <Badge key={scope} variant="secondary" className="text-xs font-mono">
-                      {scope}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <div className="rounded-lg bg-muted/50 p-3">
               <p className="text-xs font-medium mb-1">Redirect URI:</p>
-              <code className="text-xs break-all">{redirectUri}</code>
+              <div className="flex items-center gap-2">
+                <code className="text-xs break-all flex-1">{redirectUri}</code>
+                <Button type="button" variant="ghost" size="icon" className="shrink-0 h-6 w-6" onClick={copyRedirectUri}>
+                  <Copy className="w-3 h-3" />
+                </Button>
+              </div>
             </div>
 
             <Button type="submit" className="w-full" disabled={upsertMutation.isPending}>
