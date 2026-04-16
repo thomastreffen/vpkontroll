@@ -111,8 +111,15 @@ async function fetchMicrosoftEmails(accessToken: string, mailbox: string, cursor
 
 // ─── Google Gmail Provider ─────────────────
 async function refreshGoogleToken(cred: TenantCredential): Promise<string> {
-  if (!cred.client_id || !cred.client_secret_encrypted || !cred.refresh_token_encrypted) {
-    throw new Error("Google credentials incomplete");
+  // Use per-tenant credentials if available, otherwise fall back to central/shared OAuth keys
+  const clientId = cred.client_id || Deno.env.get("GOOGLE_OAUTH_CLIENT_ID");
+  const clientSecret = cred.client_secret_encrypted || Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET");
+
+  if (!clientId || !clientSecret || !cred.refresh_token_encrypted) {
+    throw new Error("Google credentials incomplete: missing " +
+      (!clientId ? "client_id " : "") +
+      (!clientSecret ? "client_secret " : "") +
+      (!cred.refresh_token_encrypted ? "refresh_token" : ""));
   }
 
   if (cred.token_expires_at && new Date(cred.token_expires_at) > new Date()) {
@@ -123,8 +130,8 @@ async function refreshGoogleToken(cred: TenantCredential): Promise<string> {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: cred.client_id,
-      client_secret: cred.client_secret_encrypted,
+      client_id: clientId,
+      client_secret: clientSecret,
       refresh_token: cred.refresh_token_encrypted,
       grant_type: "refresh_token",
     }),
