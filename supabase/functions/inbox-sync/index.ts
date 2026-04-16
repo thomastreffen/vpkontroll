@@ -147,9 +147,9 @@ async function refreshGoogleToken(cred: TenantCredential): Promise<string> {
   return data.access_token;
 }
 
-async function fetchGoogleEmails(accessToken: string, mailbox: string, cursor?: string): Promise<{ messages: EmailMessage[] }> {
-  // List messages
-  let listUrl = `https://gmail.googleapis.com/gmail/v1/users/${mailbox}/messages?maxResults=50`;
+async function fetchGoogleEmails(accessToken: string, _mailbox: string, cursor?: string): Promise<{ messages: EmailMessage[] }> {
+  // Gmail OAuth tokens are scoped to the authenticated user — always use "me"
+  let listUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50`;
   if (cursor) {
     listUrl += `&q=after:${Math.floor(new Date(cursor).getTime() / 1000)}`;
   }
