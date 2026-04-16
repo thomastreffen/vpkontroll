@@ -91,7 +91,23 @@ export function ScheduleEventDialog({ open, onOpenChange, jobId, jobTitle, compa
           techIds.map(tid => ({ event_id: newEvent.id, technician_id: tid }))
         );
       }
-      toast.success("Hendelse opprettet i Ressursplanlegger");
+      // Sync to external calendar
+      if (newEvent) {
+        try {
+          const { data } = await supabase.functions.invoke("calendar-sync", {
+            body: { event_id: newEvent.id },
+          });
+          if (data?.ok) {
+            toast.success("Hendelse opprettet og synket til kalender");
+          } else {
+            toast.success("Hendelse opprettet i Ressursplanlegger");
+          }
+        } catch {
+          toast.success("Hendelse opprettet i Ressursplanlegger");
+        }
+      } else {
+        toast.success("Hendelse opprettet i Ressursplanlegger");
+      }
       onOpenChange(false);
     } catch { toast.error("Kunne ikke opprette hendelse"); }
     finally { setSaving(false); }
