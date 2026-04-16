@@ -86,7 +86,7 @@ export function InviteUserDialog({ open, onOpenChange }: Props) {
               <Select value={tenantRoleId} onValueChange={setTenantRoleId}>
                 <SelectTrigger><SelectValue placeholder="Velg rolle..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Ingen</SelectItem>
+                  <SelectItem value="__none__">Ingen</SelectItem>
                   {tenantRoles.map(r => (
                     <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
                   ))}

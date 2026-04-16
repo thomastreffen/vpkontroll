@@ -102,7 +102,7 @@ export function LinkTechnicianDialog({ open, onOpenChange, userId, userName, use
                 <Select value={selectedTechId} onValueChange={setSelectedTechId}>
                   <SelectTrigger><SelectValue placeholder="Velg tekniker..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Ingen (fjern kobling)</SelectItem>
+                    <SelectItem value="__none__">Ingen (fjern kobling)</SelectItem>
                     {availableTechs.map(t => (
                       <SelectItem key={t.id} value={t.id}>
                         {t.name} {t.email ? `(${t.email})` : ""}
