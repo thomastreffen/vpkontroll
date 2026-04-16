@@ -166,14 +166,35 @@ export function CreateEventDrawer({
     setJobsLoading(false);
   };
 
-  const handleJobSelect = (value: string) => {
-    if (value === "__none__") { setJobId(null); return; }
+  const handleJobSelect = async (value: string) => {
+    if (value === "__none__") {
+      setJobId(null);
+      setSiteId(null);
+      setJobLinked(false);
+      setTitle("");
+      setCustomer("");
+      setAddress("");
+      return;
+    }
     const job = availableJobs.find((j: any) => j.id === value);
     if (!job) return;
     setJobId(value);
+    setSiteId(job.site_id || null);
+    setJobLinked(true);
     setTitle(`${job.job_number} – ${job.title}`);
     setCustomer(job.company?.name || "");
-    setAddress(job.site ? [job.site.address, job.site.city].filter(Boolean).join(", ") : "");
+    const siteAddr = job.site ? [job.site.address, job.site.city].filter(Boolean).join(", ") : "";
+    setAddress(siteAddr);
+
+    // Auto-fill technicians from job
+    const { data: jt } = await supabase
+      .from("job_technicians")
+      .select("technician_id")
+      .eq("job_id", value);
+    if (jt && jt.length > 0) {
+      const ids = jt.map(r => r.technician_id);
+      setTechIds(prev => [...new Set([...prev, ...ids])]);
+    }
   };
 
   const toggleTech = (id: string) => {
