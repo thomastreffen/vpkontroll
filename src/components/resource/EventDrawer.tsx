@@ -552,7 +552,49 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete, onRefresh }: {
           </section>
         )}
 
-        {/* Actions */}
+        {/* Calendar Sync Status */}
+        <section>
+          <SectionLabel>Kalendersynk</SectionLabel>
+          <div className="rounded-lg border border-border/40 bg-card p-3 space-y-2">
+            {event.calendar_sync_status === "synced" && (
+              <div className="flex items-center gap-2 text-sm">
+                <CalendarCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span className="text-emerald-700 font-medium">Synket til ekstern kalender</span>
+              </div>
+            )}
+            {event.calendar_sync_status === "pending" && (
+              <div className="flex items-center gap-2 text-sm">
+                <Loader2 className="h-4 w-4 animate-spin text-amber-600 shrink-0" />
+                <span className="text-amber-700">Synkroniserer...</span>
+              </div>
+            )}
+            {event.calendar_sync_status === "failed" && (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-sm">
+                  <CalendarX2 className="h-4 w-4 text-destructive shrink-0" />
+                  <span className="text-destructive font-medium">Synk feilet</span>
+                </div>
+                {event.calendar_sync_error && (
+                  <p className="text-xs text-muted-foreground pl-6">{event.calendar_sync_error}</p>
+                )}
+              </div>
+            )}
+            {(!event.calendar_sync_status || event.calendar_sync_status === "none") && (
+              <div className="flex items-center gap-2 text-sm">
+                <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-muted-foreground">Kun i VPK – ikke synket til kalender</span>
+              </div>
+            )}
+            {canEdit && (
+              <Button variant="outline" size="sm" className="w-full gap-1.5 mt-1" onClick={handleResync} disabled={syncing}>
+                {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                {event.calendar_sync_status === "synced" ? "Synk på nytt" : "Synk til kalender"}
+              </Button>
+            )}
+          </div>
+        </section>
+
+
         {canEdit && (
           <section className="pt-2 space-y-2">
             <Button variant="outline" size="sm" className="w-full gap-1.5" onClick={onEdit}>
