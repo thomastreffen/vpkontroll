@@ -145,6 +145,8 @@ export function CreateEventDrawer({
       }
       setTechIds(selectedTechId ? [selectedTechId] : []);
       setJobId(prefillJobId || null);
+      setSiteId(null);
+      setJobLinked(!!prefillJobId);
     }
     fetchJobs();
   }, [open, editEvent?.id]);
