@@ -170,9 +170,11 @@ function encodeSubject(subject: string): string {
 /* ── Email notification ── */
 
 function buildNotificationHtml(event: any, dateStr: string, timeStr: string, isUpdate: boolean): string {
-  const preheader = isUpdate
-    ? `Oppdatert: ${event.title} - ${dateStr}, ${timeStr}`
-    : `${event.title} - ${dateStr}, ${timeStr}`;
+  const preheaderText = isUpdate
+    ? `Oppdatert: ${event.title} \u2013 ${dateStr}, ${timeStr}${event.customer ? `, ${event.customer}` : ""}`
+    : `${event.title} \u2013 ${dateStr}, ${timeStr}${event.customer ? `, ${event.customer}` : ""}`;
+  // Zero-width spaces + non-breaking spaces to fill Gmail snippet and prevent body text leaking in
+  const snippetPad = "\u200C\u00A0".repeat(80);
 
   const rows: string[] = [];
   rows.push(`<tr><td style="color:#6b7280;padding:4px 12px 4px 0;white-space:nowrap">Dato</td><td style="padding:4px 0">${dateStr}</td></tr>`);
@@ -183,7 +185,7 @@ function buildNotificationHtml(event: any, dateStr: string, timeStr: string, isU
   return `<!DOCTYPE html>
 <html lang="nb"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
 <body style="margin:0;padding:0;background:#f4f4f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;color:#374151">
-<div style="display:none;max-height:0;overflow:hidden">${preheader}</div>
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:0;line-height:0">${preheaderText}${snippetPad}</div>
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f7;padding:32px 16px"><tr><td align="center">
 <table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden">
 <tr><td style="background:#6D28D9;padding:18px 24px;font-size:16px;font-weight:700;color:#fff">${isUpdate ? "Oppdatert oppdrag" : "Nytt oppdrag tildelt deg"}</td></tr>
