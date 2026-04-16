@@ -377,6 +377,7 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete, onRefresh }: {
   canEdit: boolean; onEdit: () => void; onDelete: () => void; onRefresh: () => void;
 }) {
   const [syncing, setSyncing] = useState(false);
+  const [notifying, setNotifying] = useState(false);
 
   const handleResync = async () => {
     setSyncing(true);
@@ -385,7 +386,7 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete, onRefresh }: {
         body: { event_id: event.id },
       });
       if (data?.ok) {
-        toast.success("Synket til ekstern kalender");
+        toast.success("Synket og varslet");
         onRefresh();
       } else {
         toast.error("Kalendersynk feilet");
@@ -394,6 +395,27 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete, onRefresh }: {
       toast.error("Kalendersynk feilet");
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleNotifyOnly = async () => {
+    setNotifying(true);
+    try {
+      const { data } = await supabase.functions.invoke("calendar-sync", {
+        body: { event_id: event.id, action: "notify" },
+      });
+      if (data?.ok && data?.notification?.sent > 0) {
+        toast.success(`Varsel sendt til ${data.notification.sent} tekniker(e)`);
+        onRefresh();
+      } else if (data?.notification?.sent === 0) {
+        toast.info("Ingen teknikere med e-post å varsle");
+      } else {
+        toast.error("Varsling feilet");
+      }
+    } catch {
+      toast.error("Kunne ikke sende varsel");
+    } finally {
+      setNotifying(false);
     }
   };
   return (
