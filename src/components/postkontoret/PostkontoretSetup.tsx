@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   CheckCircle2,
@@ -62,6 +63,7 @@ export default function PostkontoretSetup() {
 
   const [mailboxAddress, setMailboxAddress] = useState("");
   const [mailboxName, setMailboxName] = useState("");
+  const [syncMode, setSyncMode] = useState<"now" | "7days" | "30days" | "all">("now");
   const [testingConnection, setTestingConnection] = useState(false);
   const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
 
@@ -81,13 +83,28 @@ export default function PostkontoretSetup() {
   const addMailboxMutation = useMutation({
     mutationFn: async () => {
       if (!tenantId || !connectedCred || !mailboxAddress.trim()) return;
+      
+      // Calculate sync_from based on selected mode
+      let syncFrom: string;
+      const now = new Date();
+      if (syncMode === "7days") {
+        syncFrom = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      } else if (syncMode === "30days") {
+        syncFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      } else if (syncMode === "all") {
+        syncFrom = new Date("2020-01-01").toISOString();
+      } else {
+        syncFrom = now.toISOString();
+      }
+      
       const { error } = await supabase.from("mailboxes").insert({
         tenant_id: tenantId,
         address: mailboxAddress.trim().toLowerCase(),
         display_name: mailboxName.trim() || mailboxAddress.trim(),
         provider: connectedCred.provider,
         is_enabled: true,
-      });
+        sync_from: syncFrom,
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -318,10 +335,16 @@ export default function PostkontoretSetup() {
                           <p className="text-sm font-medium">{mb.display_name}</p>
                           <p className="text-xs text-muted-foreground">{mb.address}</p>
                         </div>
-                        {mb.is_enabled ? (
+                         {mb.is_enabled ? (
                           <Badge className="bg-green-600/10 text-green-600 border-green-600/20 text-[10px]">Aktiv</Badge>
                         ) : (
                           <Badge variant="outline" className="text-muted-foreground text-[10px]">Deaktivert</Badge>
+                        )}
+                        {(mb as any).sync_from && (
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            Synker fra {new Date((mb as any).sync_from).toLocaleDateString("nb-NO")}
+                          </span>
                         )}
                       </div>
                       <div className="flex items-center gap-1">
@@ -351,6 +374,18 @@ export default function PostkontoretSetup() {
                 <p className="text-xs font-medium text-muted-foreground">
                   {hasMailbox ? "Legg til en ekstra mailboks" : "Legg til mailboks-adressen Postkontoret skal bruke"}
                 </p>
+
+                {/* Personal account warning */}
+                <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/30 p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                    <div className="text-xs text-amber-800 dark:text-amber-300">
+                      <p className="font-medium mb-0.5">Bruk en dedikert e-postadresse</p>
+                      <p>Unngå å koble din personlige innboks. Bruk en delt adresse som <span className="font-mono">post@firma.no</span> eller <span className="font-mono">kundeservice@firma.no</span>. All e-post til denne adressen vil importeres til Postkontoret.</p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label className="text-xs">E-postadresse</Label>
@@ -372,6 +407,29 @@ export default function PostkontoretSetup() {
                     />
                   </div>
                 </div>
+
+                {/* Sync mode selector */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Hent e-post fra</Label>
+                  <Select value={syncMode} onValueChange={(v) => setSyncMode(v as any)}>
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="now">Fra nå av (anbefalt)</SelectItem>
+                      <SelectItem value="7days">Siste 7 dager</SelectItem>
+                      <SelectItem value="30days">Siste 30 dager</SelectItem>
+                      <SelectItem value="all">Alt historisk (kan ta lang tid)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground">
+                    {syncMode === "now" && "Kun nye e-poster som ankommer etter aktivering vil importeres."}
+                    {syncMode === "7days" && "E-poster fra siste 7 dager + nye fremover vil importeres."}
+                    {syncMode === "30days" && "E-poster fra siste 30 dager + nye fremover vil importeres. Kan inneholde mange meldinger."}
+                    {syncMode === "all" && "⚠️ Hele innboksen importeres. Dette kan ta svært lang tid og generere mange saker."}
+                  </p>
+                </div>
+
                 <Button
                   size="sm"
                   className="w-full text-xs"

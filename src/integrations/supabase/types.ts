@@ -1402,6 +1402,7 @@ export type Database = {
           id: string
           is_enabled: boolean
           provider: Database["public"]["Enums"]["integration_provider"]
+          sync_from: string
           tenant_id: string
           updated_at: string
         }
@@ -1412,6 +1413,7 @@ export type Database = {
           id?: string
           is_enabled?: boolean
           provider?: Database["public"]["Enums"]["integration_provider"]
+          sync_from?: string
           tenant_id: string
           updated_at?: string
         }
@@ -1422,6 +1424,7 @@ export type Database = {
           id?: string
           is_enabled?: boolean
           provider?: Database["public"]["Enums"]["integration_provider"]
+          sync_from?: string
           tenant_id?: string
           updated_at?: string
         }
