@@ -105,6 +105,8 @@ export function CreateEventDrawer({
   const [duration, setDuration] = useState("120");
   const [techIds, setTechIds] = useState<string[]>([]);
   const [jobId, setJobId] = useState<string | null>(null);
+  const [siteId, setSiteId] = useState<string | null>(null);
+  const [jobLinked, setJobLinked] = useState(false);
   const [saving, setSaving] = useState(false);
   const [availableJobs, setAvailableJobs] = useState<any[]>([]);
   const [jobsLoading, setJobsLoading] = useState(false);
