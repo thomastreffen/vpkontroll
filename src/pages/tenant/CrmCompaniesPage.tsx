@@ -236,7 +236,7 @@ export default function CrmCompaniesPage() {
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label>Adresse</Label>
-                <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+                <AddressAutocomplete value={form.address} onChange={v => setForm({ ...form, address: v })} onSelect={r => setForm(f => ({ ...f, address: r.address, postal_code: r.postalCode, city: r.city }))} />
               </div>
               <div className="space-y-1.5">
                 <Label>Postnr</Label>

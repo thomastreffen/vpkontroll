@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -95,7 +96,7 @@ export function SiteFormDialog({ open, onOpenChange, companyId, site }: SiteForm
               </Select>
             </div>
           </div>
-          <div><Label>Adresse</Label><Input value={form.address} onChange={e => set("address", e.target.value)} /></div>
+          <div><Label>Adresse</Label><AddressAutocomplete value={form.address} onChange={v => set("address", v)} onSelect={r => { set("address", r.address); set("postal_code", r.postalCode); set("city", r.city); }} /></div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Postnummer</Label><Input value={form.postal_code} onChange={e => set("postal_code", e.target.value)} /></div>
             <div><Label>Sted</Label><Input value={form.city} onChange={e => set("city", e.target.value)} /></div>

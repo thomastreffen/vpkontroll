@@ -284,7 +284,7 @@ export default function AgreementCreateSheet({ open, onOpenChange, onCreated }: 
       {showNewSite && (
         <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
           <Input placeholder="Anleggsnavn *" value={newSiteName} onChange={e => setNewSiteName(e.target.value)} />
-          <Input placeholder="Adresse" value={newSiteAddress} onChange={e => setNewSiteAddress(e.target.value)} />
+          <AddressAutocomplete value={newSiteAddress} onChange={setNewSiteAddress} placeholder="Adresse" />
           <Button size="sm" onClick={createSite} disabled={!newSiteName.trim()}>Opprett anleggssted</Button>
         </div>
       )}
