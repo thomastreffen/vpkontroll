@@ -18,6 +18,9 @@ import ModulesPage from "@/pages/admin/ModulesPage";
 import IntegrationsPage from "@/pages/admin/IntegrationsPage";
 import AdminAccessControlPage from "@/pages/admin/AccessControlPage";
 import TenantDetailPage from "@/pages/admin/TenantDetailPage";
+import PlansPage from "@/pages/admin/PlansPage";
+import SubscriptionsPage from "@/pages/admin/SubscriptionsPage";
+import TrialsPage from "@/pages/admin/TrialsPage";
 import TenantDashboardPage from "@/pages/tenant/TenantDashboardPage";
 import TenantModulesPage from "@/pages/tenant/TenantModulesPage";
 import TenantIntegrationsPage from "@/pages/tenant/TenantIntegrationsPage";
@@ -119,6 +122,9 @@ function AppRoutes() {
       <Route path="/admin/modules" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><ModulesPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/integrations" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><IntegrationsPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/access-control" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminAccessControlPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/plans" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><PlansPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/subscriptions" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><SubscriptionsPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/trials" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><TrialsPage /></MasterAdminLayout></ProtectedRoute>} />
 
       {/* Tenant: Operative routes – open for all tenant members */}
       <Route path="/tenant" element={<TenantRoute><TenantDashboardPage /></TenantRoute>} />

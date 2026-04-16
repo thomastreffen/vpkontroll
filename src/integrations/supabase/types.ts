@@ -1626,6 +1626,60 @@ export type Database = {
           },
         ]
       }
+      saas_plans: {
+        Row: {
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          included_modules: string[]
+          is_active: boolean
+          is_visible: boolean
+          max_users: number | null
+          name: string
+          price_monthly: number | null
+          price_yearly: number | null
+          slug: string
+          sort_order: number
+          trial_days: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          included_modules?: string[]
+          is_active?: boolean
+          is_visible?: boolean
+          max_users?: number | null
+          name: string
+          price_monthly?: number | null
+          price_yearly?: number | null
+          slug: string
+          sort_order?: number
+          trial_days?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          included_modules?: string[]
+          is_active?: boolean
+          is_visible?: boolean
+          max_users?: number | null
+          name?: string
+          price_monthly?: number | null
+          price_yearly?: number | null
+          slug?: string
+          sort_order?: number
+          trial_days?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       service_agreements: {
         Row: {
           agreement_number: string
@@ -2224,6 +2278,72 @@ export type Database = {
           },
         ]
       }
+      tenant_subscriptions: {
+        Row: {
+          billing_starts_at: string | null
+          cancelled_at: string | null
+          converted_at: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          notes: string | null
+          plan_id: string
+          source: string | null
+          started_at: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          tenant_id: string
+          trial_ends_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          billing_starts_at?: string | null
+          cancelled_at?: string | null
+          converted_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          plan_id: string
+          source?: string | null
+          started_at?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          tenant_id: string
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          billing_starts_at?: string | null
+          cancelled_at?: string | null
+          converted_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          plan_id?: string
+          source?: string | null
+          started_at?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          tenant_id?: string
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "saas_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_subscriptions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_user_permission_overrides: {
         Row: {
           allowed: boolean
@@ -2548,6 +2668,12 @@ export type Database = {
       module_name: "postkontoret" | "ressursplanlegger" | "crm"
       quote_status: "draft" | "sent" | "accepted" | "rejected" | "expired"
       site_type: "residential" | "commercial" | "industrial" | "cabin"
+      subscription_status:
+        | "trial"
+        | "active"
+        | "paused"
+        | "expired"
+        | "cancelled"
       tenant_status: "active" | "inactive" | "trial" | "suspended"
       visit_status:
         | "planned"
@@ -2786,6 +2912,13 @@ export const Constants = {
       module_name: ["postkontoret", "ressursplanlegger", "crm"],
       quote_status: ["draft", "sent", "accepted", "rejected", "expired"],
       site_type: ["residential", "commercial", "industrial", "cabin"],
+      subscription_status: [
+        "trial",
+        "active",
+        "paused",
+        "expired",
+        "cancelled",
+      ],
       tenant_status: ["active", "inactive", "trial", "suspended"],
       visit_status: [
         "planned",
