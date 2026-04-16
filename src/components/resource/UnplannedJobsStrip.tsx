@@ -114,7 +114,7 @@ export function UnplannedJobsStrip({ onJobDrop, onJobClick }: UnplannedJobsStrip
   if (jobs.length === 0) return null;
 
   return (
-    <div className="rounded-xl border border-border/30 bg-card shadow-sm">
+    <div ref={containerRef} className="rounded-xl border border-border/30 bg-card shadow-sm">
       <button
         className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-muted/30 transition-colors rounded-t-xl"
         onClick={() => setCollapsed(!collapsed)}
