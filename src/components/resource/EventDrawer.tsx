@@ -445,12 +445,20 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete, onRefresh }: {
                   <span className="font-medium">{event.customer}</span>
                 </div>
               )}
-              {(event.address || event.site) && (
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <span>{event.site ? `${event.site.name || event.site.address}, ${event.site.city}` : event.address}</span>
-                </div>
-              )}
+              {(event.address || event.site) && (() => {
+                const displayAddr = event.site
+                  ? [event.site.name || event.site.address, event.site.city].filter(Boolean).join(", ")
+                  : event.address || "";
+                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(displayAddr)}`;
+                return (
+                  <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm group hover:text-primary transition-colors">
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary shrink-0" />
+                    <span className="underline underline-offset-2 decoration-muted-foreground/40 group-hover:decoration-primary">{displayAddr}</span>
+                    <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity shrink-0" />
+                  </a>
+                );
+              })()}
               {event.site?.id && (
                 <Link to={`/tenant/crm/sites/${event.site.id}`} className="inline-block">
                   <Button variant="link" size="sm" className="h-auto p-0 text-xs gap-1 text-primary">
