@@ -148,7 +148,26 @@ async function createMicrosoftCalendarEvent(
   return (await res.json()).id;
 }
 
-/* ── Email notification (fallback when no calendar or as supplement) ── */
+/* ── UTF-8-safe base64url for Gmail raw send ── */
+
+function utf8ToBase64url(str: string): string {
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(str);
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+/** RFC 2047 encoded-word for UTF-8 subject lines */
+function encodeSubject(subject: string): string {
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(subject);
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return `=?UTF-8?B?${btoa(binary)}?=`;
+}
+
+/* ── Email notification ── */
 
 async function sendNotificationEmails(
   sb: any, cred: any, mailbox: any, event: any, techEmails: string[], isUpdate: boolean
@@ -158,27 +177,93 @@ async function sendNotificationEmails(
 
   const startDate = new Date(event.start_time);
   const endDate = new Date(event.end_time);
-  const dateStr = startDate.toLocaleDateString("nb-NO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  const timeStr = `${startDate.toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })} – ${endDate.toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })}`;
+  const dateStr = startDate.toLocaleDateString("nb-NO", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  });
+  const timeStr = `${startDate.toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })} - ${endDate.toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })}`;
 
   const subjectLine = isUpdate
-    ? `Oppdatert: ${event.title} – ${dateStr}`
-    : `Ny oppgave: ${event.title} – ${dateStr}`;
+    ? `Oppdatert oppdrag: ${event.title}`
+    : `Nytt oppdrag: ${event.title}`;
 
-  const bodyHtml = `
-    <div style="font-family: -apple-system, sans-serif; max-width: 500px; margin: 0 auto;">
-      <h2 style="color: #6D28D9; margin-bottom: 4px;">${isUpdate ? "📝 Oppdatert hendelse" : "📅 Ny planlagt hendelse"}</h2>
-      <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
-        <tr><td style="padding: 8px 0; color: #666; width: 100px;">Tittel</td><td style="padding: 8px 0; font-weight: 600;">${event.title}</td></tr>
-        <tr><td style="padding: 8px 0; color: #666;">Dato</td><td style="padding: 8px 0;">${dateStr}</td></tr>
-        <tr><td style="padding: 8px 0; color: #666;">Tid</td><td style="padding: 8px 0;">${timeStr}</td></tr>
-        ${event.customer ? `<tr><td style="padding: 8px 0; color: #666;">Kunde</td><td style="padding: 8px 0;">${event.customer}</td></tr>` : ""}
-        ${event.address ? `<tr><td style="padding: 8px 0; color: #666;">Adresse</td><td style="padding: 8px 0;">${event.address}</td></tr>` : ""}
+  const bodyHtml = `<!DOCTYPE html>
+<html lang="nb">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background-color:#f4f4f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7;padding:24px 0;">
+    <tr><td align="center">
+      <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+
+        <!-- Header -->
+        <tr>
+          <td style="background-color:#6D28D9;padding:20px 28px;">
+            <span style="font-size:18px;font-weight:700;color:#ffffff;">
+              ${isUpdate ? "Oppdatert oppdrag" : "Nytt oppdrag tildelt deg"}
+            </span>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:28px;">
+            <p style="margin:0 0 16px;font-size:14px;color:#555;">
+              ${isUpdate
+                ? "Et oppdrag du er tildelt har blitt oppdatert. Se oppdaterte detaljer under."
+                : "Du har blitt tildelt et nytt oppdrag. Sjekk detaljene under og forbered deg."}
+            </p>
+
+            <!-- Details card -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;margin-bottom:20px;">
+              <tr>
+                <td style="padding:16px 20px;">
+                  <p style="margin:0 0 12px;font-size:16px;font-weight:700;color:#111;">${event.title}</p>
+                  <table cellpadding="0" cellspacing="0" style="font-size:14px;color:#374151;line-height:1.7;">
+                    <tr>
+                      <td style="padding:2px 12px 2px 0;color:#6b7280;white-space:nowrap;">Dato</td>
+                      <td style="padding:2px 0;">${dateStr}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:2px 12px 2px 0;color:#6b7280;white-space:nowrap;">Tid</td>
+                      <td style="padding:2px 0;">${timeStr}</td>
+                    </tr>
+                    ${event.customer ? `<tr>
+                      <td style="padding:2px 12px 2px 0;color:#6b7280;white-space:nowrap;">Kunde</td>
+                      <td style="padding:2px 0;font-weight:600;">${event.customer}</td>
+                    </tr>` : ""}
+                    ${event.address ? `<tr>
+                      <td style="padding:2px 12px 2px 0;color:#6b7280;white-space:nowrap;">Adresse</td>
+                      <td style="padding:2px 0;">${event.address}</td>
+                    </tr>` : ""}
+                  </table>
+                </td>
+              </tr>
+            </table>
+
+            ${event.description ? `
+            <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">Beskrivelse</p>
+            <p style="margin:0 0 20px;font-size:14px;color:#374151;line-height:1.6;border-left:3px solid #6D28D9;padding-left:12px;">${event.description}</p>
+            ` : ""}
+
+            <p style="margin:0;font-size:13px;color:#9ca3af;">
+              Du mottar denne e-posten fordi du er registrert som montør på dette oppdraget i VPKontroll.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:16px 28px;background:#f9fafb;border-top:1px solid #e5e7eb;">
+            <p style="margin:0;font-size:11px;color:#9ca3af;text-align:center;">
+              VPKontroll Ressursplanlegger
+            </p>
+          </td>
+        </tr>
+
       </table>
-      ${event.description ? `<p style="color: #555; border-left: 3px solid #6D28D9; padding-left: 12px; margin: 16px 0;">${event.description}</p>` : ""}
-      <p style="color: #999; font-size: 12px; margin-top: 24px;">Sendt fra VPKontroll ressursplanlegger</p>
-    </div>
-  `;
+    </td></tr>
+  </table>
+</body>
+</html>`;
 
   let accessToken: string;
   try {
@@ -193,21 +278,20 @@ async function sendNotificationEmails(
   let sent = 0, failed = 0;
 
   if (cred.provider === "google") {
-    const boundary = `boundary_${Date.now()}`;
     for (const email of techEmails) {
       try {
         const rawParts = [
           `From: ${mailbox.address}`,
           `To: ${email}`,
-          `Subject: ${subjectLine}`,
+          `Subject: ${encodeSubject(subjectLine)}`,
           `MIME-Version: 1.0`,
           `Content-Type: text/html; charset="UTF-8"`,
+          `Content-Transfer-Encoding: base64`,
           ``,
-          bodyHtml,
+          utf8ToBase64url(bodyHtml),
         ];
         const raw = rawParts.join("\r\n");
-        const encoded = btoa(unescape(encodeURIComponent(raw)))
-          .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+        const encoded = utf8ToBase64url(raw);
         const res = await fetch(
           `https://gmail.googleapis.com/gmail/v1/users/${mailbox.address}/messages/send`,
           { method: "POST", headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ raw: encoded }) },
@@ -216,7 +300,6 @@ async function sendNotificationEmails(
       } catch { failed++; }
     }
   } else {
-    // Microsoft
     for (const email of techEmails) {
       try {
         const message = {
