@@ -81,7 +81,7 @@ export function EditUserDialog({ open, onOpenChange, user }: Props) {
         .eq("id", user.id);
 
       // Update role assignment
-      if (tenantRoleId && tenantId) {
+      if (tenantRoleId && tenantRoleId !== "__none__" && tenantId) {
         // Upsert: delete old, insert new
         await supabase
           .from("tenant_user_role_assignments")
@@ -140,7 +140,7 @@ export function EditUserDialog({ open, onOpenChange, user }: Props) {
               <Select value={tenantRoleId} onValueChange={setTenantRoleId}>
                 <SelectTrigger><SelectValue placeholder="Ingen rolle" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Ingen</SelectItem>
+                  <SelectItem value="__none__">Ingen</SelectItem>
                   {tenantRoles.map(r => (
                     <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
                   ))}

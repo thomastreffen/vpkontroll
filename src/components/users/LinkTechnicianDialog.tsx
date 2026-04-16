@@ -58,7 +58,7 @@ export function LinkTechnicianDialog({ open, onOpenChange, userId, userName, use
           is_active: true,
         });
         if (error) throw error;
-      } else if (selectedTechId) {
+      } else if (selectedTechId && selectedTechId !== "__none__") {
         // Unlink previous if any
         if (currentTechnicianId && currentTechnicianId !== selectedTechId) {
           await supabase.from("technicians").update({ user_id: null }).eq("id", currentTechnicianId);
@@ -102,7 +102,7 @@ export function LinkTechnicianDialog({ open, onOpenChange, userId, userName, use
                 <Select value={selectedTechId} onValueChange={setSelectedTechId}>
                   <SelectTrigger><SelectValue placeholder="Velg tekniker..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Ingen (fjern kobling)</SelectItem>
+                    <SelectItem value="__none__">Ingen (fjern kobling)</SelectItem>
                     {availableTechs.map(t => (
                       <SelectItem key={t.id} value={t.id}>
                         {t.name} {t.email ? `(${t.email})` : ""}

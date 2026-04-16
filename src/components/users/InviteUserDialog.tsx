@@ -38,7 +38,7 @@ export function InviteUserDialog({ open, onOpenChange }: Props) {
   const invite = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("invite-user", {
-        body: { email, full_name: fullName, app_role: appRole, tenant_role_id: tenantRoleId || undefined },
+        body: { email, full_name: fullName, app_role: appRole, tenant_role_id: (tenantRoleId && tenantRoleId !== "__none__") ? tenantRoleId : undefined },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -86,7 +86,7 @@ export function InviteUserDialog({ open, onOpenChange }: Props) {
               <Select value={tenantRoleId} onValueChange={setTenantRoleId}>
                 <SelectTrigger><SelectValue placeholder="Velg rolle..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Ingen</SelectItem>
+                  <SelectItem value="__none__">Ingen</SelectItem>
                   {tenantRoles.map(r => (
                     <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
                   ))}
