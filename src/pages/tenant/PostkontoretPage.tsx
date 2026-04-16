@@ -251,7 +251,7 @@ export default function PostkontoretPage() {
                   For å motta e-post automatisk må du koble en integrasjon (Google / Microsoft) og registrere en mailboks under Integrasjoner.
                 </p>
                 <Button variant="outline" size="sm" className="mt-2 text-xs gap-1.5" onClick={() => navigate("/tenant/integrations")}>
-                  <Settings className="h-3.5 w-3.5" /> Sett opp integrasjon og mailboks
+                  <Settings className="h-3.5 w-3.5" /> Sett opp Postkontoret
                 </Button>
               </div>
             </div>
