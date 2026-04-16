@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   CheckCircle2,
@@ -62,6 +63,7 @@ export default function PostkontoretSetup() {
 
   const [mailboxAddress, setMailboxAddress] = useState("");
   const [mailboxName, setMailboxName] = useState("");
+  const [syncMode, setSyncMode] = useState<"now" | "7days" | "30days" | "all">("now");
   const [testingConnection, setTestingConnection] = useState(false);
   const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
 
