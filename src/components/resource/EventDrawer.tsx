@@ -84,6 +84,7 @@ const ACTION_LABELS: Record<string, string> = {
   technician_added: "Tekniker lagt til",
   technician_removed: "Tekniker fjernet",
   status_changed: "Status endret",
+  notification_sent: "Varsel sendt",
   deleted: "Slettet",
 };
 
