@@ -83,13 +83,28 @@ export default function PostkontoretSetup() {
   const addMailboxMutation = useMutation({
     mutationFn: async () => {
       if (!tenantId || !connectedCred || !mailboxAddress.trim()) return;
+      
+      // Calculate sync_from based on selected mode
+      let syncFrom: string;
+      const now = new Date();
+      if (syncMode === "7days") {
+        syncFrom = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      } else if (syncMode === "30days") {
+        syncFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      } else if (syncMode === "all") {
+        syncFrom = new Date("2020-01-01").toISOString();
+      } else {
+        syncFrom = now.toISOString();
+      }
+      
       const { error } = await supabase.from("mailboxes").insert({
         tenant_id: tenantId,
         address: mailboxAddress.trim().toLowerCase(),
         display_name: mailboxName.trim() || mailboxAddress.trim(),
         provider: connectedCred.provider,
         is_enabled: true,
-      });
+        sync_from: syncFrom,
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
