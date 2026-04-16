@@ -103,9 +103,24 @@ export default function PostkontoretPage() {
   const [filter, setFilter] = useState<FilterType>("all");
   const [search, setSearch] = useState("");
   const [showCompose, setShowCompose] = useState(false);
+  const [mailboxReady, setMailboxReady] = useState<boolean | null>(null);
 
   const selectedCase = cases.find((c) => c.id === selectedId);
   const selectedItems = items.filter((i) => i.case_id === selectedId);
+
+  // Check if mailbox is configured
+  useEffect(() => {
+    if (!tenantId) return;
+    const checkMailbox = async () => {
+      const { count } = await supabase
+        .from("mailboxes")
+        .select("*", { count: "exact", head: true })
+        .eq("tenant_id", tenantId)
+        .eq("is_enabled", true);
+      setMailboxReady((count || 0) > 0);
+    };
+    checkMailbox();
+  }, [tenantId]);
 
   const fetchCases = useCallback(async () => {
     if (!tenantId) return;
@@ -156,10 +171,22 @@ export default function PostkontoretPage() {
   }, [fetchCases, tenantId]);
 
   const syncInbox = useCallback(async () => {
+    if (!mailboxReady) {
+      toast.error("Ingen mailboks er konfigurert. Sett opp en mailboks under Integrasjoner først.");
+      return;
+    }
     setSyncing(true);
     try {
       const { data, error } = await supabase.functions.invoke("inbox-sync");
       if (error) throw error;
+      if (data?.error) {
+        if (data.error.includes("No mailboxes configured") || data.error.includes("No credentials configured")) {
+          toast.error("Postkontoret er ikke ferdig satt opp. Koble en integrasjon og mailboks under Integrasjoner.");
+        } else {
+          toast.error("Synkronisering feilet: " + data.error);
+        }
+        return;
+      }
       if (data?.ms_reauth) {
         toast.error("Integrasjonstilkobling må fornyes. Gå til Integrasjoner.");
         return;
@@ -167,11 +194,11 @@ export default function PostkontoretPage() {
       toast.success(`Synkronisert! ${data?.new_cases || 0} nye saker, ${data?.new_items || 0} nye meldinger.`);
       await fetchCases();
     } catch (err: any) {
-      toast.error("Synkronisering feilet: " + (err.message || "Ukjent feil"));
+      toast.error("Synkronisering feilet. Sjekk at integrasjon og mailboks er konfigurert under Integrasjoner.");
     } finally {
       setSyncing(false);
     }
-  }, [fetchCases]);
+  }, [fetchCases, mailboxReady]);
 
   const openCase = (c: Case) => {
     setSelectedId(c.id);
