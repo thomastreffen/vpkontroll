@@ -37,6 +37,8 @@ type CalendarEvent = {
   end_time: string; status: string; technician_ids: string[];
   job_id: string | null; service_visit_id: string | null; site_id: string | null;
   job?: any; service_visit?: any; site?: any;
+  calendar_sync_status?: string; external_calendar_event_id?: string | null;
+  calendar_sync_error?: string | null;
 };
 
 type CalendarViewType = "timeGridDay" | "timeGridWeek" | "dayGridMonth" | "listWeek";
