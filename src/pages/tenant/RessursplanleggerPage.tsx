@@ -13,9 +13,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { EventDrawer } from "@/components/resource/EventDrawer";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { UnplannedJobsStrip } from "@/components/resource/UnplannedJobsStrip";
 import {
   ChevronLeft, ChevronRight, Plus, RotateCcw,
-  Loader2, Users, Briefcase, CalendarDays, ExternalLink, Eye, ClipboardList, Calendar, List,
+  Loader2, Users, Briefcase, CalendarDays, ExternalLink, Eye, ClipboardList, Calendar, List, Phone, Mail,
 } from "lucide-react";
 import {
   addWeeks, addDays, addMonths, startOfWeek, endOfWeek, format, parseISO,
