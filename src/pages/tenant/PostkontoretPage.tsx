@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCanDo } from "@/hooks/useCanDo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,6 +35,7 @@ import {
   ArrowRightLeft,
   Paperclip,
   Inbox,
+  Settings,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { nb } from "date-fns/locale";
@@ -103,9 +104,24 @@ export default function PostkontoretPage() {
   const [filter, setFilter] = useState<FilterType>("all");
   const [search, setSearch] = useState("");
   const [showCompose, setShowCompose] = useState(false);
+  const [mailboxReady, setMailboxReady] = useState<boolean | null>(null);
 
   const selectedCase = cases.find((c) => c.id === selectedId);
   const selectedItems = items.filter((i) => i.case_id === selectedId);
+
+  // Check if mailbox is configured
+  useEffect(() => {
+    if (!tenantId) return;
+    const checkMailbox = async () => {
+      const { count } = await supabase
+        .from("mailboxes")
+        .select("*", { count: "exact", head: true })
+        .eq("tenant_id", tenantId)
+        .eq("is_enabled", true);
+      setMailboxReady((count || 0) > 0);
+    };
+    checkMailbox();
+  }, [tenantId]);
 
   const fetchCases = useCallback(async () => {
     if (!tenantId) return;
@@ -156,10 +172,22 @@ export default function PostkontoretPage() {
   }, [fetchCases, tenantId]);
 
   const syncInbox = useCallback(async () => {
+    if (!mailboxReady) {
+      toast.error("Ingen mailboks er konfigurert. Sett opp en mailboks under Integrasjoner først.");
+      return;
+    }
     setSyncing(true);
     try {
       const { data, error } = await supabase.functions.invoke("inbox-sync");
       if (error) throw error;
+      if (data?.error) {
+        if (data.error.includes("No mailboxes configured") || data.error.includes("No credentials configured")) {
+          toast.error("Postkontoret er ikke ferdig satt opp. Koble en integrasjon og mailboks under Integrasjoner.");
+        } else {
+          toast.error("Synkronisering feilet: " + data.error);
+        }
+        return;
+      }
       if (data?.ms_reauth) {
         toast.error("Integrasjonstilkobling må fornyes. Gå til Integrasjoner.");
         return;
@@ -167,11 +195,11 @@ export default function PostkontoretPage() {
       toast.success(`Synkronisert! ${data?.new_cases || 0} nye saker, ${data?.new_items || 0} nye meldinger.`);
       await fetchCases();
     } catch (err: any) {
-      toast.error("Synkronisering feilet: " + (err.message || "Ukjent feil"));
+      toast.error("Synkronisering feilet. Sjekk at integrasjon og mailboks er konfigurert under Integrasjoner.");
     } finally {
       setSyncing(false);
     }
-  }, [fetchCases]);
+  }, [fetchCases, mailboxReady]);
 
   const openCase = (c: Case) => {
     setSelectedId(c.id);
@@ -211,13 +239,33 @@ export default function PostkontoretPage() {
 
   return (
     <div className="space-y-6">
+      {/* Setup banner when no mailbox configured */}
+      {mailboxReady === false && (
+        <Card className="border-yellow-500/30 bg-yellow-500/5">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Postkontoret er ikke ferdig satt opp</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  For å motta e-post automatisk må du koble en integrasjon (Google / Microsoft) og registrere en mailboks under Integrasjoner.
+                </p>
+                <Button variant="outline" size="sm" className="mt-2 text-xs gap-1.5" onClick={() => navigate("/tenant/integrations")}>
+                  <Settings className="h-3.5 w-3.5" /> Sett opp integrasjon og mailboks
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Postkontoret</h1>
           <p className="text-muted-foreground mt-1">Håndter innkommende henvendelser og e-post</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={syncInbox} disabled={syncing} className="gap-2">
+          <Button variant="outline" size="sm" onClick={syncInbox} disabled={syncing || mailboxReady === false} className="gap-2">
             <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
             {syncing ? "Synkroniserer..." : "Synk e-post"}
           </Button>
