@@ -238,13 +238,33 @@ export default function PostkontoretPage() {
 
   return (
     <div className="space-y-6">
+      {/* Setup banner when no mailbox configured */}
+      {mailboxReady === false && (
+        <Card className="border-yellow-500/30 bg-yellow-500/5">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Postkontoret er ikke ferdig satt opp</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  For å motta e-post automatisk må du koble en integrasjon (Google / Microsoft) og registrere en mailboks under Integrasjoner.
+                </p>
+                <Button variant="outline" size="sm" className="mt-2 text-xs gap-1.5" onClick={() => navigate("/tenant/integrations")}>
+                  <Settings className="h-3.5 w-3.5" /> Sett opp integrasjon og mailboks
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Postkontoret</h1>
           <p className="text-muted-foreground mt-1">Håndter innkommende henvendelser og e-post</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={syncInbox} disabled={syncing} className="gap-2">
+          <Button variant="outline" size="sm" onClick={syncInbox} disabled={syncing || mailboxReady === false} className="gap-2">
             <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
             {syncing ? "Synkroniserer..." : "Synk e-post"}
           </Button>
