@@ -291,6 +291,11 @@ export default function RessursplanleggerPage() {
             formTechIds.map((techId) => ({ event_id: editEvent.id, technician_id: techId }))
           );
         }
+        // Log update
+        await supabase.from("event_logs").insert({
+          event_id: editEvent.id, tenant_id: tenantId, actor_id: user?.id,
+          action: "updated", details: { title: formTitle.trim() },
+        } as any);
         toast.success("Hendelse oppdatert");
       } else {
         const { data: newEvent } = await supabase.from("events").insert({
@@ -303,6 +308,13 @@ export default function RessursplanleggerPage() {
           await supabase.from("event_technicians").insert(
             formTechIds.map((techId) => ({ event_id: newEvent.id, technician_id: techId }))
           );
+        }
+        // Log creation
+        if (newEvent) {
+          await supabase.from("event_logs").insert({
+            event_id: newEvent.id, tenant_id: tenantId, actor_id: user?.id,
+            action: "created", details: { title: formTitle.trim() },
+          } as any);
         }
         toast.success("Hendelse opprettet");
       }
