@@ -47,7 +47,7 @@ export default function OnboardingChecklist() {
         { key: "modules", label: "Moduler aktivert", done: (moduleCount || 0) >= 1, icon: Boxes, navigateTo: "/tenant/modules" },
         { key: "technician", label: "Tekniker koblet", done: (techCount || 0) >= 1, icon: Wrench, navigateTo: "/tenant/users" },
         { key: "customer", label: "Første kunde opprettet", done: (companyCount || 0) >= 1, icon: Building2, navigateTo: "/tenant/crm/companies" },
-        { key: "mailbox", label: "Mailboks koblet", done: (mailboxCount || 0) >= 1, icon: Mail, navigateTo: "/tenant/integrations" },
+        { key: "mailbox", label: "Postkontoret mailboks konfigurert", done: (mailboxCount || 0) >= 1, icon: Mail, navigateTo: "/tenant/postkontoret" },
         { key: "document", label: "Dokumentopplasting testet", done: (docCount || 0) >= 1, icon: FileText },
       ]);
       setLoading(false);
@@ -61,7 +61,6 @@ export default function OnboardingChecklist() {
   const totalCount = items.length;
   const percent = Math.round((doneCount / totalCount) * 100);
 
-  // Hide completely when all done
   if (doneCount === totalCount) return null;
 
   return (
