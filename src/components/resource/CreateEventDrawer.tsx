@@ -105,6 +105,8 @@ export function CreateEventDrawer({
   const [duration, setDuration] = useState("120");
   const [techIds, setTechIds] = useState<string[]>([]);
   const [jobId, setJobId] = useState<string | null>(null);
+  const [siteId, setSiteId] = useState<string | null>(null);
+  const [jobLinked, setJobLinked] = useState(false);
   const [saving, setSaving] = useState(false);
   const [availableJobs, setAvailableJobs] = useState<any[]>([]);
   const [jobsLoading, setJobsLoading] = useState(false);
@@ -143,6 +145,8 @@ export function CreateEventDrawer({
       }
       setTechIds(selectedTechId ? [selectedTechId] : []);
       setJobId(prefillJobId || null);
+      setSiteId(null);
+      setJobLinked(!!prefillJobId);
     }
     fetchJobs();
   }, [open, editEvent?.id]);
@@ -152,7 +156,7 @@ export function CreateEventDrawer({
     setJobsLoading(true);
     const { data } = await supabase
       .from("jobs")
-      .select("id, job_number, title, status, company:crm_companies(name), site:customer_sites(address, city)")
+      .select("id, job_number, title, status, site_id, company:crm_companies(name), site:customer_sites(address, city, name)")
       .eq("tenant_id", tenantId)
       .is("deleted_at", null)
       .in("status", ["planned", "scheduled", "in_progress", "on_hold"])
@@ -162,14 +166,35 @@ export function CreateEventDrawer({
     setJobsLoading(false);
   };
 
-  const handleJobSelect = (value: string) => {
-    if (value === "__none__") { setJobId(null); return; }
+  const handleJobSelect = async (value: string) => {
+    if (value === "__none__") {
+      setJobId(null);
+      setSiteId(null);
+      setJobLinked(false);
+      setTitle("");
+      setCustomer("");
+      setAddress("");
+      return;
+    }
     const job = availableJobs.find((j: any) => j.id === value);
     if (!job) return;
     setJobId(value);
+    setSiteId(job.site_id || null);
+    setJobLinked(true);
     setTitle(`${job.job_number} – ${job.title}`);
     setCustomer(job.company?.name || "");
-    setAddress(job.site ? [job.site.address, job.site.city].filter(Boolean).join(", ") : "");
+    const siteAddr = job.site ? [job.site.address, job.site.city].filter(Boolean).join(", ") : "";
+    setAddress(siteAddr);
+
+    // Auto-fill technicians from job
+    const { data: jt } = await supabase
+      .from("job_technicians")
+      .select("technician_id")
+      .eq("job_id", value);
+    if (jt && jt.length > 0) {
+      const ids = jt.map(r => r.technician_id);
+      setTechIds(prev => [...new Set([...prev, ...ids])]);
+    }
   };
 
   const toggleTech = (id: string) => {
@@ -210,7 +235,7 @@ export function CreateEventDrawer({
           title: title.trim(), customer: customer || null,
           address: address || null, description: description || null,
           start_time: st.toISOString(), end_time: et.toISOString(),
-          job_id: jobId || null,
+          job_id: jobId || null, site_id: siteId || null,
         } as any).eq("id", editEvent.id);
 
         await supabase.from("event_technicians").delete().eq("event_id", editEvent.id);
@@ -240,7 +265,7 @@ export function CreateEventDrawer({
           tenant_id: tenantId, title: title.trim(), customer: customer || null,
           address: address || null, description: description || null,
           start_time: st.toISOString(), end_time: et.toISOString(),
-          created_by: user?.id, job_id: jobId || null,
+          created_by: user?.id, job_id: jobId || null, site_id: siteId || null,
         } as any).select("id").single();
 
         if (newEvent && techIds.length > 0) {
@@ -309,10 +334,11 @@ export function CreateEventDrawer({
                   )}
                 </SelectContent>
               </Select>
-              {jobId && (
-                <p className="text-[11px] text-primary/70 mt-1 flex items-center gap-1">
-                  <Briefcase className="h-3 w-3" />Kunde og adresse er fylt inn fra jobben
-                </p>
+              {jobLinked && jobId && (
+                <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-primary/80 bg-primary/5 rounded-md px-2.5 py-1.5 border border-primary/10">
+                  <Briefcase className="h-3 w-3 shrink-0" />
+                  <span>Kunde, adresse og teknikere er hentet automatisk fra jobben</span>
+                </div>
               )}
             </section>
 
@@ -328,14 +354,18 @@ export function CreateEventDrawer({
               <section>
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   <User className="h-3 w-3 inline mr-1" />Kunde
+                  {jobLinked && <Badge variant="outline" className="ml-1.5 text-[9px] px-1 py-0 h-4 font-normal">Fra jobb</Badge>}
                 </Label>
-                <Input value={customer} onChange={e => setCustomer(e.target.value)} className="mt-1.5" />
+                <Input value={customer} onChange={e => { setCustomer(e.target.value); }}
+                  className={cn("mt-1.5", jobLinked && customer && "border-primary/20 bg-primary/5")} />
               </section>
               <section>
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   <MapPin className="h-3 w-3 inline mr-1" />Adresse
+                  {jobLinked && <Badge variant="outline" className="ml-1.5 text-[9px] px-1 py-0 h-4 font-normal">Fra jobb</Badge>}
                 </Label>
-                <Input value={address} onChange={e => setAddress(e.target.value)} className="mt-1.5" />
+                <Input value={address} onChange={e => { setAddress(e.target.value); }}
+                  className={cn("mt-1.5", jobLinked && address && "border-primary/20 bg-primary/5")} />
               </section>
             </div>
 
