@@ -479,7 +479,7 @@ function MessagesTab({ notes, loading, newMessage, setNewMessage, sending, onSen
   }, [notes.length]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       if (newMessage.trim() && !sending) {
         onSend();
@@ -547,7 +547,7 @@ function MessagesTab({ notes, loading, newMessage, setNewMessage, sending, onSen
           <Textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Skriv en melding... (Enter for å sende, Shift+Enter for ny linje)"
+            placeholder="Skriv en melding..."
             className="min-h-[44px] max-h-[120px] resize-none text-sm rounded-xl bg-background border-border/60"
             rows={1}
             onKeyDown={handleKeyDown}
@@ -559,7 +559,7 @@ function MessagesTab({ notes, loading, newMessage, setNewMessage, sending, onSen
           </Button>
         </div>
         <p className="text-[10px] text-muted-foreground/60 mt-1.5 px-1">
-          Enter = send · Shift+Enter = ny linje
+          Ctrl+Enter = send
         </p>
       </div>
     </div>
