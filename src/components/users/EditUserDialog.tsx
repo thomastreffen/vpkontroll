@@ -81,7 +81,7 @@ export function EditUserDialog({ open, onOpenChange, user }: Props) {
         .eq("id", user.id);
 
       // Update role assignment
-      if (tenantRoleId && tenantId) {
+      if (tenantRoleId && tenantRoleId !== "__none__" && tenantId) {
         // Upsert: delete old, insert new
         await supabase
           .from("tenant_user_role_assignments")

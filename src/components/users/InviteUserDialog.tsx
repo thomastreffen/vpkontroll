@@ -38,7 +38,7 @@ export function InviteUserDialog({ open, onOpenChange }: Props) {
   const invite = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("invite-user", {
-        body: { email, full_name: fullName, app_role: appRole, tenant_role_id: tenantRoleId || undefined },
+        body: { email, full_name: fullName, app_role: appRole, tenant_role_id: (tenantRoleId && tenantRoleId !== "__none__") ? tenantRoleId : undefined },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
