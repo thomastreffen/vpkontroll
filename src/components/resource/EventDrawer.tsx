@@ -16,6 +16,9 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { format, parseISO, formatDistanceToNow } from "date-fns";
 import { nb } from "date-fns/locale";
@@ -24,6 +27,8 @@ import {
   Briefcase, CalendarDays, Clock, MapPin, User, Users,
   ExternalLink, MessageSquare, History, Loader2, Send,
   Trash2, Edit3, ClipboardList, Eye, Phone, Mail,
+  CheckCircle2, PlayCircle, PauseCircle, XCircle,
+  FileText, Building2, Wrench,
 } from "lucide-react";
 import {
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
@@ -79,6 +84,14 @@ const ACTION_LABELS: Record<string, string> = {
   deleted: "Slettet",
 };
 
+const EVENT_STATUS_OPTIONS = [
+  { value: "planned", label: "Planlagt", icon: CalendarDays, color: "text-blue-600" },
+  { value: "confirmed", label: "Bekreftet", icon: CheckCircle2, color: "text-emerald-600" },
+  { value: "in_progress", label: "Pågår", icon: PlayCircle, color: "text-amber-600" },
+  { value: "completed", label: "Fullført", icon: CheckCircle2, color: "text-emerald-700" },
+  { value: "cancelled", label: "Avlyst", icon: XCircle, color: "text-destructive" },
+];
+
 export function EventDrawer({ open, onOpenChange, event, technicians, onEdit, onDeleted, onRefresh }: EventDrawerProps) {
   const { user, tenantId } = useAuth();
   const { canDo } = useCanDo();
@@ -91,6 +104,7 @@ export function EventDrawer({ open, onOpenChange, event, technicians, onEdit, on
   const [sending, setSending] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [changingStatus, setChangingStatus] = useState(false);
 
   useEffect(() => {
     if (open) setTab("details");
@@ -174,6 +188,26 @@ export function EventDrawer({ open, onOpenChange, event, technicians, onEdit, on
     }
   };
 
+  const handleStatusChange = async (newStatus: string) => {
+    if (!event || !tenantId) return;
+    setChangingStatus(true);
+    const oldStatus = event.status;
+    try {
+      await supabase.from("events").update({ status: newStatus } as any).eq("id", event.id);
+      await supabase.from("event_logs").insert({
+        event_id: event.id, tenant_id: tenantId, actor_id: user?.id,
+        action: "status_changed",
+        details: { old_status: oldStatus, new_status: newStatus },
+      } as any);
+      toast.success("Status oppdatert");
+      onRefresh();
+    } catch {
+      toast.error("Kunne ikke endre status");
+    } finally {
+      setChangingStatus(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!event) return;
     setDeleting(true);
@@ -205,12 +239,19 @@ export function EventDrawer({ open, onOpenChange, event, technicians, onEdit, on
     .map(id => technicians.find(t => t.id === id))
     .filter(Boolean) as Technician[];
 
+  const durationMinutes = Math.round((new Date(event.end_time).getTime() - new Date(event.start_time).getTime()) / 60000);
+  const durationLabel = durationMinutes >= 60
+    ? `${Math.floor(durationMinutes / 60)}t ${durationMinutes % 60 > 0 ? `${durationMinutes % 60}m` : ""}`
+    : `${durationMinutes}m`;
+
+  const currentStatusOption = EVENT_STATUS_OPTIONS.find(s => s.value === event.status);
+
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="sm:max-w-[480px] flex flex-col p-0 gap-0">
+        <SheetContent className="sm:max-w-[500px] flex flex-col p-0 gap-0">
           {/* Header */}
-          <div className="px-6 pt-6 pb-3 space-y-2">
+          <div className="px-6 pt-6 pb-3 space-y-3">
             <SheetHeader className="space-y-1">
               <SheetTitle className="flex items-center gap-2 text-base pr-8">
                 {event.job_id && <Briefcase className="h-4 w-4 text-primary shrink-0" />}
@@ -218,14 +259,33 @@ export function EventDrawer({ open, onOpenChange, event, technicians, onEdit, on
                 <span className="truncate">{event.title}</span>
               </SheetTitle>
               <SheetDescription className="text-xs flex items-center gap-2 flex-wrap">
-                <Badge variant="outline" className="text-[10px]">{event.status}</Badge>
                 {event.job?.job_number && (
                   <span className="font-mono text-[10px] bg-primary/10 text-primary rounded px-1.5 py-0.5">
                     {event.job.job_number}
                   </span>
                 )}
+                <span className="text-muted-foreground">{durationLabel}</span>
               </SheetDescription>
             </SheetHeader>
+
+            {/* Status changer */}
+            {canDo("ressursplan.schedule") && (
+              <Select value={event.status} onValueChange={handleStatusChange} disabled={changingStatus}>
+                <SelectTrigger className="h-8 text-xs w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {EVENT_STATUS_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      <span className="flex items-center gap-2">
+                        <opt.icon className={cn("h-3.5 w-3.5", opt.color)} />
+                        {opt.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
             {/* Tab switcher */}
             <div className="flex items-center gap-1 border border-border/40 rounded-lg p-0.5">
@@ -323,11 +383,11 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete }: {
         {(event.customer || event.address || event.site) && (
           <section>
             <SectionLabel>Kunde & Lokasjon</SectionLabel>
-            <div className="space-y-2">
+            <div className="rounded-lg border border-border/40 bg-card p-3 space-y-2">
               {event.customer && (
                 <div className="flex items-center gap-2 text-sm">
-                  <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <span>{event.customer}</span>
+                  <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="font-medium">{event.customer}</span>
                 </div>
               )}
               {(event.address || event.site) && (
@@ -336,15 +396,22 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete }: {
                   <span>{event.site ? `${event.site.name || event.site.address}, ${event.site.city}` : event.address}</span>
                 </div>
               )}
+              {event.site?.id && (
+                <Link to={`/tenant/crm/sites/${event.site.id}`} className="inline-block">
+                  <Button variant="link" size="sm" className="h-auto p-0 text-xs gap-1 text-primary">
+                    <ExternalLink className="h-3 w-3" />Gå til anleggssted
+                  </Button>
+                </Link>
+              )}
             </div>
           </section>
         )}
 
-        {/* Linked Job */}
+        {/* Linked Job – enriched */}
         {event.job && (
           <section>
             <SectionLabel>Koblet jobb</SectionLabel>
-            <div className="rounded-lg border border-border/40 bg-card p-3">
+            <div className="rounded-lg border border-border/40 bg-card p-3 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-sm truncate">{event.job.job_number} – {event.job.title}</p>
@@ -352,26 +419,34 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete }: {
                     <Badge variant="secondary" className={cn("text-[10px]", JOB_STATUS_COLORS[event.job.status] || "")}>
                       {JOB_STATUS_LABELS[event.job.status] || event.job.status}
                     </Badge>
-                    <span className="text-xs text-muted-foreground">{JOB_TYPE_LABELS[event.job.job_type] || event.job.job_type}</span>
+                    <Badge variant="outline" className="text-[10px] gap-1">
+                      <Wrench className="h-2.5 w-2.5" />
+                      {JOB_TYPE_LABELS[event.job.job_type] || event.job.job_type}
+                    </Badge>
                   </div>
                 </div>
                 <Link to={`/tenant/crm/jobs/${event.job.id}`}>
                   <Button variant="ghost" size="icon" className="shrink-0"><ExternalLink className="h-4 w-4" /></Button>
                 </Link>
               </div>
-              {(event.job.job_type === "installation" || event.job.job_type === "service") && (
-                <div className="mt-2 pt-2 border-t border-border/30">
-                  <Link to={`/tenant/crm/jobs/${event.job.id}`}>
-                    <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs">
-                      {event.job.form_data?.schema_version === 1 ? (
-                        <><Eye className="h-3 w-3" />Se skjema</>
-                      ) : (
-                        <><ClipboardList className="h-3 w-3" />Fyll ut skjema</>
-                      )}
-                    </Button>
-                  </Link>
-                </div>
-              )}
+
+              {/* Quick actions for job */}
+              <div className="flex gap-2 pt-1 border-t border-border/30">
+                <Link to={`/tenant/crm/jobs/${event.job.id}`} className="flex-1">
+                  <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs">
+                    {event.job.form_data?.schema_version === 1 ? (
+                      <><Eye className="h-3 w-3" />Se skjema</>
+                    ) : (
+                      <><ClipboardList className="h-3 w-3" />Fyll ut skjema</>
+                    )}
+                  </Button>
+                </Link>
+                <Link to={`/tenant/crm/jobs/${event.job.id}`} className="flex-1">
+                  <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs">
+                    <FileText className="h-3 w-3" />Jobbdetaljer
+                  </Button>
+                </Link>
+              </div>
             </div>
           </section>
         )}
@@ -390,7 +465,7 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete }: {
                     </Badge>
                     {event.service_visit.report_data?.schema_version === 1 ? (
                       <Badge variant="secondary" className="text-[10px] gap-1 bg-emerald-500/10 text-emerald-600">
-                        <CalendarDays className="h-2.5 w-2.5" />Skjema utfylt
+                        <CheckCircle2 className="h-2.5 w-2.5" />Skjema utfylt
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-200">Skjema mangler</Badge>
@@ -409,7 +484,7 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete }: {
 
         {/* Technicians */}
         <section>
-          <SectionLabel>Teknikere</SectionLabel>
+          <SectionLabel>Teknikere ({techs.length})</SectionLabel>
           {techs.length > 0 ? (
             <div className="space-y-2">
               {techs.map(tech => (
@@ -422,10 +497,14 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete }: {
                     <p className="text-sm font-medium truncate">{tech.name}</p>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                       {tech.phone && (
-                        <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{tech.phone}</span>
+                        <a href={`tel:${tech.phone}`} className="flex items-center gap-1 hover:text-primary transition-colors">
+                          <Phone className="h-3 w-3" />{tech.phone}
+                        </a>
                       )}
                       {tech.email && (
-                        <span className="flex items-center gap-1 truncate"><Mail className="h-3 w-3" />{tech.email}</span>
+                        <a href={`mailto:${tech.email}`} className="flex items-center gap-1 truncate hover:text-primary transition-colors">
+                          <Mail className="h-3 w-3" />{tech.email}
+                        </a>
                       )}
                     </div>
                   </div>
@@ -433,7 +512,10 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete }: {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Ingen teknikere tildelt</p>
+            <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 p-4 text-center">
+              <Users className="h-5 w-5 text-muted-foreground/40 mx-auto mb-1" />
+              <p className="text-xs text-muted-foreground">Ingen teknikere tildelt</p>
+            </div>
           )}
         </section>
 
@@ -441,7 +523,9 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete }: {
         {event.description && (
           <section>
             <SectionLabel>Beskrivelse</SectionLabel>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{event.description}</p>
+            <div className="rounded-lg border border-border/40 bg-muted/20 p-3">
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{event.description}</p>
+            </div>
           </section>
         )}
 
@@ -471,7 +555,6 @@ function MessagesTab({ notes, loading, newMessage, setNewMessage, sending, onSen
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when new notes arrive
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -498,45 +581,52 @@ function MessagesTab({ notes, loading, newMessage, setNewMessage, sending, onSen
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                 <MessageSquare className="h-6 w-6 text-primary/60" />
               </div>
-              <p className="text-sm font-medium">Ingen meldinger ennå</p>
-              <p className="text-xs text-muted-foreground mt-1 max-w-[240px] mx-auto">
-                Bruk meldinger for å kommunisere med teamet om denne hendelsen. Trykk Enter for å sende.
+              <p className="text-sm font-medium">Intern meldingstråd</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-[260px] mx-auto leading-relaxed">
+                Bruk denne tråden til å koordinere med teamet rundt denne hendelsen – f.eks. endringsforespørsler, tilbakemeldinger fra kunden, eller beskjeder til montør.
               </p>
             </div>
           ) : (
-            notes.map(note => {
-              const isOwn = note.author_id === currentUserId;
-              const isSystem = note.note_type === "system" || note.note_type === "status_change";
-              if (isSystem) {
+            <>
+              <div className="flex justify-center mb-2">
+                <span className="text-[10px] text-muted-foreground/50 bg-muted/30 rounded-full px-3 py-0.5">
+                  Intern tråd – synlig for teamet
+                </span>
+              </div>
+              {notes.map(note => {
+                const isOwn = note.author_id === currentUserId;
+                const isSystem = note.note_type === "system" || note.note_type === "status_change";
+                if (isSystem) {
+                  return (
+                    <div key={note.id} className="flex justify-center">
+                      <div className="bg-muted/50 rounded-full px-3 py-1 text-[11px] text-muted-foreground">
+                        {note.body}
+                      </div>
+                    </div>
+                  );
+                }
                 return (
-                  <div key={note.id} className="flex justify-center">
-                    <div className="bg-muted/50 rounded-full px-3 py-1 text-[11px] text-muted-foreground">
-                      {note.body}
+                  <div key={note.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
+                    <div className={cn(
+                      "max-w-[85%] rounded-2xl px-4 py-2.5 space-y-1",
+                      isOwn
+                        ? "bg-primary text-primary-foreground rounded-br-md"
+                        : "bg-muted rounded-bl-md"
+                    )}>
+                      {!isOwn && (
+                        <p className={cn("text-[11px] font-semibold", "text-muted-foreground")}>
+                          {note.author_name}
+                        </p>
+                      )}
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{note.body}</p>
+                      <p className={cn("text-[10px]", isOwn ? "text-primary-foreground/60" : "text-muted-foreground/70")}>
+                        {format(parseISO(note.created_at), "d. MMM HH:mm", { locale: nb })}
+                      </p>
                     </div>
                   </div>
                 );
-              }
-              return (
-                <div key={note.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
-                  <div className={cn(
-                    "max-w-[85%] rounded-2xl px-4 py-2.5 space-y-1",
-                    isOwn
-                      ? "bg-primary text-primary-foreground rounded-br-md"
-                      : "bg-muted rounded-bl-md"
-                  )}>
-                    {!isOwn && (
-                      <p className={cn("text-[11px] font-semibold", "text-muted-foreground")}>
-                        {note.author_name}
-                      </p>
-                    )}
-                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{note.body}</p>
-                    <p className={cn("text-[10px]", isOwn ? "text-primary-foreground/60" : "text-muted-foreground/70")}>
-                      {format(parseISO(note.created_at), "d. MMM HH:mm", { locale: nb })}
-                    </p>
-                  </div>
-                </div>
-              );
-            })
+              })}
+            </>
           )}
         </div>
       </div>
@@ -547,9 +637,9 @@ function MessagesTab({ notes, loading, newMessage, setNewMessage, sending, onSen
           <Textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Skriv en melding..."
+            placeholder="Skriv en intern melding..."
             className="min-h-[44px] max-h-[120px] resize-none text-sm rounded-xl bg-background border-border/60"
-            rows={1}
+            rows={2}
             onKeyDown={handleKeyDown}
           />
           <Button size="icon" onClick={onSend}
@@ -559,7 +649,7 @@ function MessagesTab({ notes, loading, newMessage, setNewMessage, sending, onSen
           </Button>
         </div>
         <p className="text-[10px] text-muted-foreground/60 mt-1.5 px-1">
-          Ctrl+Enter = send
+          Ctrl+Enter = send · Synlig for alle i teamet
         </p>
       </div>
     </div>
@@ -592,6 +682,7 @@ function HistoryTab({ logs, loading }: { logs: EventLog[]; loading: boolean }) {
                     log.action === "deleted" ? "bg-destructive" :
                     log.action === "created" ? "bg-emerald-500" :
                     log.action === "moved" || log.action === "resized" ? "bg-amber-500" :
+                    log.action === "status_changed" ? "bg-blue-500" :
                     "bg-primary"
                   )} />
                   <div>
@@ -606,6 +697,13 @@ function HistoryTab({ logs, loading }: { logs: EventLog[]; loading: boolean }) {
                       <div className="mt-1 text-xs text-muted-foreground bg-muted/30 rounded-md px-2.5 py-1.5 space-y-0.5">
                         {log.details.title && <span className="block">«{log.details.title}»</span>}
                         {log.details.technician_name && <span className="block">Tekniker: {log.details.technician_name}</span>}
+                        {log.details.old_status && log.details.new_status && (
+                          <span className="block">
+                            {EVENT_STATUS_OPTIONS.find(s => s.value === log.details.old_status)?.label || log.details.old_status}
+                            {" → "}
+                            {EVENT_STATUS_OPTIONS.find(s => s.value === log.details.new_status)?.label || log.details.new_status}
+                          </span>
+                        )}
                         {log.details.old_time && log.details.new_time && (
                           <span className="block">{log.details.old_time} → {log.details.new_time}</span>
                         )}
