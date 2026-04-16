@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCanDo } from "@/hooks/useCanDo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,6 +35,7 @@ import {
   ArrowRightLeft,
   Paperclip,
   Inbox,
+  Settings,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { nb } from "date-fns/locale";
