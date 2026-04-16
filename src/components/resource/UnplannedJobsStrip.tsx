@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Draggable } from "@fullcalendar/interaction";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +30,23 @@ export function UnplannedJobsStrip({ onJobDrop, onJobClick }: UnplannedJobsStrip
   const [jobs, setJobs] = useState<UnplannedJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Initialize FullCalendar Draggable on the container
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const draggable = new Draggable(containerRef.current, {
+      itemSelector: ".vpk-draggable-job",
+      eventData: (el) => {
+        try {
+          return JSON.parse(el.getAttribute("data-event") || "{}");
+        } catch {
+          return {};
+        }
+      },
+    });
+    return () => draggable.destroy();
+  }, [collapsed, jobs.length]);
 
   const fetchUnplannedJobs = useCallback(async () => {
     if (!tenantId) return;
@@ -96,7 +114,7 @@ export function UnplannedJobsStrip({ onJobDrop, onJobClick }: UnplannedJobsStrip
   if (jobs.length === 0) return null;
 
   return (
-    <div className="rounded-xl border border-border/30 bg-card shadow-sm">
+    <div ref={containerRef} className="rounded-xl border border-border/30 bg-card shadow-sm">
       <button
         className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-muted/30 transition-colors rounded-t-xl"
         onClick={() => setCollapsed(!collapsed)}
@@ -116,15 +134,21 @@ export function UnplannedJobsStrip({ onJobDrop, onJobClick }: UnplannedJobsStrip
               <div
                 key={job.id}
                 draggable
+                className={cn(
+                  "vpk-draggable-job flex-shrink-0 w-56 rounded-lg border border-border/50 bg-background p-3 cursor-grab active:cursor-grabbing",
+                  "hover:border-primary/40 hover:shadow-sm transition-all group"
+                )}
+                data-vpk-job={JSON.stringify(job)}
+                data-event={JSON.stringify({
+                  title: `${job.job_number} – ${job.title}`,
+                  duration: job.estimated_hours ? `${String(Math.floor(job.estimated_hours)).padStart(2, "0")}:00` : "02:00",
+                  extendedProps: { vpkJobData: job },
+                })}
                 onDragStart={(e) => {
                   e.dataTransfer.setData("application/vpk-job", JSON.stringify(job));
                   e.dataTransfer.effectAllowed = "copy";
                 }}
                 onClick={() => onJobClick?.(job)}
-                className={cn(
-                  "flex-shrink-0 w-56 rounded-lg border border-border/50 bg-background p-3 cursor-grab active:cursor-grabbing",
-                  "hover:border-primary/40 hover:shadow-sm transition-all group"
-                )}
               >
                 <div className="flex items-start gap-2">
                   <GripVertical className="h-4 w-4 text-muted-foreground/40 mt-0.5 shrink-0 group-hover:text-primary/60" />

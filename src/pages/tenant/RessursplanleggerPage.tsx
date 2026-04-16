@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { UnplannedJobsStrip } from "@/components/resource/UnplannedJobsStrip";
 import {
   ChevronLeft, ChevronRight, Plus, RotateCcw,
-  Users, Briefcase, CalendarDays, Calendar, List, Phone,
+  Users, Briefcase, CalendarDays, Calendar, List, Phone, Clock,
 } from "lucide-react";
 import {
   addWeeks, addDays, addMonths, startOfWeek, endOfWeek, format, parseISO,
@@ -22,7 +22,7 @@ import { useCanDo } from "@/hooks/useCanDo";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import interactionPlugin from "@fullcalendar/interaction";
+import interactionPlugin, { Draggable } from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
 import type { EventInput, EventDropArg, EventClickArg, DateSelectArg, EventContentArg } from "@fullcalendar/core";
 
@@ -221,6 +221,59 @@ export default function RessursplanleggerPage() {
     setCreateDrawerOpen(true);
   };
 
+  // Handle external drop from unplanned jobs strip
+  const handleExternalDrop = useCallback(async (info: any) => {
+    // FullCalendar external drop via eventReceive
+    const dragData = info.event.extendedProps?.vpkJobData;
+    if (!dragData || !tenantId) {
+      info.revert?.();
+      return;
+    }
+
+    const start = info.event.start;
+    const end = info.event.end || new Date(start.getTime() + (dragData.estimated_hours || 2) * 3600000);
+
+    try {
+      const { data: newEvent, error } = await supabase.from("events").insert({
+        tenant_id: tenantId,
+        title: `${dragData.job_number} – ${dragData.title}`,
+        customer: dragData.company_name || null,
+        address: dragData.site_address || null,
+        start_time: start.toISOString(),
+        end_time: end.toISOString(),
+        job_id: dragData.id,
+        created_by: user?.id,
+        status: "planned",
+      } as any).select().single();
+
+      if (error) throw error;
+
+      // Log creation
+      if (newEvent) {
+        await supabase.from("event_logs").insert({
+          event_id: newEvent.id, tenant_id: tenantId, actor_id: user?.id,
+          action: "created",
+          details: { title: `${dragData.job_number} – ${dragData.title}`, source: "drag_from_unplanned" },
+        } as any);
+
+        // Assign selected technician if any
+        if (selectedTechId) {
+          await supabase.from("event_technicians").insert({
+            event_id: newEvent.id, technician_id: selectedTechId,
+          });
+        }
+      }
+
+      toast.success(`Jobb ${dragData.job_number} planlagt i kalenderen`);
+      fetchEvents();
+    } catch {
+      toast.error("Kunne ikke opprette hendelse");
+    }
+
+    // Remove the temporary FC event (we reload from DB)
+    info.event.remove();
+  }, [tenantId, user?.id, selectedTechId, fetchEvents]);
+
   // Drag-drop handler with logging
   const handleEventDrop = useCallback(async (info: EventDropArg) => {
     const eventId = info.event.id;
@@ -295,6 +348,22 @@ export default function RessursplanleggerPage() {
 
   const getTechNames = (techIds: string[]) =>
     techIds.map(id => technicians.find(t => t.id === id)?.name).filter(Boolean).join(", ");
+
+  // Compute next event per technician for sidebar
+  const techNextEvent = useMemo(() => {
+    const now = new Date();
+    const map = new Map<string, CalendarEvent>();
+    for (const e of events) {
+      const start = new Date(e.start_time);
+      for (const tid of e.technician_ids) {
+        const existing = map.get(tid);
+        if (start >= now && (!existing || start < new Date(existing.start_time))) {
+          map.set(tid, e);
+        }
+      }
+    }
+    return map;
+  }, [events]);
 
   // Event content renderer
   const renderEventContent = useCallback((arg: EventContentArg) => {
@@ -380,7 +449,7 @@ export default function RessursplanleggerPage() {
 
       <div className="flex gap-4">
         {/* Technician sidebar */}
-        <Card className="w-60 shrink-0 shadow-sm">
+        <Card className="w-64 shrink-0 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2"><Users className="h-4 w-4" /> Teknikere</CardTitle>
           </CardHeader>
@@ -392,11 +461,12 @@ export default function RessursplanleggerPage() {
             {technicians.map((tech) => {
               const techEventCount = events.filter(e => e.technician_ids.includes(tech.id)).length;
               const isSelected = selectedTechId === tech.id;
+              const nextEvt = techNextEvent.get(tech.id);
               return (
                 <Button key={tech.id} variant={isSelected ? "default" : "ghost"} size="sm"
-                  className="w-full justify-start gap-2 h-auto py-2"
+                  className="w-full justify-start gap-2 h-auto py-2.5"
                   onClick={() => setSelectedTechId(isSelected ? null : tech.id)}>
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0"
                     style={{ backgroundColor: tech.color }}>
                     {tech.name.charAt(0).toUpperCase()}
                   </div>
@@ -405,6 +475,12 @@ export default function RessursplanleggerPage() {
                     {tech.phone && (
                       <p className={cn("text-[10px] truncate", isSelected ? "text-primary-foreground/70" : "text-muted-foreground")}>
                         <Phone className="h-2.5 w-2.5 inline mr-0.5" />{tech.phone}
+                      </p>
+                    )}
+                    {nextEvt && (
+                      <p className={cn("text-[10px] truncate mt-0.5", isSelected ? "text-primary-foreground/60" : "text-muted-foreground/70")}>
+                        <Clock className="h-2.5 w-2.5 inline mr-0.5" />
+                        {format(parseISO(nextEvt.start_time), "EEE HH:mm", { locale: nb })}
                       </p>
                     )}
                   </div>
@@ -441,6 +517,7 @@ export default function RessursplanleggerPage() {
             nowIndicator
             selectable={canDo("ressursplan.schedule")}
             editable={canDo("ressursplan.schedule")}
+            droppable={canDo("ressursplan.schedule")}
             eventResizableFromStart
             selectMirror
             dayMaxEvents={3}
@@ -449,9 +526,16 @@ export default function RessursplanleggerPage() {
             eventClick={handleEventClick}
             eventDrop={handleEventDrop}
             eventResize={handleEventResize}
+            eventReceive={handleExternalDrop}
             select={handleDateSelect}
             weekNumbers
             weekNumberFormat={{ week: "numeric" }}
+            dropAccept=".vpk-draggable-job"
+            drop={(info) => {
+              // Parse job data from the dropped element
+              const rawData = info.draggedEl.getAttribute("data-vpk-job");
+              if (!rawData) return;
+            }}
           />
         </div>
       </div>
