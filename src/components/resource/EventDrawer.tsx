@@ -28,7 +28,7 @@ import {
   ExternalLink, MessageSquare, History, Loader2, Send,
   Trash2, Edit3, ClipboardList, Eye, Phone, Mail,
   CheckCircle2, PlayCircle, PauseCircle, XCircle,
-  FileText, Building2, Wrench,
+  FileText, Building2, Wrench, RefreshCw, CalendarCheck, CalendarX2,
 } from "lucide-react";
 import {
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
@@ -361,10 +361,30 @@ export function EventDrawer({ open, onOpenChange, event, technicians, onEdit, on
 }
 
 /* ── Details Tab ── */
-function DetailsTab({ event, techs, canEdit, onEdit, onDelete }: {
+function DetailsTab({ event, techs, canEdit, onEdit, onDelete, onRefresh }: {
   event: CalendarEvent; techs: Technician[];
-  canEdit: boolean; onEdit: () => void; onDelete: () => void;
+  canEdit: boolean; onEdit: () => void; onDelete: () => void; onRefresh: () => void;
 }) {
+  const [syncing, setSyncing] = useState(false);
+
+  const handleResync = async () => {
+    setSyncing(true);
+    try {
+      const { data } = await supabase.functions.invoke("calendar-sync", {
+        body: { event_id: event.id },
+      });
+      if (data?.ok) {
+        toast.success("Synket til ekstern kalender");
+        onRefresh();
+      } else {
+        toast.error("Kalendersynk feilet");
+      }
+    } catch {
+      toast.error("Kalendersynk feilet");
+    } finally {
+      setSyncing(false);
+    }
+  };
   return (
     <ScrollArea className="h-full">
       <div className="p-6 space-y-5">
