@@ -116,15 +116,21 @@ export function UnplannedJobsStrip({ onJobDrop, onJobClick }: UnplannedJobsStrip
               <div
                 key={job.id}
                 draggable
+                className={cn(
+                  "vpk-draggable-job flex-shrink-0 w-56 rounded-lg border border-border/50 bg-background p-3 cursor-grab active:cursor-grabbing",
+                  "hover:border-primary/40 hover:shadow-sm transition-all group"
+                )}
+                data-vpk-job={JSON.stringify(job)}
+                data-event={JSON.stringify({
+                  title: `${job.job_number} – ${job.title}`,
+                  duration: job.estimated_hours ? `${String(Math.floor(job.estimated_hours)).padStart(2, "0")}:00` : "02:00",
+                  extendedProps: { vpkJobData: job },
+                })}
                 onDragStart={(e) => {
                   e.dataTransfer.setData("application/vpk-job", JSON.stringify(job));
                   e.dataTransfer.effectAllowed = "copy";
                 }}
                 onClick={() => onJobClick?.(job)}
-                className={cn(
-                  "flex-shrink-0 w-56 rounded-lg border border-border/50 bg-background p-3 cursor-grab active:cursor-grabbing",
-                  "hover:border-primary/40 hover:shadow-sm transition-all group"
-                )}
               >
                 <div className="flex items-start gap-2">
                   <GripVertical className="h-4 w-4 text-muted-foreground/40 mt-0.5 shrink-0 group-hover:text-primary/60" />
