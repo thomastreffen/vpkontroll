@@ -169,101 +169,56 @@ function encodeSubject(subject: string): string {
 
 /* ── Email notification ── */
 
+function buildNotificationHtml(event: any, dateStr: string, timeStr: string, isUpdate: boolean): string {
+  const preheader = isUpdate
+    ? `Oppdatert: ${event.title} - ${dateStr}, ${timeStr}`
+    : `${event.title} - ${dateStr}, ${timeStr}`;
+
+  const rows: string[] = [];
+  rows.push(`<tr><td style="color:#6b7280;padding:4px 12px 4px 0;white-space:nowrap">Dato</td><td style="padding:4px 0">${dateStr}</td></tr>`);
+  rows.push(`<tr><td style="color:#6b7280;padding:4px 12px 4px 0;white-space:nowrap">Tid</td><td style="padding:4px 0">${timeStr}</td></tr>`);
+  if (event.customer) rows.push(`<tr><td style="color:#6b7280;padding:4px 12px 4px 0;white-space:nowrap">Kunde</td><td style="padding:4px 0;font-weight:600">${event.customer}</td></tr>`);
+  if (event.address) rows.push(`<tr><td style="color:#6b7280;padding:4px 12px 4px 0;white-space:nowrap">Adresse</td><td style="padding:4px 0">${event.address}</td></tr>`);
+
+  return `<!DOCTYPE html>
+<html lang="nb"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;padding:0;background:#f4f4f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;color:#374151">
+<div style="display:none;max-height:0;overflow:hidden">${preheader}</div>
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f7;padding:32px 16px"><tr><td align="center">
+<table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden">
+<tr><td style="background:#6D28D9;padding:18px 24px;font-size:16px;font-weight:700;color:#fff">${isUpdate ? "Oppdatert oppdrag" : "Nytt oppdrag tildelt deg"}</td></tr>
+<tr><td style="padding:24px">
+<p style="margin:0 0 16px;color:#555">${isUpdate ? "Et oppdrag du er tildelt har blitt oppdatert:" : "Du har blitt tildelt et nytt oppdrag:"}</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;margin:0 0 16px">
+<tr><td style="padding:14px 18px">
+<p style="margin:0 0 10px;font-size:16px;font-weight:700;color:#111">${event.title}</p>
+<table cellpadding="0" cellspacing="0" style="font-size:14px;color:#374151">${rows.join("")}</table>
+</td></tr></table>
+${event.description ? `<p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.5;border-left:3px solid #6D28D9;padding-left:12px">${event.description}</p>` : ""}
+<p style="margin:0;font-size:12px;color:#9ca3af">Sendt fra VPKontroll Ressursplanlegger</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
+}
+
 async function sendNotificationEmails(
   sb: any, cred: any, mailbox: any, event: any, techEmails: string[], isUpdate: boolean
 ): Promise<{ sent: number; failed: number }> {
-  if (techEmails.length === 0) return { sent: 0, failed: 0 };
-  if (!mailbox) return { sent: 0, failed: 0 };
+  if (techEmails.length === 0 || !mailbox) return { sent: 0, failed: 0 };
 
   const startDate = new Date(event.start_time);
   const endDate = new Date(event.end_time);
   const dateStr = startDate.toLocaleDateString("nb-NO", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   });
-  const timeStr = `${startDate.toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })} - ${endDate.toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })}`;
+  const timeStr = `${startDate.toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })} \u2013 ${endDate.toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })}`;
 
   const subjectLine = isUpdate
     ? `Oppdatert oppdrag: ${event.title}`
     : `Nytt oppdrag: ${event.title}`;
 
-  const bodyHtml = `<!DOCTYPE html>
-<html lang="nb">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background-color:#f4f4f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7;padding:24px 0;">
-    <tr><td align="center">
-      <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
-
-        <!-- Header -->
-        <tr>
-          <td style="background-color:#6D28D9;padding:20px 28px;">
-            <span style="font-size:18px;font-weight:700;color:#ffffff;">
-              ${isUpdate ? "Oppdatert oppdrag" : "Nytt oppdrag tildelt deg"}
-            </span>
-          </td>
-        </tr>
-
-        <!-- Body -->
-        <tr>
-          <td style="padding:28px;">
-            <p style="margin:0 0 16px;font-size:14px;color:#555;">
-              ${isUpdate
-                ? "Et oppdrag du er tildelt har blitt oppdatert. Se oppdaterte detaljer under."
-                : "Du har blitt tildelt et nytt oppdrag. Sjekk detaljene under og forbered deg."}
-            </p>
-
-            <!-- Details card -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;margin-bottom:20px;">
-              <tr>
-                <td style="padding:16px 20px;">
-                  <p style="margin:0 0 12px;font-size:16px;font-weight:700;color:#111;">${event.title}</p>
-                  <table cellpadding="0" cellspacing="0" style="font-size:14px;color:#374151;line-height:1.7;">
-                    <tr>
-                      <td style="padding:2px 12px 2px 0;color:#6b7280;white-space:nowrap;">Dato</td>
-                      <td style="padding:2px 0;">${dateStr}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding:2px 12px 2px 0;color:#6b7280;white-space:nowrap;">Tid</td>
-                      <td style="padding:2px 0;">${timeStr}</td>
-                    </tr>
-                    ${event.customer ? `<tr>
-                      <td style="padding:2px 12px 2px 0;color:#6b7280;white-space:nowrap;">Kunde</td>
-                      <td style="padding:2px 0;font-weight:600;">${event.customer}</td>
-                    </tr>` : ""}
-                    ${event.address ? `<tr>
-                      <td style="padding:2px 12px 2px 0;color:#6b7280;white-space:nowrap;">Adresse</td>
-                      <td style="padding:2px 0;">${event.address}</td>
-                    </tr>` : ""}
-                  </table>
-                </td>
-              </tr>
-            </table>
-
-            ${event.description ? `
-            <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">Beskrivelse</p>
-            <p style="margin:0 0 20px;font-size:14px;color:#374151;line-height:1.6;border-left:3px solid #6D28D9;padding-left:12px;">${event.description}</p>
-            ` : ""}
-
-            <p style="margin:0;font-size:13px;color:#9ca3af;">
-              Du mottar denne e-posten fordi du er registrert som montør på dette oppdraget i VPKontroll.
-            </p>
-          </td>
-        </tr>
-
-        <!-- Footer -->
-        <tr>
-          <td style="padding:16px 28px;background:#f9fafb;border-top:1px solid #e5e7eb;">
-            <p style="margin:0;font-size:11px;color:#9ca3af;text-align:center;">
-              VPKontroll Ressursplanlegger
-            </p>
-          </td>
-        </tr>
-
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
+  const bodyHtml = buildNotificationHtml(event, dateStr, timeStr, isUpdate);
 
   let accessToken: string;
   try {
@@ -280,18 +235,17 @@ async function sendNotificationEmails(
   if (cred.provider === "google") {
     for (const email of techEmails) {
       try {
-        const rawParts = [
+        // Build RFC 2822, then base64url-encode the entire message once
+        const rawMsg = [
           `From: ${mailbox.address}`,
           `To: ${email}`,
           `Subject: ${encodeSubject(subjectLine)}`,
           `MIME-Version: 1.0`,
           `Content-Type: text/html; charset="UTF-8"`,
-          `Content-Transfer-Encoding: base64`,
           ``,
-          utf8ToBase64url(bodyHtml),
-        ];
-        const raw = rawParts.join("\r\n");
-        const encoded = utf8ToBase64url(raw);
+          bodyHtml,
+        ].join("\r\n");
+        const encoded = utf8ToBase64url(rawMsg);
         const res = await fetch(
           `https://gmail.googleapis.com/gmail/v1/users/${mailbox.address}/messages/send`,
           { method: "POST", headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ raw: encoded }) },
