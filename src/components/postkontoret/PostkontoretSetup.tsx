@@ -368,6 +368,18 @@ export default function PostkontoretSetup() {
                 <p className="text-xs font-medium text-muted-foreground">
                   {hasMailbox ? "Legg til en ekstra mailboks" : "Legg til mailboks-adressen Postkontoret skal bruke"}
                 </p>
+
+                {/* Personal account warning */}
+                <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/30 p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                    <div className="text-xs text-amber-800 dark:text-amber-300">
+                      <p className="font-medium mb-0.5">Bruk en dedikert e-postadresse</p>
+                      <p>Unngå å koble din personlige innboks. Bruk en delt adresse som <span className="font-mono">post@firma.no</span> eller <span className="font-mono">kundeservice@firma.no</span>. All e-post til denne adressen vil importeres til Postkontoret.</p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label className="text-xs">E-postadresse</Label>
@@ -389,6 +401,29 @@ export default function PostkontoretSetup() {
                     />
                   </div>
                 </div>
+
+                {/* Sync mode selector */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Hent e-post fra</Label>
+                  <Select value={syncMode} onValueChange={(v) => setSyncMode(v as any)}>
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="now">Fra nå av (anbefalt)</SelectItem>
+                      <SelectItem value="7days">Siste 7 dager</SelectItem>
+                      <SelectItem value="30days">Siste 30 dager</SelectItem>
+                      <SelectItem value="all">Alt historisk (kan ta lang tid)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground">
+                    {syncMode === "now" && "Kun nye e-poster som ankommer etter aktivering vil importeres."}
+                    {syncMode === "7days" && "E-poster fra siste 7 dager + nye fremover vil importeres."}
+                    {syncMode === "30days" && "E-poster fra siste 30 dager + nye fremover vil importeres. Kan inneholde mange meldinger."}
+                    {syncMode === "all" && "⚠️ Hele innboksen importeres. Dette kan ta svært lang tid og generere mange saker."}
+                  </p>
+                </div>
+
                 <Button
                   size="sm"
                   className="w-full text-xs"
