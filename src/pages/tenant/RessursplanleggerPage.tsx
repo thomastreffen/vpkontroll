@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,12 +15,10 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   ChevronLeft, ChevronRight, Plus, RotateCcw,
-  Loader2, Users, Briefcase, CalendarDays, ExternalLink, X, Eye, ClipboardList,
+  Loader2, Users, Briefcase, CalendarDays, ExternalLink, Eye, ClipboardList, Calendar, List,
 } from "lucide-react";
 import {
-  addWeeks, addDays, startOfWeek, endOfWeek, format, isSameDay,
-  eachDayOfInterval, differenceInMinutes, setHours, setMinutes,
-  parseISO,
+  addWeeks, addDays, addMonths, startOfWeek, endOfWeek, format, parseISO,
 } from "date-fns";
 import { nb } from "date-fns/locale";
 import {
@@ -28,6 +26,13 @@ import {
   VISIT_STATUS_LABELS,
 } from "@/lib/domain-labels";
 import { useCanDo } from "@/hooks/useCanDo";
+
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import interactionPlugin from "@fullcalendar/interaction";
+import listPlugin from "@fullcalendar/list";
+import type { EventInput, EventDropArg, EventClickArg, DateSelectArg, EventContentArg } from "@fullcalendar/core";
 
 type Technician = {
   id: string; tenant_id: string; name: string; phone: string | null;
@@ -39,21 +44,34 @@ type CalendarEvent = {
   address: string | null; description: string | null; start_time: string;
   end_time: string; status: string; technician_ids: string[];
   job_id: string | null; service_visit_id: string | null; site_id: string | null;
-  // Joined data
   job?: any; service_visit?: any; site?: any;
 };
 
-const HOURS = Array.from({ length: 13 }, (_, i) => i + 7);
-const HOUR_HEIGHT = 60;
+type CalendarViewType = "timeGridDay" | "timeGridWeek" | "dayGridMonth" | "listWeek";
+
+const VIEW_OPTIONS: { value: CalendarViewType; label: string; icon: typeof Calendar }[] = [
+  { value: "timeGridDay", label: "Dag", icon: Calendar },
+  { value: "timeGridWeek", label: "Uke", icon: CalendarDays },
+  { value: "dayGridMonth", label: "Måned", icon: Calendar },
+  { value: "listWeek", label: "Liste", icon: List },
+];
 
 export default function RessursplanleggerPage() {
   const { user, tenantId } = useAuth();
   const { canDo } = useCanDo();
+  const calendarRef = useRef<FullCalendar>(null);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTechId, setSelectedTechId] = useState<string | null>(null);
   const [referenceDate, setReferenceDate] = useState(new Date());
+  const [calendarView, setCalendarView] = useState<CalendarViewType>(() => {
+    try {
+      const stored = localStorage.getItem("vpk_resource_view");
+      if (stored && VIEW_OPTIONS.some(v => v.value === stored)) return stored as CalendarViewType;
+    } catch {}
+    return "timeGridWeek";
+  });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
   const [detailEvent, setDetailEvent] = useState<CalendarEvent | null>(null);
@@ -72,9 +90,33 @@ export default function RessursplanleggerPage() {
   const [availableJobs, setAvailableJobs] = useState<any[]>([]);
   const [jobsLoading, setJobsLoading] = useState(false);
 
-  const weekStart = startOfWeek(referenceDate, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(referenceDate, { weekStartsOn: 1 });
-  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd }).slice(0, 5);
+  // Persist view
+  useEffect(() => {
+    localStorage.setItem("vpk_resource_view", calendarView);
+  }, [calendarView]);
+
+  // Sync FullCalendar with referenceDate and view
+  useEffect(() => {
+    const api = calendarRef.current?.getApi();
+    if (api) {
+      api.gotoDate(referenceDate);
+      if (api.view.type !== calendarView) api.changeView(calendarView);
+    }
+  }, [referenceDate, calendarView]);
+
+  // Calculate date range based on view
+  const dateRange = useMemo(() => {
+    if (calendarView === "timeGridDay") {
+      return { start: referenceDate, end: addDays(referenceDate, 1) };
+    }
+    if (calendarView === "dayGridMonth") {
+      const monthStart = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
+      const monthEnd = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 7);
+      return { start: addDays(monthStart, -7), end: monthEnd };
+    }
+    const ws = startOfWeek(referenceDate, { weekStartsOn: 1 });
+    return { start: ws, end: addDays(endOfWeek(referenceDate, { weekStartsOn: 1 }), 1) };
+  }, [referenceDate, calendarView]);
 
   const fetchTechnicians = useCallback(async () => {
     if (!tenantId) return;
@@ -90,8 +132,8 @@ export default function RessursplanleggerPage() {
       .select("*, job:jobs(id, job_number, title, status, job_type, company_id, form_data), service_visit:service_visits(id, status, scheduled_date, agreement_id, report_data), site:customer_sites(id, name, address, city)")
       .eq("tenant_id", tenantId)
       .is("deleted_at", null)
-      .gte("start_time", weekStart.toISOString())
-      .lte("end_time", addDays(weekEnd, 1).toISOString())
+      .gte("start_time", dateRange.start.toISOString())
+      .lte("end_time", dateRange.end.toISOString())
       .order("start_time");
 
     if (eventsData) {
@@ -99,30 +141,27 @@ export default function RessursplanleggerPage() {
       const { data: assignments } = eventIds.length > 0
         ? await supabase.from("event_technicians").select("event_id, technician_id").in("event_id", eventIds)
         : { data: [] };
-
       const assignmentMap = new Map<string, string[]>();
       for (const a of (assignments || []) as any[]) {
         const list = assignmentMap.get(a.event_id) || [];
         list.push(a.technician_id);
         assignmentMap.set(a.event_id, list);
       }
-
-      setEvents(eventsData.map((e: any) => ({
-        ...e,
-        technician_ids: assignmentMap.get(e.id) || [],
-      })));
+      setEvents(eventsData.map((e: any) => ({ ...e, technician_ids: assignmentMap.get(e.id) || [] })));
     }
     setLoading(false);
-  }, [tenantId, weekStart.toISOString()]);
+  }, [tenantId, dateRange.start.toISOString(), dateRange.end.toISOString()]);
 
   useEffect(() => { fetchTechnicians(); }, [fetchTechnicians]);
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
+  // Realtime
   useEffect(() => {
     if (!tenantId) return;
     const channel = supabase
       .channel("events-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "events" }, () => fetchEvents())
+      .on("postgres_changes", { event: "*", schema: "public", table: "event_technicians" }, () => fetchEvents())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [fetchEvents, tenantId]);
@@ -132,7 +171,55 @@ export default function RessursplanleggerPage() {
     return events.filter((e) => e.technician_ids.includes(selectedTechId));
   }, [events, selectedTechId]);
 
-  // Fetch available jobs for linking
+  // FullCalendar event inputs
+  const fcEvents: EventInput[] = useMemo(() => {
+    return filteredEvents.map((e) => {
+      const techColor = (() => {
+        if (e.technician_ids.length === 0) return "hsl(var(--primary))";
+        const tech = technicians.find((t) => t.id === e.technician_ids[0]);
+        return tech?.color || "hsl(var(--primary))";
+      })();
+      return {
+        id: e.id,
+        title: e.title,
+        start: e.start_time,
+        end: e.end_time,
+        backgroundColor: techColor,
+        borderColor: techColor,
+        textColor: "#FFFFFF",
+        extendedProps: { calendarEvent: e },
+        editable: canDo("ressursplan.schedule"),
+      };
+    });
+  }, [filteredEvents, technicians, canDo]);
+
+  // Navigation
+  const goToPrev = useCallback(() => {
+    setReferenceDate((d) => {
+      if (calendarView === "timeGridDay") return addDays(d, -1);
+      if (calendarView === "dayGridMonth") return addMonths(d, -1);
+      return addWeeks(d, -1);
+    });
+  }, [calendarView]);
+
+  const goToNext = useCallback(() => {
+    setReferenceDate((d) => {
+      if (calendarView === "timeGridDay") return addDays(d, 1);
+      if (calendarView === "dayGridMonth") return addMonths(d, 1);
+      return addWeeks(d, 1);
+    });
+  }, [calendarView]);
+
+  // Date header label
+  const dateLabel = useMemo(() => {
+    if (calendarView === "timeGridDay") return format(referenceDate, "EEEE d. MMMM yyyy", { locale: nb });
+    if (calendarView === "dayGridMonth") return format(referenceDate, "MMMM yyyy", { locale: nb });
+    const ws = startOfWeek(referenceDate, { weekStartsOn: 1 });
+    const we = endOfWeek(referenceDate, { weekStartsOn: 1 });
+    return `Uke ${format(ws, "w", { locale: nb })} — ${format(ws, "d. MMM", { locale: nb })} – ${format(we, "d. MMM yyyy", { locale: nb })}`;
+  }, [referenceDate, calendarView]);
+
+  // Fetch jobs for linking
   const fetchAvailableJobs = useCallback(async () => {
     if (!tenantId) return;
     setJobsLoading(true);
@@ -149,10 +236,7 @@ export default function RessursplanleggerPage() {
   }, [tenantId]);
 
   const handleJobSelect = (jobId: string) => {
-    if (jobId === "__none__") {
-      setFormJobId(null);
-      return;
-    }
+    if (jobId === "__none__") { setFormJobId(null); return; }
     const job = availableJobs.find((j: any) => j.id === jobId);
     if (!job) return;
     setFormJobId(jobId);
@@ -161,11 +245,13 @@ export default function RessursplanleggerPage() {
     setFormAddress(job.site ? [job.site.address, job.site.city].filter(Boolean).join(", ") : "");
   };
 
-  const openNewEvent = (day?: Date) => {
+  const openNewEvent = (day?: Date, startTime?: string, endTime?: string) => {
     setEditEvent(null);
     setFormTitle(""); setFormCustomer(""); setFormAddress(""); setFormDescription("");
     setFormDate(format(day || new Date(), "yyyy-MM-dd"));
-    setFormStartTime("08:00"); setFormEndTime("16:00"); setFormTechIds([]);
+    setFormStartTime(startTime || "08:00");
+    setFormEndTime(endTime || "16:00");
+    setFormTechIds(selectedTechId ? [selectedTechId] : []);
     setFormJobId(null);
     fetchAvailableJobs();
     setDialogOpen(true);
@@ -192,7 +278,6 @@ export default function RessursplanleggerPage() {
     try {
       const startTime = new Date(`${formDate}T${formStartTime}:00`);
       const endTime = new Date(`${formDate}T${formEndTime}:00`);
-
       if (editEvent) {
         await supabase.from("events").update({
           title: formTitle.trim(), customer: formCustomer || null,
@@ -200,7 +285,6 @@ export default function RessursplanleggerPage() {
           start_time: startTime.toISOString(), end_time: endTime.toISOString(),
           job_id: formJobId || null,
         } as any).eq("id", editEvent.id);
-
         await supabase.from("event_technicians").delete().eq("event_id", editEvent.id);
         if (formTechIds.length > 0) {
           await supabase.from("event_technicians").insert(
@@ -215,7 +299,6 @@ export default function RessursplanleggerPage() {
           start_time: startTime.toISOString(), end_time: endTime.toISOString(),
           created_by: user?.id, job_id: formJobId || null,
         } as any).select("id").single();
-
         if (newEvent && formTechIds.length > 0) {
           await supabase.from("event_technicians").insert(
             formTechIds.map((techId) => ({ event_id: newEvent.id, technician_id: techId }))
@@ -229,41 +312,87 @@ export default function RessursplanleggerPage() {
     finally { setSaving(false); }
   };
 
+  // Drag-drop handler
+  const handleEventDrop = useCallback(async (info: EventDropArg) => {
+    const eventId = info.event.id;
+    const newStart = info.event.start;
+    const newEnd = info.event.end;
+    if (!newStart || !newEnd) { info.revert(); return; }
+    const { error } = await supabase.from("events").update({
+      start_time: newStart.toISOString(),
+      end_time: newEnd.toISOString(),
+    } as any).eq("id", eventId);
+    if (error) { info.revert(); toast.error("Kunne ikke flytte hendelsen"); }
+    else { toast.success("Hendelse flyttet"); fetchEvents(); }
+  }, [fetchEvents]);
+
+  // Event resize handler
+  const handleEventResize = useCallback(async (info: any) => {
+    const eventId = info.event.id;
+    const newStart = info.event.start;
+    const newEnd = info.event.end;
+    if (!newStart || !newEnd) { info.revert(); return; }
+    const { error } = await supabase.from("events").update({
+      start_time: newStart.toISOString(),
+      end_time: newEnd.toISOString(),
+    } as any).eq("id", eventId);
+    if (error) { info.revert(); toast.error("Kunne ikke endre varighet"); }
+    else { toast.success("Varighet oppdatert"); fetchEvents(); }
+  }, [fetchEvents]);
+
+  // Click on event
+  const handleEventClick = useCallback((info: EventClickArg) => {
+    const calEvent = info.event.extendedProps.calendarEvent as CalendarEvent;
+    if (calEvent) setDetailEvent(calEvent);
+  }, []);
+
+  // Select time range to create event
+  const handleDateSelect = useCallback((info: DateSelectArg) => {
+    if (!canDo("ressursplan.schedule")) return;
+    const start = info.start;
+    const end = info.end;
+    openNewEvent(start, format(start, "HH:mm"), format(end, "HH:mm"));
+  }, [canDo, selectedTechId]);
+
   const toggleTechInForm = (techId: string) => {
     setFormTechIds((prev) =>
       prev.includes(techId) ? prev.filter((id) => id !== techId) : [...prev, techId]
     );
   };
 
-  const getEventsForDay = (day: Date) =>
-    filteredEvents.filter((e) => isSameDay(parseISO(e.start_time), day));
-
-  const getEventPosition = (event: CalendarEvent) => {
-    const start = parseISO(event.start_time);
-    const end = parseISO(event.end_time);
-    const dayStart = setMinutes(setHours(start, HOURS[0]), 0);
-    const topMinutes = differenceInMinutes(start, dayStart);
-    const heightMinutes = differenceInMinutes(end, start);
-    return { top: (topMinutes / 60) * HOUR_HEIGHT, height: Math.max((heightMinutes / 60) * HOUR_HEIGHT, 20) };
-  };
-
-  const getTechColor = (techIds: string[]) => {
-    if (techIds.length === 0) return "hsl(var(--primary))";
-    const tech = technicians.find((t) => t.id === techIds[0]);
-    return tech?.color || "hsl(var(--primary))";
-  };
-
   const getTechNames = (techIds: string[]) =>
     techIds.map(id => technicians.find(t => t.id === id)?.name).filter(Boolean).join(", ");
 
-  const getEventTypeIcon = (event: CalendarEvent) => {
-    if (event.job_id) return <Briefcase className="h-2.5 w-2.5" />;
-    if (event.service_visit_id) return <CalendarDays className="h-2.5 w-2.5" />;
-    return null;
-  };
+  // Custom event content renderer
+  const renderEventContent = useCallback((arg: EventContentArg) => {
+    const calEvent = arg.event.extendedProps.calendarEvent as CalendarEvent;
+    const isCompact = (arg.event.end && arg.event.start)
+      ? (arg.event.end.getTime() - arg.event.start.getTime()) < 45 * 60 * 1000
+      : false;
+
+    return (
+      <div className="px-1.5 py-0.5 overflow-hidden h-full">
+        <div className="flex items-center gap-1">
+          {calEvent?.job_id && <Briefcase className="h-2.5 w-2.5 shrink-0 opacity-80" />}
+          {calEvent?.service_visit_id && <CalendarDays className="h-2.5 w-2.5 shrink-0 opacity-80" />}
+          <span className="font-medium text-xs truncate">{arg.event.title}</span>
+        </div>
+        {!isCompact && calEvent?.customer && (
+          <p className="text-[10px] opacity-80 truncate">{calEvent.customer}</p>
+        )}
+        {!isCompact && arg.timeText && (
+          <p className="text-[10px] opacity-70">{arg.timeText}</p>
+        )}
+        {!isCompact && calEvent?.technician_ids?.length > 0 && (
+          <p className="text-[10px] opacity-70 truncate">{getTechNames(calEvent.technician_ids)}</p>
+        )}
+      </div>
+    );
+  }, [technicians]);
 
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Ressursplanlegger</h1>
@@ -274,13 +403,28 @@ export default function RessursplanleggerPage() {
         )}
       </div>
 
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="icon" onClick={() => setReferenceDate((d) => addWeeks(d, -1))}><ChevronLeft className="h-4 w-4" /></Button>
-        <Button variant="outline" size="sm" onClick={() => setReferenceDate(new Date())} className="gap-1.5"><RotateCcw className="h-3.5 w-3.5" />I dag</Button>
-        <Button variant="outline" size="icon" onClick={() => setReferenceDate((d) => addWeeks(d, 1))}><ChevronRight className="h-4 w-4" /></Button>
-        <span className="text-sm font-medium ml-2">
-          Uke {format(weekStart, "w", { locale: nb })} — {format(weekStart, "d. MMM", { locale: nb })} – {format(weekEnd, "d. MMM yyyy", { locale: nb })}
-        </span>
+      {/* Navigation and view switcher */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={goToPrev}><ChevronLeft className="h-4 w-4" /></Button>
+          <Button variant="outline" size="sm" onClick={() => setReferenceDate(new Date())} className="gap-1.5"><RotateCcw className="h-3.5 w-3.5" />I dag</Button>
+          <Button variant="outline" size="icon" onClick={goToNext}><ChevronRight className="h-4 w-4" /></Button>
+          <span className="text-sm font-medium ml-2 capitalize">{dateLabel}</span>
+        </div>
+        <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
+          {VIEW_OPTIONS.map(opt => (
+            <Button
+              key={opt.value}
+              variant={calendarView === opt.value ? "default" : "ghost"}
+              size="sm"
+              className="gap-1.5 h-7 text-xs"
+              onClick={() => setCalendarView(opt.value)}
+            >
+              <opt.icon className="h-3 w-3" />
+              {opt.label}
+            </Button>
+          ))}
+        </div>
       </div>
 
       <div className="flex gap-4">
@@ -297,62 +441,49 @@ export default function RessursplanleggerPage() {
                 onClick={() => setSelectedTechId(selectedTechId === tech.id ? null : tech.id)}>
                 <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: tech.color }} />
                 <span className="truncate">{tech.name}</span>
+                <Badge variant="secondary" className="ml-auto text-[10px] px-1.5">
+                  {events.filter(e => e.technician_ids.includes(tech.id)).length}
+                </Badge>
               </Button>
             ))}
             {technicians.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Ingen teknikere lagt til ennå</p>}
           </CardContent>
         </Card>
 
-        {/* Calendar grid */}
-        <div className="flex-1 overflow-x-auto">
-          <div className="min-w-[700px]">
-            <div className="grid grid-cols-5 gap-px bg-border rounded-t-lg overflow-hidden">
-              {weekDays.map((day) => (
-                <div key={day.toISOString()} className={cn("bg-card px-3 py-2 text-center", isSameDay(day, new Date()) && "bg-primary/5")}>
-                  <p className="text-xs text-muted-foreground uppercase">{format(day, "EEE", { locale: nb })}</p>
-                  <p className={cn("text-lg font-semibold", isSameDay(day, new Date()) && "text-primary")}>{format(day, "d")}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-5 gap-px bg-border">
-              {weekDays.map((day) => (
-                <div key={day.toISOString()} className="bg-card relative cursor-pointer" style={{ height: HOURS.length * HOUR_HEIGHT }}
-                  onClick={() => canDo("ressursplan.schedule") && openNewEvent(day)}>
-                  {HOURS.map((hour) => (
-                    <div key={hour} className="absolute left-0 right-0 border-t border-border/30" style={{ top: (hour - HOURS[0]) * HOUR_HEIGHT }}>
-                      {day === weekDays[0] && (
-                        <span className="absolute -left-1 -top-2.5 text-[10px] text-muted-foreground w-8 text-right">{String(hour).padStart(2, "0")}:00</span>
-                      )}
-                    </div>
-                  ))}
-
-                  {getEventsForDay(day).map((event) => {
-                    const { top, height } = getEventPosition(event);
-                    const color = getTechColor(event.technician_ids);
-                    return (
-                      <div key={event.id}
-                        className="absolute left-1 right-1 rounded-md px-2 py-1 text-xs text-white overflow-hidden cursor-pointer hover:opacity-90 transition-opacity shadow-sm"
-                        style={{ top, height, backgroundColor: color, minHeight: 20 }}
-                        onClick={(e) => { e.stopPropagation(); setDetailEvent(event); }}>
-                        <div className="flex items-center gap-1">
-                          {getEventTypeIcon(event)}
-                          <p className="font-medium truncate">{event.title}</p>
-                        </div>
-                        {height > 30 && event.customer && <p className="truncate opacity-80">{event.customer}</p>}
-                        {height > 45 && (
-                          <p className="opacity-70">{format(parseISO(event.start_time), "HH:mm")}–{format(parseISO(event.end_time), "HH:mm")}</p>
-                        )}
-                        {height > 60 && event.technician_ids.length > 0 && (
-                          <p className="opacity-70 truncate">{getTechNames(event.technician_ids)}</p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-          </div>
+        {/* FullCalendar */}
+        <div className="flex-1 overflow-hidden rounded-xl border border-border/30 bg-card shadow-sm">
+          <FullCalendar
+            ref={calendarRef}
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
+            initialView={calendarView}
+            initialDate={referenceDate}
+            locale="nb"
+            firstDay={1}
+            headerToolbar={false}
+            height="auto"
+            contentHeight={calendarView === "dayGridMonth" ? 600 : undefined}
+            slotMinTime="06:00:00"
+            slotMaxTime="20:00:00"
+            slotDuration="00:30:00"
+            slotLabelInterval="01:00:00"
+            slotLabelFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
+            eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
+            allDaySlot={false}
+            nowIndicator
+            selectable={canDo("ressursplan.schedule")}
+            editable={canDo("ressursplan.schedule")}
+            eventResizableFromStart
+            selectMirror
+            dayMaxEvents={3}
+            events={fcEvents}
+            eventContent={renderEventContent}
+            eventClick={handleEventClick}
+            eventDrop={handleEventDrop}
+            eventResize={handleEventResize}
+            select={handleDateSelect}
+            weekNumbers
+            weekNumberFormat={{ week: "numeric" }}
+          />
         </div>
       </div>
 
@@ -386,15 +517,12 @@ export default function RessursplanleggerPage() {
                   <p>{detailEvent.customer}</p>
                 </div>
               )}
-
               {detailEvent.address && (
                 <div className="text-sm">
                   <p className="text-[11px] text-muted-foreground font-medium uppercase">Adresse</p>
                   <p>{detailEvent.address}</p>
                 </div>
               )}
-
-              {/* Site context */}
               {detailEvent.site && (
                 <div className="text-sm">
                   <p className="text-[11px] text-muted-foreground font-medium uppercase">Anleggsadresse</p>
@@ -402,7 +530,6 @@ export default function RessursplanleggerPage() {
                 </div>
               )}
 
-              {/* Job context */}
               {detailEvent.job && (
                 <Card className="p-3">
                   <p className="text-[11px] text-muted-foreground font-medium uppercase mb-1">Koblet jobb</p>
@@ -423,7 +550,6 @@ export default function RessursplanleggerPage() {
                 </Card>
               )}
 
-              {/* Service visit context */}
               {detailEvent.service_visit && (
                 <Card className="p-3">
                   <p className="text-[11px] text-muted-foreground font-medium uppercase mb-1">Servicebesøk</p>
@@ -452,7 +578,6 @@ export default function RessursplanleggerPage() {
                 </Card>
               )}
 
-              {/* Technicians */}
               {detailEvent.technician_ids.length > 0 && (
                 <div>
                   <p className="text-[11px] text-muted-foreground font-medium uppercase mb-1">Teknikere</p>
@@ -480,19 +605,14 @@ export default function RessursplanleggerPage() {
 
               <div className="flex gap-2 pt-2 flex-wrap">
                 <Button variant="outline" size="sm" onClick={() => { openEditEvent(detailEvent); setDetailEvent(null); }}>Rediger</Button>
-                {/* Form CTAs */}
                 {detailEvent.service_visit_id && detailEvent.service_visit && (
                   detailEvent.service_visit.report_data?.schema_version === 1 ? (
                     <Link to={`/tenant/crm/agreements/${detailEvent.service_visit.agreement_id}`}>
-                      <Button variant="outline" size="sm" className="gap-1.5">
-                        <Eye className="h-3 w-3" />Se skjema
-                      </Button>
+                      <Button variant="outline" size="sm" className="gap-1.5"><Eye className="h-3 w-3" />Se skjema</Button>
                     </Link>
                   ) : detailEvent.service_visit.agreement_id ? (
                     <Link to={`/tenant/crm/agreements/${detailEvent.service_visit.agreement_id}`}>
-                      <Button size="sm" className="gap-1.5">
-                        <ClipboardList className="h-3 w-3" />Fyll ut skjema
-                      </Button>
+                      <Button size="sm" className="gap-1.5"><ClipboardList className="h-3 w-3" />Fyll ut skjema</Button>
                     </Link>
                   ) : null
                 )}
@@ -517,7 +637,6 @@ export default function RessursplanleggerPage() {
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>{editEvent ? "Rediger hendelse" : "Ny hendelse"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            {/* Job picker */}
             <div className="space-y-1.5">
               <Label>Koble til jobb</Label>
               <Select value={formJobId || "__none__"} onValueChange={handleJobSelect}>
@@ -535,9 +654,7 @@ export default function RessursplanleggerPage() {
                   )}
                 </SelectContent>
               </Select>
-              {formJobId && (
-                <p className="text-[11px] text-muted-foreground">Kunde og adresse er fylt inn fra jobben. Du kan overstyre manuelt.</p>
-              )}
+              {formJobId && <p className="text-[11px] text-muted-foreground">Kunde og adresse er fylt inn fra jobben.</p>}
             </div>
             <div className="space-y-1.5">
               <Label>Tittel *</Label>
