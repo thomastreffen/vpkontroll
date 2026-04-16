@@ -28,7 +28,7 @@ import {
   ExternalLink, MessageSquare, History, Loader2, Send,
   Trash2, Edit3, ClipboardList, Eye, Phone, Mail,
   CheckCircle2, PlayCircle, PauseCircle, XCircle,
-  FileText, Building2, Wrench,
+  FileText, Building2, Wrench, RefreshCw, CalendarCheck, CalendarX2,
 } from "lucide-react";
 import {
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
@@ -47,6 +47,8 @@ type CalendarEvent = {
   end_time: string; status: string; technician_ids: string[];
   job_id: string | null; service_visit_id: string | null; site_id: string | null;
   job?: any; service_visit?: any; site?: any;
+  calendar_sync_status?: string; external_calendar_event_id?: string | null;
+  calendar_sync_error?: string | null;
 };
 
 type EventNote = {
@@ -212,6 +214,14 @@ export function EventDrawer({ open, onOpenChange, event, technicians, onEdit, on
     if (!event) return;
     setDeleting(true);
     try {
+      // Remove from external calendar if synced
+      if (event.external_calendar_event_id) {
+        try {
+          await supabase.functions.invoke("calendar-sync", {
+            body: { event_id: event.id, action: "delete" },
+          });
+        } catch (e) { console.warn("Failed to remove external calendar event:", e); }
+      }
       await supabase.from("event_technicians").delete().eq("event_id", event.id);
       await supabase.from("events").update({
         deleted_at: new Date().toISOString(), status: "cancelled",
@@ -320,7 +330,8 @@ export function EventDrawer({ open, onOpenChange, event, technicians, onEdit, on
               <DetailsTab event={event} techs={eventTechs}
                 canEdit={canDo("ressursplan.schedule")}
                 onEdit={() => { onEdit(event); onOpenChange(false); }}
-                onDelete={() => setShowDeleteConfirm(true)} />
+                onDelete={() => setShowDeleteConfirm(true)}
+                onRefresh={onRefresh} />
             )}
             {tab === "messages" && (
               <MessagesTab
@@ -359,10 +370,30 @@ export function EventDrawer({ open, onOpenChange, event, technicians, onEdit, on
 }
 
 /* ── Details Tab ── */
-function DetailsTab({ event, techs, canEdit, onEdit, onDelete }: {
+function DetailsTab({ event, techs, canEdit, onEdit, onDelete, onRefresh }: {
   event: CalendarEvent; techs: Technician[];
-  canEdit: boolean; onEdit: () => void; onDelete: () => void;
+  canEdit: boolean; onEdit: () => void; onDelete: () => void; onRefresh: () => void;
 }) {
+  const [syncing, setSyncing] = useState(false);
+
+  const handleResync = async () => {
+    setSyncing(true);
+    try {
+      const { data } = await supabase.functions.invoke("calendar-sync", {
+        body: { event_id: event.id },
+      });
+      if (data?.ok) {
+        toast.success("Synket til ekstern kalender");
+        onRefresh();
+      } else {
+        toast.error("Kalendersynk feilet");
+      }
+    } catch {
+      toast.error("Kalendersynk feilet");
+    } finally {
+      setSyncing(false);
+    }
+  };
   return (
     <ScrollArea className="h-full">
       <div className="p-6 space-y-5">
@@ -529,7 +560,49 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete }: {
           </section>
         )}
 
-        {/* Actions */}
+        {/* Calendar Sync Status */}
+        <section>
+          <SectionLabel>Kalendersynk</SectionLabel>
+          <div className="rounded-lg border border-border/40 bg-card p-3 space-y-2">
+            {event.calendar_sync_status === "synced" && (
+              <div className="flex items-center gap-2 text-sm">
+                <CalendarCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span className="text-emerald-700 font-medium">Synket til ekstern kalender</span>
+              </div>
+            )}
+            {event.calendar_sync_status === "pending" && (
+              <div className="flex items-center gap-2 text-sm">
+                <Loader2 className="h-4 w-4 animate-spin text-amber-600 shrink-0" />
+                <span className="text-amber-700">Synkroniserer...</span>
+              </div>
+            )}
+            {event.calendar_sync_status === "failed" && (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-sm">
+                  <CalendarX2 className="h-4 w-4 text-destructive shrink-0" />
+                  <span className="text-destructive font-medium">Synk feilet</span>
+                </div>
+                {event.calendar_sync_error && (
+                  <p className="text-xs text-muted-foreground pl-6">{event.calendar_sync_error}</p>
+                )}
+              </div>
+            )}
+            {(!event.calendar_sync_status || event.calendar_sync_status === "none") && (
+              <div className="flex items-center gap-2 text-sm">
+                <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-muted-foreground">Kun i VPK – ikke synket til kalender</span>
+              </div>
+            )}
+            {canEdit && (
+              <Button variant="outline" size="sm" className="w-full gap-1.5 mt-1" onClick={handleResync} disabled={syncing}>
+                {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                {event.calendar_sync_status === "synced" ? "Synk på nytt" : "Synk til kalender"}
+              </Button>
+            )}
+          </div>
+        </section>
+
+
         {canEdit && (
           <section className="pt-2 space-y-2">
             <Button variant="outline" size="sm" className="w-full gap-1.5" onClick={onEdit}>

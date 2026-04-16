@@ -37,6 +37,8 @@ type CalendarEvent = {
   end_time: string; status: string; technician_ids: string[];
   job_id: string | null; service_visit_id: string | null; site_id: string | null;
   job?: any; service_visit?: any; site?: any;
+  calendar_sync_status?: string; external_calendar_event_id?: string | null;
+  calendar_sync_error?: string | null;
 };
 
 type CalendarViewType = "timeGridDay" | "timeGridWeek" | "dayGridMonth" | "listWeek";
@@ -262,6 +264,10 @@ export default function RessursplanleggerPage() {
             event_id: newEvent.id, technician_id: selectedTechId,
           });
         }
+        // Sync to external calendar
+        try {
+          await supabase.functions.invoke("calendar-sync", { body: { event_id: newEvent.id } });
+        } catch (e) { console.warn("Calendar sync on drop:", e); }
       }
 
       toast.success(`Jobb ${dragData.job_number} planlagt i kalenderen`);
@@ -301,6 +307,10 @@ export default function RessursplanleggerPage() {
         } as any);
       }
       toast.success("Hendelse flyttet");
+      // Re-sync to external calendar if previously synced
+      if (calEvent?.external_calendar_event_id) {
+        supabase.functions.invoke("calendar-sync", { body: { event_id: eventId } }).catch(() => {});
+      }
       fetchEvents();
     }
   }, [fetchEvents, tenantId, user?.id]);
@@ -332,6 +342,9 @@ export default function RessursplanleggerPage() {
         } as any);
       }
       toast.success("Varighet oppdatert");
+      if (calEvent?.external_calendar_event_id) {
+        supabase.functions.invoke("calendar-sync", { body: { event_id: eventId } }).catch(() => {});
+      }
       fetchEvents();
     }
   }, [fetchEvents, tenantId, user?.id]);
@@ -379,6 +392,12 @@ export default function RessursplanleggerPage() {
           {calEvent?.job_id && <Briefcase className="h-3 w-3 shrink-0 opacity-80" />}
           {calEvent?.service_visit_id && <CalendarDays className="h-3 w-3 shrink-0 opacity-80" />}
           <span className="font-semibold text-xs truncate leading-tight">{arg.event.title}</span>
+          {calEvent?.calendar_sync_status === "synced" && (
+            <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 ml-auto" title="Synket til kalender" />
+          )}
+          {calEvent?.calendar_sync_status === "failed" && (
+            <span className="w-2 h-2 rounded-full bg-red-400 shrink-0 ml-auto" title="Kalendersynk feilet" />
+          )}
         </div>
         {!isCompact && arg.timeText && (
           <p className="text-[11px] opacity-80 mt-0.5">{arg.timeText}</p>

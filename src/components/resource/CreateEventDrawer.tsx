@@ -176,6 +176,23 @@ export function CreateEventDrawer({
     setTechIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
+  const syncToCalendar = async (eventId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("calendar-sync", {
+        body: { event_id: eventId },
+      });
+      if (data?.ok) {
+        toast.success("Synket til ekstern kalender", { description: `Teknikere mottar kalenderinvitasjon (${data.provider === "google" ? "Google" : "Microsoft"})` });
+      } else if (data?.reason === "no_integration") {
+        // Silently skip - no integration configured
+      } else if (error) {
+        console.warn("Calendar sync failed:", error);
+      }
+    } catch (e) {
+      console.warn("Calendar sync error:", e);
+    }
+  };
+
   const handleSave = async () => {
     if (!tenantId || !title.trim() || !date) return;
     setSaving(true);
@@ -211,6 +228,8 @@ export function CreateEventDrawer({
           },
         } as any);
         toast.success("Hendelse oppdatert");
+        // Sync to external calendar
+        syncToCalendar(editEvent.id);
       } else {
         const { data: newEvent } = await supabase.from("events").insert({
           tenant_id: tenantId, title: title.trim(), customer: customer || null,
@@ -229,6 +248,8 @@ export function CreateEventDrawer({
             event_id: newEvent.id, tenant_id: tenantId, actor_id: user?.id,
             action: "created", details: { title: title.trim() },
           } as any);
+          // Sync to external calendar
+          syncToCalendar(newEvent.id);
         }
         toast.success("Hendelse opprettet");
       }

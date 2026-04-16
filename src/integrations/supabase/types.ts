@@ -946,12 +946,15 @@ export type Database = {
       events: {
         Row: {
           address: string | null
+          calendar_sync_error: string | null
+          calendar_sync_status: string
           created_at: string
           created_by: string | null
           customer: string | null
           deleted_at: string | null
           description: string | null
           end_time: string
+          external_calendar_event_id: string | null
           id: string
           job_id: string | null
           service_visit_id: string | null
@@ -964,12 +967,15 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          calendar_sync_error?: string | null
+          calendar_sync_status?: string
           created_at?: string
           created_by?: string | null
           customer?: string | null
           deleted_at?: string | null
           description?: string | null
           end_time: string
+          external_calendar_event_id?: string | null
           id?: string
           job_id?: string | null
           service_visit_id?: string | null
@@ -982,12 +988,15 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          calendar_sync_error?: string | null
+          calendar_sync_status?: string
           created_at?: string
           created_by?: string | null
           customer?: string | null
           deleted_at?: string | null
           description?: string | null
           end_time?: string
+          external_calendar_event_id?: string | null
           id?: string
           job_id?: string | null
           service_visit_id?: string | null
