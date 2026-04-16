@@ -318,13 +318,22 @@ Deno.serve(async (req) => {
         let accessToken: string;
         let messages: EmailMessage[];
 
+        // Use the later of last_sync_at or mailbox.sync_from as the cursor
+        // This prevents importing emails from before the mailbox was activated
+        const syncFloor = mailbox.sync_from || new Date().toISOString();
+        const cursor = cred.last_sync_at && new Date(cred.last_sync_at) > new Date(syncFloor)
+          ? cred.last_sync_at
+          : syncFloor;
+
+        console.log(`Syncing mailbox ${mailbox.address} from cursor: ${cursor} (sync_from: ${syncFloor}, last_sync: ${cred.last_sync_at})`);
+
         if (cred.provider === "microsoft") {
           accessToken = await refreshMicrosoftToken(cred as unknown as TenantCredential);
-          const result = await fetchMicrosoftEmails(accessToken, mailbox.address, cred.last_sync_at || undefined);
+          const result = await fetchMicrosoftEmails(accessToken, mailbox.address, cursor);
           messages = result.messages;
         } else {
           accessToken = await refreshGoogleToken(cred as unknown as TenantCredential);
-          const result = await fetchGoogleEmails(accessToken, mailbox.address, cred.last_sync_at || undefined);
+          const result = await fetchGoogleEmails(accessToken, mailbox.address, cursor);
           messages = result.messages;
         }
 
