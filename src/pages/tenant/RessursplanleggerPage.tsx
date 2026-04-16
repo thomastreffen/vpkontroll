@@ -335,8 +335,16 @@ export default function RessursplanleggerPage() {
       end_time: newEnd.toISOString(),
     } as any).eq("id", eventId);
     if (error) { info.revert(); toast.error("Kunne ikke flytte hendelsen"); }
-    else { toast.success("Hendelse flyttet"); fetchEvents(); }
-  }, [fetchEvents]);
+    else {
+      if (tenantId) {
+        await supabase.from("event_logs").insert({
+          event_id: eventId, tenant_id: tenantId, actor_id: user?.id,
+          action: "moved", details: { new_time: `${format(newStart, "HH:mm")} – ${format(newEnd, "HH:mm")}` },
+        } as any);
+      }
+      toast.success("Hendelse flyttet"); fetchEvents();
+    }
+  }, [fetchEvents, tenantId, user?.id]);
 
   // Event resize handler
   const handleEventResize = useCallback(async (info: any) => {
