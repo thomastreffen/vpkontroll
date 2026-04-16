@@ -7,6 +7,7 @@ import DashDocsStatus from "@/components/dashboard/DashDocsStatus";
 import DashPostkontoret from "@/components/dashboard/DashPostkontoret";
 import DashWarranty from "@/components/dashboard/DashWarranty";
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
+import TrialBanner from "@/components/dashboard/TrialBanner";
 
 export default function TenantDashboardPage() {
   const d = useDashboardData();
@@ -25,6 +26,9 @@ export default function TenantDashboardPage() {
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-sm text-muted-foreground">Operativ oversikt – klikk for å gå videre</p>
       </div>
+
+      {/* Trial expiry warning */}
+      <TrialBanner />
 
       {/* Onboarding checklist – hidden when all done */}
       <OnboardingChecklist />
