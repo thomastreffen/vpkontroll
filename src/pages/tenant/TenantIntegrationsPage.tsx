@@ -304,6 +304,9 @@ export default function TenantIntegrationsPage() {
         })}
       </div>
 
+      {/* Postkontoret setup section */}
+      <PostkontoretSetup />
+
       {/* Microsoft credentials dialog */}
       <Dialog open={!!editProvider} onOpenChange={(o) => { if (!o) closeEdit(); }}>
         <DialogContent>
