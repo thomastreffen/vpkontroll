@@ -9,28 +9,18 @@ import { Button } from "@/components/ui/button";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuSeparator, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Users, Plus, MoreHorizontal, Pencil, Shield, Link2, UserX, UserCheck, Wrench } from "lucide-react";
-import { toast } from "sonner";
+import { Users, Plus, Wrench, ChevronRight } from "lucide-react";
 import { InviteUserDialog } from "@/components/users/InviteUserDialog";
-import { EditUserDialog } from "@/components/users/EditUserDialog";
-import { LinkTechnicianDialog } from "@/components/users/LinkTechnicianDialog";
+import { UserDetailDrawer } from "@/components/users/UserDetailDrawer";
 
 export default function TenantUsersPage() {
   const { tenantId } = useAuth();
-  const queryClient = useQueryClient();
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [editUser, setEditUser] = useState<any>(null);
-  const [linkUser, setLinkUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
 
-  // Fetch profiles with role assignments and technician links
   const { data: users, isLoading } = useQuery({
     queryKey: ["tenant-users", tenantId],
     queryFn: async () => {
-      // Profiles
       const { data: profiles, error } = await supabase
         .from("profiles")
         .select("*")
@@ -38,21 +28,18 @@ export default function TenantUsersPage() {
         .order("created_at", { ascending: false });
       if (error) throw error;
 
-      // User roles (app-level)
       const userIds = profiles?.map(p => p.user_id) || [];
       const { data: appRoles } = await supabase
         .from("user_roles")
         .select("user_id, role")
         .in("user_id", userIds);
 
-      // Tenant role assignments
       const { data: roleAssignments } = await supabase
         .from("tenant_user_role_assignments")
         .select("user_id, role_id, tenant_roles(name)")
         .eq("tenant_id", tenantId!)
         .in("user_id", userIds);
 
-      // Technicians linked to users
       const { data: technicians } = await supabase
         .from("technicians")
         .select("id, name, user_id")
@@ -69,28 +56,13 @@ export default function TenantUsersPage() {
     enabled: !!tenantId,
   });
 
-  const toggleActive = useMutation({
-    mutationFn: async ({ profileId, isActive }: { profileId: string; isActive: boolean }) => {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ is_active: isActive })
-        .eq("id", profileId);
-      if (error) throw error;
-    },
-    onSuccess: (_, { isActive }) => {
-      toast.success(isActive ? "Bruker aktivert" : "Bruker deaktivert");
-      queryClient.invalidateQueries({ queryKey: ["tenant-users"] });
-    },
-    onError: () => toast.error("Kunne ikke endre status"),
-  });
-
   const getInitials = (name: string | null) =>
     (name ?? "?").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
-  const getRoleBadge = (appRoles: string[]) => {
-    if (appRoles.includes("master_admin")) return <Badge variant="default" className="text-[10px]">Master</Badge>;
-    if (appRoles.includes("tenant_admin")) return <Badge variant="default" className="text-[10px]">Admin</Badge>;
-    return <Badge variant="secondary" className="text-[10px]">Bruker</Badge>;
+  const getSystemRole = (appRoles: string[]) => {
+    if (appRoles.includes("master_admin")) return "Master";
+    if (appRoles.includes("tenant_admin")) return "Admin";
+    return "Bruker";
   };
 
   return (
@@ -123,17 +95,20 @@ export default function TenantUsersPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Bruker</TableHead>
-                  <TableHead>E-post</TableHead>
-                  <TableHead>Systemrolle</TableHead>
-                  <TableHead>Tilgangsrolle</TableHead>
+                  <TableHead className="hidden md:table-cell">E-post</TableHead>
+                  <TableHead>Roller</TableHead>
                   <TableHead>Tekniker</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
+                  <TableHead className="w-[40px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.map((u) => (
-                  <TableRow key={u.id} className={!u.is_active ? "opacity-50" : ""}>
+                  <TableRow
+                    key={u.id}
+                    className={`cursor-pointer transition-colors hover:bg-muted/50 ${!u.is_active ? "opacity-50" : ""}`}
+                    onClick={() => setSelectedUser(u)}
+                  >
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="w-8 h-8">
@@ -141,28 +116,33 @@ export default function TenantUsersPage() {
                             {getInitials(u.full_name)}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="font-medium text-sm">{u.full_name || "Ukjent"}</span>
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm truncate">{u.full_name || "Ukjent"}</p>
+                          <p className="text-xs text-muted-foreground md:hidden truncate">{u.email}</p>
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{u.email}</TableCell>
-                    <TableCell>{getRoleBadge(u.appRoles)}</TableCell>
-                    <TableCell className="text-sm">
-                      {u.tenantRole ? (
+                    <TableCell className="text-muted-foreground text-sm hidden md:table-cell">{u.email}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
                         <Badge variant="outline" className="text-[10px]">
-                          {(u.tenantRole as any).tenant_roles?.name || "–"}
+                          {getSystemRole(u.appRoles)}
                         </Badge>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">Ingen</span>
-                      )}
+                        {u.tenantRole && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            {(u.tenantRole as any).tenant_roles?.name || "–"}
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {u.technician ? (
-                        <Badge variant="outline" className="gap-1 text-[10px]">
+                        <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 gap-1 text-[10px]">
                           <Wrench className="h-3 w-3" />
-                          {u.technician.name}
+                          Aktiv
                         </Badge>
                       ) : (
-                        <span className="text-muted-foreground text-xs">Ikke koblet</span>
+                        <span className="text-muted-foreground text-xs">–</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -173,47 +153,7 @@ export default function TenantUsersPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setEditUser(u)} className="gap-2">
-                            <Pencil className="h-3.5 w-3.5" />
-                            Rediger
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setEditUser(u)} className="gap-2">
-                            <Shield className="h-3.5 w-3.5" />
-                            Tildel rolle
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setLinkUser(u)}
-                            className="gap-2"
-                          >
-                            <Link2 className="h-3.5 w-3.5" />
-                            {u.technician ? "Endre teknikerkobling" : "Koble til tekniker"}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => toggleActive.mutate({ profileId: u.id, isActive: !u.is_active })}
-                            className="gap-2"
-                          >
-                            {u.is_active ? (
-                              <>
-                                <UserX className="h-3.5 w-3.5" />
-                                Deaktiver
-                              </>
-                            ) : (
-                              <>
-                                <UserCheck className="h-3.5 w-3.5" />
-                                Aktiver
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -224,17 +164,11 @@ export default function TenantUsersPage() {
       </Card>
 
       <InviteUserDialog open={inviteOpen} onOpenChange={setInviteOpen} />
-      <EditUserDialog open={!!editUser} onOpenChange={o => !o && setEditUser(null)} user={editUser} />
-      {linkUser && (
-        <LinkTechnicianDialog
-          open={!!linkUser}
-          onOpenChange={o => !o && setLinkUser(null)}
-          userId={linkUser.user_id}
-          userName={linkUser.full_name || linkUser.email || ""}
-          userEmail={linkUser.email}
-          currentTechnicianId={linkUser.technician?.id}
-        />
-      )}
+      <UserDetailDrawer
+        open={!!selectedUser}
+        onOpenChange={o => !o && setSelectedUser(null)}
+        user={selectedUser}
+      />
     </div>
   );
 }
