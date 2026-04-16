@@ -235,7 +235,7 @@ export function CreateEventDrawer({
           title: title.trim(), customer: customer || null,
           address: address || null, description: description || null,
           start_time: st.toISOString(), end_time: et.toISOString(),
-          job_id: jobId || null,
+          job_id: jobId || null, site_id: siteId || null,
         } as any).eq("id", editEvent.id);
 
         await supabase.from("event_technicians").delete().eq("event_id", editEvent.id);
@@ -265,7 +265,7 @@ export function CreateEventDrawer({
           tenant_id: tenantId, title: title.trim(), customer: customer || null,
           address: address || null, description: description || null,
           start_time: st.toISOString(), end_time: et.toISOString(),
-          created_by: user?.id, job_id: jobId || null,
+          created_by: user?.id, job_id: jobId || null, site_id: siteId || null,
         } as any).select("id").single();
 
         if (newEvent && techIds.length > 0) {
