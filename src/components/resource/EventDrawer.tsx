@@ -49,6 +49,7 @@ type CalendarEvent = {
   job?: any; service_visit?: any; site?: any;
   calendar_sync_status?: string; external_calendar_event_id?: string | null;
   calendar_sync_error?: string | null;
+  notification_status?: string; notified_at?: string | null;
 };
 
 type EventNote = {
