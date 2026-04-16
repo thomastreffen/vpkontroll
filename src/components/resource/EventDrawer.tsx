@@ -214,6 +214,14 @@ export function EventDrawer({ open, onOpenChange, event, technicians, onEdit, on
     if (!event) return;
     setDeleting(true);
     try {
+      // Remove from external calendar if synced
+      if (event.external_calendar_event_id) {
+        try {
+          await supabase.functions.invoke("calendar-sync", {
+            body: { event_id: event.id, action: "delete" },
+          });
+        } catch (e) { console.warn("Failed to remove external calendar event:", e); }
+      }
       await supabase.from("event_technicians").delete().eq("event_id", event.id);
       await supabase.from("events").update({
         deleted_at: new Date().toISOString(), status: "cancelled",
