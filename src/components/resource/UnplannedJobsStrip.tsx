@@ -30,6 +30,23 @@ export function UnplannedJobsStrip({ onJobDrop, onJobClick }: UnplannedJobsStrip
   const [jobs, setJobs] = useState<UnplannedJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Initialize FullCalendar Draggable on the container
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const draggable = new Draggable(containerRef.current, {
+      itemSelector: ".vpk-draggable-job",
+      eventData: (el) => {
+        try {
+          return JSON.parse(el.getAttribute("data-event") || "{}");
+        } catch {
+          return {};
+        }
+      },
+    });
+    return () => draggable.destroy();
+  }, [collapsed, jobs.length]);
 
   const fetchUnplannedJobs = useCallback(async () => {
     if (!tenantId) return;
