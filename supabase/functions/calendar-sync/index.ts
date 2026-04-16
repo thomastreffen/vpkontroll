@@ -185,7 +185,7 @@ function buildNotificationHtml(event: any, dateStr: string, timeStr: string, isU
   return `<!DOCTYPE html>
 <html lang="nb"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
 <body style="margin:0;padding:0;background:#f4f4f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;color:#374151">
-<div style="display:none;max-height:0;overflow:hidden">${preheader}</div>
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:0;line-height:0">${preheaderText}${snippetPad}</div>
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f7;padding:32px 16px"><tr><td align="center">
 <table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden">
 <tr><td style="background:#6D28D9;padding:18px 24px;font-size:16px;font-weight:700;color:#fff">${isUpdate ? "Oppdatert oppdrag" : "Nytt oppdrag tildelt deg"}</td></tr>
