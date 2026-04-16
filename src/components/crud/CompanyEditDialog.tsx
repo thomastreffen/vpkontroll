@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";

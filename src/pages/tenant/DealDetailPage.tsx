@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
