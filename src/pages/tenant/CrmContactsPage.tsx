@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -260,7 +261,7 @@ export default function CrmContactsPage() {
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label>Adresse</Label>
-                <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+                <AddressAutocomplete value={form.address} onChange={v => setForm({ ...form, address: v })} onSelect={r => setForm(f => ({ ...f, address: r.address, postal_code: r.postalCode, city: r.city }))} />
               </div>
               <div className="space-y-1.5">
                 <Label>Postnr</Label>

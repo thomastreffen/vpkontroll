@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -364,8 +365,8 @@ export function CreateEventDrawer({
                   <MapPin className="h-3 w-3 inline mr-1" />Adresse
                   {jobLinked && <Badge variant="outline" className="ml-1.5 text-[9px] px-1 py-0 h-4 font-normal">Fra jobb</Badge>}
                 </Label>
-                <Input value={address} onChange={e => { setAddress(e.target.value); }}
-                  className={cn("mt-1.5", jobLinked && address && "border-primary/20 bg-primary/5")} />
+                <AddressAutocomplete value={address} onChange={setAddress}
+                  className={cn(jobLinked && address && "border-primary/20 bg-primary/5")} />
               </section>
             </div>
 

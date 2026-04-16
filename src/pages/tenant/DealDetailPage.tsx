@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -1393,7 +1394,7 @@ export default function DealDetailPage() {
             </div>
             <div className="space-y-1.5">
               <Label>Adresse *</Label>
-              <Input value={newSiteForm.address} onChange={e => setNewSiteForm(f => ({ ...f, address: e.target.value }))} autoFocus />
+              <AddressAutocomplete value={newSiteForm.address} onChange={v => setNewSiteForm(f => ({ ...f, address: v }))} onSelect={r => setNewSiteForm(f => ({ ...f, address: r.address, postal_code: r.postalCode, city: r.city }))} autoFocus />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">

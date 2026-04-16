@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -121,7 +122,7 @@ export function ScheduleEventDialog({ open, onOpenChange, jobId, jobTitle, compa
           <div className="space-y-1.5"><Label>Tittel *</Label><Input value={title} onChange={e => setTitle(e.target.value)} /></div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5"><Label>Kunde</Label><Input value={customer} onChange={e => setCustomer(e.target.value)} /></div>
-            <div className="space-y-1.5"><Label>Adresse</Label><Input value={address} onChange={e => setAddress(e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>Adresse</Label><AddressAutocomplete value={address} onChange={setAddress} /></div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5"><Label>Dato *</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
