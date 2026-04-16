@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,8 +8,6 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -25,7 +23,7 @@ import { cn } from "@/lib/utils";
 import {
   Briefcase, CalendarDays, Clock, MapPin, User, Users,
   ExternalLink, MessageSquare, History, Loader2, Send,
-  Trash2, Edit3, Save, ClipboardList, Eye, Phone, Mail,
+  Trash2, Edit3, ClipboardList, Eye, Phone, Mail,
 } from "lucide-react";
 import {
   JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
@@ -74,6 +72,7 @@ const ACTION_LABELS: Record<string, string> = {
   created: "Opprettet",
   updated: "Oppdatert",
   moved: "Flyttet",
+  resized: "Varighet endret",
   technician_added: "Tekniker lagt til",
   technician_removed: "Tekniker fjernet",
   status_changed: "Status endret",
@@ -93,19 +92,15 @@ export function EventDrawer({ open, onOpenChange, event, technicians, onEdit, on
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // Reset tab when event changes
   useEffect(() => {
     if (open) setTab("details");
   }, [open, event?.id]);
 
-  // Fetch notes
   const fetchNotes = useCallback(async () => {
     if (!event) return;
     setNotesLoading(true);
     const { data: notesData } = await supabase
-      .from("event_notes")
-      .select("*")
-      .eq("event_id", event.id)
+      .from("event_notes").select("*").eq("event_id", event.id)
       .order("created_at", { ascending: true });
 
     if (notesData && notesData.length > 0) {
@@ -113,12 +108,9 @@ export function EventDrawer({ open, onOpenChange, event, technicians, onEdit, on
       let profileMap = new Map<string, string>();
       if (authorIds.length > 0) {
         const { data: profiles } = await supabase
-          .from("profiles")
-          .select("user_id, full_name")
+          .from("profiles").select("user_id, full_name")
           .in("user_id", authorIds as string[]);
-        for (const p of (profiles || [])) {
-          profileMap.set(p.user_id, p.full_name || p.user_id);
-        }
+        for (const p of (profiles || [])) profileMap.set(p.user_id, p.full_name || p.user_id);
       }
       setNotes(notesData.map(n => ({
         ...n,
@@ -130,14 +122,11 @@ export function EventDrawer({ open, onOpenChange, event, technicians, onEdit, on
     setNotesLoading(false);
   }, [event?.id]);
 
-  // Fetch logs
   const fetchLogs = useCallback(async () => {
     if (!event) return;
     setLogsLoading(true);
     const { data: logsData } = await supabase
-      .from("event_logs")
-      .select("*")
-      .eq("event_id", event.id)
+      .from("event_logs").select("*").eq("event_id", event.id)
       .order("created_at", { ascending: false });
 
     if (logsData && logsData.length > 0) {
@@ -145,12 +134,9 @@ export function EventDrawer({ open, onOpenChange, event, technicians, onEdit, on
       let profileMap = new Map<string, string>();
       if (actorIds.length > 0) {
         const { data: profiles } = await supabase
-          .from("profiles")
-          .select("user_id, full_name")
+          .from("profiles").select("user_id, full_name")
           .in("user_id", actorIds as string[]);
-        for (const p of (profiles || [])) {
-          profileMap.set(p.user_id, p.full_name || p.user_id);
-        }
+        for (const p of (profiles || [])) profileMap.set(p.user_id, p.full_name || p.user_id);
       }
       setLogs(logsData.map(l => ({
         ...l,
@@ -170,21 +156,17 @@ export function EventDrawer({ open, onOpenChange, event, technicians, onEdit, on
     if (open && event && tab === "history") fetchLogs();
   }, [open, event?.id, tab, fetchLogs]);
 
-  // Send message
   const handleSendMessage = async () => {
     if (!event || !tenantId || !newMessage.trim()) return;
     setSending(true);
     try {
       await supabase.from("event_notes").insert({
-        event_id: event.id,
-        tenant_id: tenantId,
-        author_id: user?.id,
-        body: newMessage.trim(),
+        event_id: event.id, tenant_id: tenantId,
+        author_id: user?.id, body: newMessage.trim(),
         note_type: "message",
       } as any);
       setNewMessage("");
       fetchNotes();
-      toast.success("Melding sendt");
     } catch {
       toast.error("Kunne ikke sende melding");
     } finally {
@@ -192,27 +174,20 @@ export function EventDrawer({ open, onOpenChange, event, technicians, onEdit, on
     }
   };
 
-  // Delete event
   const handleDelete = async () => {
     if (!event) return;
     setDeleting(true);
     try {
       await supabase.from("event_technicians").delete().eq("event_id", event.id);
       await supabase.from("events").update({
-        deleted_at: new Date().toISOString(),
-        status: "cancelled",
+        deleted_at: new Date().toISOString(), status: "cancelled",
       } as any).eq("id", event.id);
-
       if (tenantId) {
         await supabase.from("event_logs").insert({
-          event_id: event.id,
-          tenant_id: tenantId,
-          actor_id: user?.id,
-          action: "deleted",
-          details: { title: event.title },
+          event_id: event.id, tenant_id: tenantId, actor_id: user?.id,
+          action: "deleted", details: { title: event.title },
         } as any);
       }
-
       toast.success("Hendelse fjernet");
       onOpenChange(false);
       onDeleted();
@@ -260,11 +235,9 @@ export function EventDrawer({ open, onOpenChange, event, technicians, onEdit, on
                 { key: "history" as DrawerTab, label: "Historikk", icon: History },
               ]).map(t => (
                 <Button
-                  key={t.key}
-                  type="button"
+                  key={t.key} type="button"
                   variant={tab === t.key ? "default" : "ghost"}
-                  size="sm"
-                  className="h-8 text-xs rounded-md flex-1 gap-1.5"
+                  size="sm" className="h-8 text-xs rounded-md flex-1 gap-1.5"
                   onClick={() => setTab(t.key)}
                 >
                   <t.icon className="h-3.5 w-3.5" />
@@ -283,15 +256,17 @@ export function EventDrawer({ open, onOpenChange, event, technicians, onEdit, on
 
           {/* Content */}
           <div className="flex-1 overflow-hidden">
-            {tab === "details" && <DetailsTab event={event} techs={eventTechs} canEdit={canDo("ressursplan.schedule")} onEdit={() => { onEdit(event); onOpenChange(false); }} onDelete={() => setShowDeleteConfirm(true)} />}
+            {tab === "details" && (
+              <DetailsTab event={event} techs={eventTechs}
+                canEdit={canDo("ressursplan.schedule")}
+                onEdit={() => { onEdit(event); onOpenChange(false); }}
+                onDelete={() => setShowDeleteConfirm(true)} />
+            )}
             {tab === "messages" && (
               <MessagesTab
-                notes={notes}
-                loading={notesLoading}
-                newMessage={newMessage}
-                setNewMessage={setNewMessage}
-                sending={sending}
-                onSend={handleSendMessage}
+                notes={notes} loading={notesLoading}
+                newMessage={newMessage} setNewMessage={setNewMessage}
+                sending={sending} onSend={handleSendMessage}
                 currentUserId={user?.id}
               />
             )}
@@ -310,11 +285,9 @@ export function EventDrawer({ open, onOpenChange, event, technicians, onEdit, on
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Avbryt</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={deleting}
+            <AlertDialogAction disabled={deleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={handleDelete}
-            >
+              onClick={handleDelete}>
               {deleting && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
               Slett
             </AlertDialogAction>
@@ -333,7 +306,6 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete }: {
   return (
     <ScrollArea className="h-full">
       <div className="p-6 space-y-5">
-
         {/* Time */}
         <section>
           <SectionLabel>Tidspunkt</SectionLabel>
@@ -387,7 +359,6 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete }: {
                   <Button variant="ghost" size="icon" className="shrink-0"><ExternalLink className="h-4 w-4" /></Button>
                 </Link>
               </div>
-              {/* Form status */}
               {(event.job.job_type === "installation" || event.job.job_type === "service") && (
                 <div className="mt-2 pt-2 border-t border-border/30">
                   <Link to={`/tenant/crm/jobs/${event.job.id}`}>
@@ -480,11 +451,9 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete }: {
             <Button variant="outline" size="sm" className="w-full gap-1.5" onClick={onEdit}>
               <Edit3 className="h-3.5 w-3.5" />Rediger hendelse
             </Button>
-            <Button
-              variant="ghost" size="sm"
+            <Button variant="ghost" size="sm"
               className="w-full gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10 justify-start"
-              onClick={onDelete}
-            >
+              onClick={onDelete}>
               <Trash2 className="h-3.5 w-3.5" />Fjern fra plan
             </Button>
           </section>
@@ -500,17 +469,39 @@ function MessagesTab({ notes, loading, newMessage, setNewMessage, sending, onSen
   newMessage: string; setNewMessage: (v: string) => void;
   sending: boolean; onSend: () => void; currentUserId?: string;
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when new notes arrive
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [notes.length]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (newMessage.trim() && !sending) {
+        onSend();
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
-      <ScrollArea className="flex-1">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <div className="p-6 space-y-3">
           {loading ? (
             <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
           ) : notes.length === 0 ? (
-            <div className="text-center py-8">
-              <MessageSquare className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">Ingen meldinger ennå</p>
-              <p className="text-xs text-muted-foreground mt-1">Skriv en melding for å kommunisere om denne hendelsen</p>
+            <div className="text-center py-12">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                <MessageSquare className="h-6 w-6 text-primary/60" />
+              </div>
+              <p className="text-sm font-medium">Ingen meldinger ennå</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-[240px] mx-auto">
+                Bruk meldinger for å kommunisere med teamet om denne hendelsen. Trykk Enter for å sende.
+              </p>
             </div>
           ) : (
             notes.map(note => {
@@ -528,19 +519,19 @@ function MessagesTab({ notes, loading, newMessage, setNewMessage, sending, onSen
               return (
                 <div key={note.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
                   <div className={cn(
-                    "max-w-[85%] rounded-xl px-3.5 py-2.5 space-y-1",
+                    "max-w-[85%] rounded-2xl px-4 py-2.5 space-y-1",
                     isOwn
-                      ? "bg-primary text-primary-foreground rounded-br-sm"
-                      : "bg-muted rounded-bl-sm"
+                      ? "bg-primary text-primary-foreground rounded-br-md"
+                      : "bg-muted rounded-bl-md"
                   )}>
                     {!isOwn && (
-                      <p className={cn("text-[10px] font-semibold", isOwn ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                      <p className={cn("text-[11px] font-semibold", "text-muted-foreground")}>
                         {note.author_name}
                       </p>
                     )}
-                    <p className="text-sm whitespace-pre-wrap">{note.body}</p>
-                    <p className={cn("text-[10px]", isOwn ? "text-primary-foreground/60" : "text-muted-foreground")}>
-                      {formatDistanceToNow(parseISO(note.created_at), { addSuffix: true, locale: nb })}
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{note.body}</p>
+                    <p className={cn("text-[10px]", isOwn ? "text-primary-foreground/60" : "text-muted-foreground/70")}>
+                      {format(parseISO(note.created_at), "d. MMM HH:mm", { locale: nb })}
                     </p>
                   </div>
                 </div>
@@ -548,28 +539,28 @@ function MessagesTab({ notes, loading, newMessage, setNewMessage, sending, onSen
             })
           )}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Input */}
-      <div className="border-t border-border p-4">
-        <div className="flex gap-2">
+      <div className="border-t border-border bg-muted/20 p-3">
+        <div className="flex gap-2 items-end">
           <Textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Skriv en melding..."
-            className="min-h-[40px] max-h-[100px] resize-none text-sm"
+            placeholder="Skriv en melding... (Enter for å sende, Shift+Enter for ny linje)"
+            className="min-h-[44px] max-h-[120px] resize-none text-sm rounded-xl bg-background border-border/60"
             rows={1}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                onSend();
-              }
-            }}
+            onKeyDown={handleKeyDown}
           />
-          <Button size="icon" onClick={onSend} disabled={sending || !newMessage.trim()} className="shrink-0 h-10 w-10">
+          <Button size="icon" onClick={onSend}
+            disabled={sending || !newMessage.trim()}
+            className="shrink-0 h-11 w-11 rounded-xl">
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
+        <p className="text-[10px] text-muted-foreground/60 mt-1.5 px-1">
+          Enter = send · Shift+Enter = ny linje
+        </p>
       </div>
     </div>
   );
@@ -583,43 +574,43 @@ function HistoryTab({ logs, loading }: { logs: EventLog[]; loading: boolean }) {
         {loading ? (
           <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
         ) : logs.length === 0 ? (
-          <div className="text-center py-8">
-            <History className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">Ingen historikk ennå</p>
-            <p className="text-xs text-muted-foreground mt-1">Endringer og hendelser logges automatisk her</p>
+          <div className="text-center py-12">
+            <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-3">
+              <History className="h-6 w-6 text-muted-foreground/40" />
+            </div>
+            <p className="text-sm font-medium">Ingen historikk ennå</p>
+            <p className="text-xs text-muted-foreground mt-1">Endringer logges automatisk her</p>
           </div>
         ) : (
           <div className="relative">
-            {/* Timeline line */}
-            <div className="absolute left-3 top-2 bottom-2 w-px bg-border" />
-
+            <div className="absolute left-3 top-2 bottom-2 w-px bg-border/60" />
             <div className="space-y-4">
               {logs.map(log => (
                 <div key={log.id} className="relative pl-8">
-                  {/* Dot */}
                   <div className={cn(
                     "absolute left-1.5 top-1.5 w-3 h-3 rounded-full border-2 border-background",
                     log.action === "deleted" ? "bg-destructive" :
                     log.action === "created" ? "bg-emerald-500" :
+                    log.action === "moved" || log.action === "resized" ? "bg-amber-500" :
                     "bg-primary"
                   )} />
-
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">{ACTION_LABELS[log.action] || log.action}</span>
                       <span className="text-[10px] text-muted-foreground">
-                        {formatDistanceToNow(parseISO(log.created_at), { addSuffix: true, locale: nb })}
+                        {format(parseISO(log.created_at), "d. MMM HH:mm", { locale: nb })}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {log.actor_name || "System"}
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{log.actor_name || "System"}</p>
                     {log.details && Object.keys(log.details).length > 0 && (
-                      <div className="mt-1 text-xs text-muted-foreground bg-muted/30 rounded px-2 py-1">
-                        {log.details.title && <span>«{log.details.title}»</span>}
-                        {log.details.technician_name && <span>Tekniker: {log.details.technician_name}</span>}
+                      <div className="mt-1 text-xs text-muted-foreground bg-muted/30 rounded-md px-2.5 py-1.5 space-y-0.5">
+                        {log.details.title && <span className="block">«{log.details.title}»</span>}
+                        {log.details.technician_name && <span className="block">Tekniker: {log.details.technician_name}</span>}
                         {log.details.old_time && log.details.new_time && (
-                          <span>{log.details.old_time} → {log.details.new_time}</span>
+                          <span className="block">{log.details.old_time} → {log.details.new_time}</span>
+                        )}
+                        {log.details.new_time && !log.details.old_time && (
+                          <span className="block">Ny tid: {log.details.new_time}</span>
                         )}
                       </div>
                     )}
