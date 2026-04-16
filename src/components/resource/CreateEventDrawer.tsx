@@ -156,7 +156,7 @@ export function CreateEventDrawer({
     setJobsLoading(true);
     const { data } = await supabase
       .from("jobs")
-      .select("id, job_number, title, status, company:crm_companies(name), site:customer_sites(address, city)")
+      .select("id, job_number, title, status, site_id, company:crm_companies(name), site:customer_sites(address, city, name)")
       .eq("tenant_id", tenantId)
       .is("deleted_at", null)
       .in("status", ["planned", "scheduled", "in_progress", "on_hold"])
