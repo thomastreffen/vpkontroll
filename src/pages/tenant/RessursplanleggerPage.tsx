@@ -264,6 +264,10 @@ export default function RessursplanleggerPage() {
             event_id: newEvent.id, technician_id: selectedTechId,
           });
         }
+        // Sync to external calendar
+        try {
+          await supabase.functions.invoke("calendar-sync", { body: { event_id: newEvent.id } });
+        } catch (e) { console.warn("Calendar sync on drop:", e); }
       }
 
       toast.success(`Jobb ${dragData.job_number} planlagt i kalenderen`);
