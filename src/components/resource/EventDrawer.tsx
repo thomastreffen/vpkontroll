@@ -322,7 +322,8 @@ export function EventDrawer({ open, onOpenChange, event, technicians, onEdit, on
               <DetailsTab event={event} techs={eventTechs}
                 canEdit={canDo("ressursplan.schedule")}
                 onEdit={() => { onEdit(event); onOpenChange(false); }}
-                onDelete={() => setShowDeleteConfirm(true)} />
+                onDelete={() => setShowDeleteConfirm(true)}
+                onRefresh={onRefresh} />
             )}
             {tab === "messages" && (
               <MessagesTab
