@@ -24,7 +24,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin, { Draggable } from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
-import type { EventInput, EventDropArg, EventClickArg, DateSelectArg, EventContentArg, EventReceiveArg } from "@fullcalendar/core";
+import type { EventInput, EventDropArg, EventClickArg, DateSelectArg, EventContentArg } from "@fullcalendar/core";
 
 type Technician = {
   id: string; tenant_id: string; name: string; phone: string | null;
