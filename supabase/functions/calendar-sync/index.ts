@@ -362,9 +362,27 @@ Deno.serve(async (req) => {
         }).eq("id", event_id);
       } catch (syncErr: any) {
         console.error("Calendar sync failed:", syncErr);
+        // Parse friendly error message
+        let friendlyError = "Ukjent feil ved kalendersynk";
+        const msg = syncErr.message || "";
+        if (msg.includes("SERVICE_DISABLED") || msg.includes("has not been used in project")) {
+          friendlyError = "Google Calendar API er ikke aktivert i Google Cloud-prosjektet. Aktiver den i Google Cloud Console → APIs & Services → Enable Google Calendar API.";
+        } else if (msg.includes("invalid_grant") || msg.includes("Token has been expired")) {
+          friendlyError = "Google-tilgangen har utløpt. Koble til Google på nytt via Integrasjoner.";
+        } else if (msg.includes("insufficient") || msg.includes("scope")) {
+          friendlyError = "Manglende kalendertillatelser (scopes). Koble til Google på nytt med kalendertilgang.";
+        } else if (msg.includes("401")) {
+          friendlyError = "Autentisering feilet. Token kan være ugyldig eller utløpt.";
+        } else if (msg.includes("403")) {
+          friendlyError = "Ingen tilgang til kalenderen. Sjekk at Google Calendar API er aktivert og at kontoen har riktige tillatelser.";
+        } else if (msg.includes("404")) {
+          friendlyError = "Kalenderoppføringen ble ikke funnet. Den kan ha blitt slettet eksternt.";
+        } else {
+          friendlyError = msg.substring(0, 300);
+        }
         await sb.from("events").update({
           calendar_sync_status: "failed",
-          calendar_sync_error: syncErr.message?.substring(0, 500) || "Ukjent feil",
+          calendar_sync_error: friendlyError,
         }).eq("id", event_id);
       }
     }
