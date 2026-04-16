@@ -269,7 +269,7 @@ Deno.serve(async (req) => {
     if (action === "delete" && event.external_calendar_event_id) {
       const { data: cred } = await sb
         .from("tenant_credentials").select("*")
-        .eq("tenant_id", event.tenant_id).eq("status", "active").limit(1).single();
+        .eq("tenant_id", event.tenant_id).eq("status", "connected").limit(1).single();
 
       if (cred) {
         try {
@@ -301,7 +301,7 @@ Deno.serve(async (req) => {
     // Find tenant credentials
     const { data: cred } = await sb
       .from("tenant_credentials").select("*")
-      .eq("tenant_id", event.tenant_id).eq("status", "active").limit(1).single();
+      .eq("tenant_id", event.tenant_id).eq("status", "connected").limit(1).single();
 
     // Get technician emails
     const { data: eventTechs } = await sb
