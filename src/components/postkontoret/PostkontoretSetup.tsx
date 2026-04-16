@@ -335,10 +335,16 @@ export default function PostkontoretSetup() {
                           <p className="text-sm font-medium">{mb.display_name}</p>
                           <p className="text-xs text-muted-foreground">{mb.address}</p>
                         </div>
-                        {mb.is_enabled ? (
+                         {mb.is_enabled ? (
                           <Badge className="bg-green-600/10 text-green-600 border-green-600/20 text-[10px]">Aktiv</Badge>
                         ) : (
                           <Badge variant="outline" className="text-muted-foreground text-[10px]">Deaktivert</Badge>
+                        )}
+                        {(mb as any).sync_from && (
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            Synker fra {new Date((mb as any).sync_from).toLocaleDateString("nb-NO")}
+                          </span>
                         )}
                       </div>
                       <div className="flex items-center gap-1">
