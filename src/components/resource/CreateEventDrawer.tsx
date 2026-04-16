@@ -334,10 +334,11 @@ export function CreateEventDrawer({
                   )}
                 </SelectContent>
               </Select>
-              {jobId && (
-                <p className="text-[11px] text-primary/70 mt-1 flex items-center gap-1">
-                  <Briefcase className="h-3 w-3" />Kunde og adresse er fylt inn fra jobben
-                </p>
+              {jobLinked && jobId && (
+                <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-primary/80 bg-primary/5 rounded-md px-2.5 py-1.5 border border-primary/10">
+                  <Briefcase className="h-3 w-3 shrink-0" />
+                  <span>Kunde, adresse og teknikere er hentet automatisk fra jobben</span>
+                </div>
               )}
             </section>
 
@@ -353,14 +354,18 @@ export function CreateEventDrawer({
               <section>
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   <User className="h-3 w-3 inline mr-1" />Kunde
+                  {jobLinked && <Badge variant="outline" className="ml-1.5 text-[9px] px-1 py-0 h-4 font-normal">Fra jobb</Badge>}
                 </Label>
-                <Input value={customer} onChange={e => setCustomer(e.target.value)} className="mt-1.5" />
+                <Input value={customer} onChange={e => { setCustomer(e.target.value); }}
+                  className={cn("mt-1.5", jobLinked && customer && "border-primary/20 bg-primary/5")} />
               </section>
               <section>
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   <MapPin className="h-3 w-3 inline mr-1" />Adresse
+                  {jobLinked && <Badge variant="outline" className="ml-1.5 text-[9px] px-1 py-0 h-4 font-normal">Fra jobb</Badge>}
                 </Label>
-                <Input value={address} onChange={e => setAddress(e.target.value)} className="mt-1.5" />
+                <Input value={address} onChange={e => { setAddress(e.target.value); }}
+                  className={cn("mt-1.5", jobLinked && address && "border-primary/20 bg-primary/5")} />
               </section>
             </div>
 
