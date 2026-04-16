@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
   Building2, LayoutDashboard, Plug, LogOut, Flame, Puzzle,
-  Menu, Shield, Bell, Search, ArrowRightLeft,
+  Menu, Shield, Bell, Search, ArrowRightLeft, Package, CreditCard, Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -15,6 +15,9 @@ import { Input } from "@/components/ui/input";
 const navItems = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Tenants", href: "/admin/tenants", icon: Building2 },
+  { label: "Planer", href: "/admin/plans", icon: Package },
+  { label: "Abonnementer", href: "/admin/subscriptions", icon: CreditCard },
+  { label: "Trials", href: "/admin/trials", icon: Clock },
   { label: "Moduler", href: "/admin/modules", icon: Puzzle },
   { label: "Integrasjoner", href: "/admin/integrations", icon: Plug },
   { label: "Tilgangsstyring", href: "/admin/access-control", icon: Shield },
