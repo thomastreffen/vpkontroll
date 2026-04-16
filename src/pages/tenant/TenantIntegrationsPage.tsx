@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { CheckCircle2, XCircle, AlertCircle, Clock, Settings, Plus, ExternalLink, Copy, Unplug } from "lucide-react";
+import PostkontoretSetup from "@/components/postkontoret/PostkontoretSetup";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Credential = Tables<"tenant_credentials">;
@@ -302,6 +303,9 @@ export default function TenantIntegrationsPage() {
           );
         })}
       </div>
+
+      {/* Postkontoret setup section */}
+      <PostkontoretSetup />
 
       {/* Microsoft credentials dialog */}
       <Dialog open={!!editProvider} onOpenChange={(o) => { if (!o) closeEdit(); }}>
