@@ -307,6 +307,10 @@ export default function RessursplanleggerPage() {
         } as any);
       }
       toast.success("Hendelse flyttet");
+      // Re-sync to external calendar if previously synced
+      if (calEvent?.external_calendar_event_id) {
+        supabase.functions.invoke("calendar-sync", { body: { event_id: eventId } }).catch(() => {});
+      }
       fetchEvents();
     }
   }, [fetchEvents, tenantId, user?.id]);
@@ -338,6 +342,9 @@ export default function RessursplanleggerPage() {
         } as any);
       }
       toast.success("Varighet oppdatert");
+      if (calEvent?.external_calendar_event_id) {
+        supabase.functions.invoke("calendar-sync", { body: { event_id: eventId } }).catch(() => {});
+      }
       fetchEvents();
     }
   }, [fetchEvents, tenantId, user?.id]);
