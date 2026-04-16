@@ -10,12 +10,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { EventDrawer } from "@/components/resource/EventDrawer";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { UnplannedJobsStrip } from "@/components/resource/UnplannedJobsStrip";
 import {
   ChevronLeft, ChevronRight, Plus, RotateCcw,
-  Loader2, Users, Briefcase, CalendarDays, ExternalLink, Eye, ClipboardList, Calendar, List,
+  Loader2, Users, Briefcase, CalendarDays, ExternalLink, Eye, ClipboardList, Calendar, List, Phone, Mail,
 } from "lucide-react";
 import {
   addWeeks, addDays, addMonths, startOfWeek, endOfWeek, format, parseISO,
@@ -291,6 +292,11 @@ export default function RessursplanleggerPage() {
             formTechIds.map((techId) => ({ event_id: editEvent.id, technician_id: techId }))
           );
         }
+        // Log update
+        await supabase.from("event_logs").insert({
+          event_id: editEvent.id, tenant_id: tenantId, actor_id: user?.id,
+          action: "updated", details: { title: formTitle.trim() },
+        } as any);
         toast.success("Hendelse oppdatert");
       } else {
         const { data: newEvent } = await supabase.from("events").insert({
@@ -303,6 +309,13 @@ export default function RessursplanleggerPage() {
           await supabase.from("event_technicians").insert(
             formTechIds.map((techId) => ({ event_id: newEvent.id, technician_id: techId }))
           );
+        }
+        // Log creation
+        if (newEvent) {
+          await supabase.from("event_logs").insert({
+            event_id: newEvent.id, tenant_id: tenantId, actor_id: user?.id,
+            action: "created", details: { title: formTitle.trim() },
+          } as any);
         }
         toast.success("Hendelse opprettet");
       }
@@ -323,8 +336,16 @@ export default function RessursplanleggerPage() {
       end_time: newEnd.toISOString(),
     } as any).eq("id", eventId);
     if (error) { info.revert(); toast.error("Kunne ikke flytte hendelsen"); }
-    else { toast.success("Hendelse flyttet"); fetchEvents(); }
-  }, [fetchEvents]);
+    else {
+      if (tenantId) {
+        await supabase.from("event_logs").insert({
+          event_id: eventId, tenant_id: tenantId, actor_id: user?.id,
+          action: "moved", details: { new_time: `${format(newStart, "HH:mm")} – ${format(newEnd, "HH:mm")}` },
+        } as any);
+      }
+      toast.success("Hendelse flyttet"); fetchEvents();
+    }
+  }, [fetchEvents, tenantId, user?.id]);
 
   // Event resize handler
   const handleEventResize = useCallback(async (info: any) => {
@@ -427,25 +448,53 @@ export default function RessursplanleggerPage() {
         </div>
       </div>
 
+      {/* Unplanned Jobs Strip */}
+      <UnplannedJobsStrip
+        onJobClick={(job) => {
+          openNewEvent();
+          setFormJobId(job.id);
+          setFormTitle(`${job.job_number} – ${job.title}`);
+          setFormCustomer(job.company_name || "");
+          setFormAddress(job.site_address || "");
+        }}
+      />
+
       <div className="flex gap-4">
         {/* Technician sidebar */}
-        <Card className="w-56 shrink-0">
+        <Card className="w-60 shrink-0">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2"><Users className="h-4 w-4" /> Teknikere</CardTitle>
           </CardHeader>
-          <CardContent className="p-2">
-            <Button variant={selectedTechId === null ? "default" : "ghost"} size="sm" className="w-full justify-start mb-1" onClick={() => setSelectedTechId(null)}>Alle</Button>
-            {technicians.map((tech) => (
-              <Button key={tech.id} variant={selectedTechId === tech.id ? "default" : "ghost"} size="sm"
-                className="w-full justify-start gap-2 mb-0.5"
-                onClick={() => setSelectedTechId(selectedTechId === tech.id ? null : tech.id)}>
-                <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: tech.color }} />
-                <span className="truncate">{tech.name}</span>
-                <Badge variant="secondary" className="ml-auto text-[10px] px-1.5">
-                  {events.filter(e => e.technician_ids.includes(tech.id)).length}
-                </Badge>
-              </Button>
-            ))}
+          <CardContent className="p-2 space-y-0.5">
+            <Button variant={selectedTechId === null ? "default" : "ghost"} size="sm" className="w-full justify-start mb-1" onClick={() => setSelectedTechId(null)}>
+              <Users className="h-3.5 w-3.5 mr-2" />Alle
+              <Badge variant="secondary" className="ml-auto text-[10px] px-1.5">{events.length}</Badge>
+            </Button>
+            {technicians.map((tech) => {
+              const techEventCount = events.filter(e => e.technician_ids.includes(tech.id)).length;
+              const isSelected = selectedTechId === tech.id;
+              return (
+                <Button key={tech.id} variant={isSelected ? "default" : "ghost"} size="sm"
+                  className="w-full justify-start gap-2 h-auto py-2"
+                  onClick={() => setSelectedTechId(isSelected ? null : tech.id)}>
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+                    style={{ backgroundColor: tech.color }}>
+                    {tech.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1 text-left">
+                    <p className="text-xs font-medium truncate">{tech.name}</p>
+                    {tech.phone && (
+                      <p className={cn("text-[10px] truncate", isSelected ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                        <Phone className="h-2.5 w-2.5 inline mr-0.5" />{tech.phone}
+                      </p>
+                    )}
+                  </div>
+                  <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 shrink-0">
+                    {techEventCount}
+                  </Badge>
+                </Button>
+              );
+            })}
             {technicians.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Ingen teknikere lagt til ennå</p>}
           </CardContent>
         </Card>
@@ -487,150 +536,16 @@ export default function RessursplanleggerPage() {
         </div>
       </div>
 
-      {/* Detail Sheet */}
-      <Sheet open={!!detailEvent} onOpenChange={(o) => { if (!o) setDetailEvent(null); }}>
-        <SheetContent className="w-[400px] sm:w-[440px]">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              {detailEvent?.job_id && <Briefcase className="h-4 w-4 text-primary" />}
-              {detailEvent?.service_visit_id && <CalendarDays className="h-4 w-4 text-primary" />}
-              {detailEvent?.title}
-            </SheetTitle>
-          </SheetHeader>
-          {detailEvent && (
-            <div className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <p className="text-[11px] text-muted-foreground font-medium uppercase">Tidspunkt</p>
-                  <p>{format(parseISO(detailEvent.start_time), "d. MMM yyyy", { locale: nb })}</p>
-                  <p>{format(parseISO(detailEvent.start_time), "HH:mm")} – {format(parseISO(detailEvent.end_time), "HH:mm")}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-muted-foreground font-medium uppercase">Status</p>
-                  <Badge variant="outline">{detailEvent.status}</Badge>
-                </div>
-              </div>
-
-              {detailEvent.customer && (
-                <div className="text-sm">
-                  <p className="text-[11px] text-muted-foreground font-medium uppercase">Kunde</p>
-                  <p>{detailEvent.customer}</p>
-                </div>
-              )}
-              {detailEvent.address && (
-                <div className="text-sm">
-                  <p className="text-[11px] text-muted-foreground font-medium uppercase">Adresse</p>
-                  <p>{detailEvent.address}</p>
-                </div>
-              )}
-              {detailEvent.site && (
-                <div className="text-sm">
-                  <p className="text-[11px] text-muted-foreground font-medium uppercase">Anleggsadresse</p>
-                  <p>{detailEvent.site.name || detailEvent.site.address}, {detailEvent.site.city}</p>
-                </div>
-              )}
-
-              {detailEvent.job && (
-                <Card className="p-3">
-                  <p className="text-[11px] text-muted-foreground font-medium uppercase mb-1">Koblet jobb</p>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-sm">{detailEvent.job.job_number} – {detailEvent.job.title}</p>
-                      <div className="flex gap-2 mt-1">
-                        <Badge variant="secondary" className={`text-[10px] ${JOB_STATUS_COLORS[detailEvent.job.status] || ""}`}>
-                          {JOB_STATUS_LABELS[detailEvent.job.status] || detailEvent.job.status}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">{JOB_TYPE_LABELS[detailEvent.job.job_type] || detailEvent.job.job_type}</span>
-                      </div>
-                    </div>
-                    <Link to={`/tenant/crm/jobs/${detailEvent.job.id}`}>
-                      <Button variant="ghost" size="icon"><ExternalLink className="h-4 w-4" /></Button>
-                    </Link>
-                  </div>
-                </Card>
-              )}
-
-              {detailEvent.service_visit && (
-                <Card className="p-3">
-                  <p className="text-[11px] text-muted-foreground font-medium uppercase mb-1">Servicebesøk</p>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm">Planlagt: {detailEvent.service_visit.scheduled_date || "–"}</p>
-                      <div className="flex gap-1.5 mt-1">
-                        <Badge variant="outline" className="text-[10px]">{VISIT_STATUS_LABELS[detailEvent.service_visit.status] || detailEvent.service_visit.status}</Badge>
-                        {detailEvent.service_visit.report_data?.schema_version === 1 ? (
-                          <Badge variant="secondary" className="text-[10px] gap-1 bg-emerald-500/10 text-emerald-600">
-                            <CalendarDays className="h-2.5 w-2.5" />Skjema utfylt
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-200">Skjema mangler</Badge>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-1">
-                      {detailEvent.service_visit.agreement_id && (
-                        <Link to={`/tenant/crm/agreements/${detailEvent.service_visit.agreement_id}`}>
-                          <Button variant="ghost" size="icon"><ExternalLink className="h-4 w-4" /></Button>
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              )}
-
-              {detailEvent.technician_ids.length > 0 && (
-                <div>
-                  <p className="text-[11px] text-muted-foreground font-medium uppercase mb-1">Teknikere</p>
-                  <div className="flex flex-wrap gap-2">
-                    {detailEvent.technician_ids.map(id => {
-                      const tech = technicians.find(t => t.id === id);
-                      if (!tech) return null;
-                      return (
-                        <Badge key={id} variant="secondary" className="gap-1.5">
-                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tech.color }} />
-                          {tech.name}
-                        </Badge>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {detailEvent.description && (
-                <div className="text-sm">
-                  <p className="text-[11px] text-muted-foreground font-medium uppercase">Beskrivelse</p>
-                  <p className="text-muted-foreground">{detailEvent.description}</p>
-                </div>
-              )}
-
-              <div className="flex gap-2 pt-2 flex-wrap">
-                <Button variant="outline" size="sm" onClick={() => { openEditEvent(detailEvent); setDetailEvent(null); }}>Rediger</Button>
-                {detailEvent.service_visit_id && detailEvent.service_visit && (
-                  detailEvent.service_visit.report_data?.schema_version === 1 ? (
-                    <Link to={`/tenant/crm/agreements/${detailEvent.service_visit.agreement_id}`}>
-                      <Button variant="outline" size="sm" className="gap-1.5"><Eye className="h-3 w-3" />Se skjema</Button>
-                    </Link>
-                  ) : detailEvent.service_visit.agreement_id ? (
-                    <Link to={`/tenant/crm/agreements/${detailEvent.service_visit.agreement_id}`}>
-                      <Button size="sm" className="gap-1.5"><ClipboardList className="h-3 w-3" />Fyll ut skjema</Button>
-                    </Link>
-                  ) : null
-                )}
-                {detailEvent.job_id && detailEvent.job && (
-                  (detailEvent.job.job_type === "installation" || detailEvent.job.job_type === "service") && (
-                    <Link to={`/tenant/crm/jobs/${detailEvent.job.id}`}>
-                      <Button variant="outline" size="sm" className="gap-1.5">
-                        <ClipboardList className="h-3 w-3" />
-                        {detailEvent.job.form_data?.schema_version === 1 ? "Se skjema" : "Fyll ut skjema"}
-                      </Button>
-                    </Link>
-                  )
-                )}
-              </div>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
+      {/* Event Drawer */}
+      <EventDrawer
+        open={!!detailEvent}
+        onOpenChange={(o) => { if (!o) setDetailEvent(null); }}
+        event={detailEvent}
+        technicians={technicians}
+        onEdit={(ev) => { openEditEvent(ev); setDetailEvent(null); }}
+        onDeleted={fetchEvents}
+        onRefresh={fetchEvents}
+      />
 
       {/* Event Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
