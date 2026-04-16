@@ -1,31 +1,22 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { EventDrawer } from "@/components/resource/EventDrawer";
+import { CreateEventDrawer } from "@/components/resource/CreateEventDrawer";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { UnplannedJobsStrip } from "@/components/resource/UnplannedJobsStrip";
 import {
   ChevronLeft, ChevronRight, Plus, RotateCcw,
-  Loader2, Users, Briefcase, CalendarDays, ExternalLink, Eye, ClipboardList, Calendar, List, Phone, Mail,
+  Users, Briefcase, CalendarDays, Calendar, List, Phone,
 } from "lucide-react";
 import {
   addWeeks, addDays, addMonths, startOfWeek, endOfWeek, format, parseISO,
 } from "date-fns";
 import { nb } from "date-fns/locale";
-import {
-  JOB_STATUS_LABELS, JOB_STATUS_COLORS, JOB_TYPE_LABELS,
-  VISIT_STATUS_LABELS,
-} from "@/lib/domain-labels";
 import { useCanDo } from "@/hooks/useCanDo";
 
 import FullCalendar from "@fullcalendar/react";
@@ -73,30 +64,25 @@ export default function RessursplanleggerPage() {
     } catch {}
     return "timeGridWeek";
   });
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
+
+  // Drawers
   const [detailEvent, setDetailEvent] = useState<CalendarEvent | null>(null);
+  const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
 
-  // Form state
-  const [formTitle, setFormTitle] = useState("");
-  const [formCustomer, setFormCustomer] = useState("");
-  const [formAddress, setFormAddress] = useState("");
-  const [formDescription, setFormDescription] = useState("");
-  const [formDate, setFormDate] = useState("");
-  const [formStartTime, setFormStartTime] = useState("08:00");
-  const [formEndTime, setFormEndTime] = useState("16:00");
-  const [formTechIds, setFormTechIds] = useState<string[]>([]);
-  const [formJobId, setFormJobId] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [availableJobs, setAvailableJobs] = useState<any[]>([]);
-  const [jobsLoading, setJobsLoading] = useState(false);
+  // Prefill state for create drawer
+  const [prefillDate, setPrefillDate] = useState<string>("");
+  const [prefillStartTime, setPrefillStartTime] = useState<string>("");
+  const [prefillEndTime, setPrefillEndTime] = useState<string>("");
+  const [prefillJobId, setPrefillJobId] = useState<string | null>(null);
+  const [prefillTitle, setPrefillTitle] = useState<string>("");
+  const [prefillCustomer, setPrefillCustomer] = useState<string>("");
+  const [prefillAddress, setPrefillAddress] = useState<string>("");
 
-  // Persist view
   useEffect(() => {
     localStorage.setItem("vpk_resource_view", calendarView);
   }, [calendarView]);
 
-  // Sync FullCalendar with referenceDate and view
   useEffect(() => {
     const api = calendarRef.current?.getApi();
     if (api) {
@@ -105,7 +91,6 @@ export default function RessursplanleggerPage() {
     }
   }, [referenceDate, calendarView]);
 
-  // Calculate date range based on view
   const dateRange = useMemo(() => {
     if (calendarView === "timeGridDay") {
       return { start: referenceDate, end: addDays(referenceDate, 1) };
@@ -172,7 +157,6 @@ export default function RessursplanleggerPage() {
     return events.filter((e) => e.technician_ids.includes(selectedTechId));
   }, [events, selectedTechId]);
 
-  // FullCalendar event inputs
   const fcEvents: EventInput[] = useMemo(() => {
     return filteredEvents.map((e) => {
       const techColor = (() => {
@@ -211,7 +195,6 @@ export default function RessursplanleggerPage() {
     });
   }, [calendarView]);
 
-  // Date header label
   const dateLabel = useMemo(() => {
     if (calendarView === "timeGridDay") return format(referenceDate, "EEEE d. MMMM yyyy", { locale: nb });
     if (calendarView === "dayGridMonth") return format(referenceDate, "MMMM yyyy", { locale: nb });
@@ -220,192 +203,122 @@ export default function RessursplanleggerPage() {
     return `Uke ${format(ws, "w", { locale: nb })} — ${format(ws, "d. MMM", { locale: nb })} – ${format(we, "d. MMM yyyy", { locale: nb })}`;
   }, [referenceDate, calendarView]);
 
-  // Fetch jobs for linking
-  const fetchAvailableJobs = useCallback(async () => {
-    if (!tenantId) return;
-    setJobsLoading(true);
-    const { data } = await supabase
-      .from("jobs")
-      .select("id, job_number, title, status, company:crm_companies(name), site:customer_sites(address, city)")
-      .eq("tenant_id", tenantId)
-      .is("deleted_at", null)
-      .in("status", ["planned", "scheduled", "in_progress", "on_hold"])
-      .order("created_at", { ascending: false })
-      .limit(50);
-    setAvailableJobs(data || []);
-    setJobsLoading(false);
-  }, [tenantId]);
-
-  const handleJobSelect = (jobId: string) => {
-    if (jobId === "__none__") { setFormJobId(null); return; }
-    const job = availableJobs.find((j: any) => j.id === jobId);
-    if (!job) return;
-    setFormJobId(jobId);
-    setFormTitle(`${job.job_number} – ${job.title}`);
-    setFormCustomer(job.company?.name || "");
-    setFormAddress(job.site ? [job.site.address, job.site.city].filter(Boolean).join(", ") : "");
-  };
-
+  // Open create drawer
   const openNewEvent = (day?: Date, startTime?: string, endTime?: string) => {
-    setEditEvent(null);
-    setFormTitle(""); setFormCustomer(""); setFormAddress(""); setFormDescription("");
-    setFormDate(format(day || new Date(), "yyyy-MM-dd"));
-    setFormStartTime(startTime || "08:00");
-    setFormEndTime(endTime || "16:00");
-    setFormTechIds(selectedTechId ? [selectedTechId] : []);
-    setFormJobId(null);
-    fetchAvailableJobs();
-    setDialogOpen(true);
+    setEditingEvent(null);
+    setPrefillDate(format(day || new Date(), "yyyy-MM-dd"));
+    setPrefillStartTime(startTime || "08:00");
+    setPrefillEndTime(endTime || "16:00");
+    setPrefillJobId(null);
+    setPrefillTitle("");
+    setPrefillCustomer("");
+    setPrefillAddress("");
+    setCreateDrawerOpen(true);
   };
 
   const openEditEvent = (event: CalendarEvent) => {
-    setEditEvent(event);
-    setFormTitle(event.title);
-    setFormCustomer(event.customer || "");
-    setFormAddress(event.address || "");
-    setFormDescription(event.description || "");
-    setFormDate(format(parseISO(event.start_time), "yyyy-MM-dd"));
-    setFormStartTime(format(parseISO(event.start_time), "HH:mm"));
-    setFormEndTime(format(parseISO(event.end_time), "HH:mm"));
-    setFormTechIds(event.technician_ids);
-    setFormJobId(event.job_id || null);
-    fetchAvailableJobs();
-    setDialogOpen(true);
+    setEditingEvent(event);
+    setCreateDrawerOpen(true);
   };
 
-  const handleSave = async () => {
-    if (!tenantId || !formTitle.trim() || !formDate) return;
-    setSaving(true);
-    try {
-      const startTime = new Date(`${formDate}T${formStartTime}:00`);
-      const endTime = new Date(`${formDate}T${formEndTime}:00`);
-      if (editEvent) {
-        await supabase.from("events").update({
-          title: formTitle.trim(), customer: formCustomer || null,
-          address: formAddress || null, description: formDescription || null,
-          start_time: startTime.toISOString(), end_time: endTime.toISOString(),
-          job_id: formJobId || null,
-        } as any).eq("id", editEvent.id);
-        await supabase.from("event_technicians").delete().eq("event_id", editEvent.id);
-        if (formTechIds.length > 0) {
-          await supabase.from("event_technicians").insert(
-            formTechIds.map((techId) => ({ event_id: editEvent.id, technician_id: techId }))
-          );
-        }
-        // Log update
-        await supabase.from("event_logs").insert({
-          event_id: editEvent.id, tenant_id: tenantId, actor_id: user?.id,
-          action: "updated", details: { title: formTitle.trim() },
-        } as any);
-        toast.success("Hendelse oppdatert");
-      } else {
-        const { data: newEvent } = await supabase.from("events").insert({
-          tenant_id: tenantId, title: formTitle.trim(), customer: formCustomer || null,
-          address: formAddress || null, description: formDescription || null,
-          start_time: startTime.toISOString(), end_time: endTime.toISOString(),
-          created_by: user?.id, job_id: formJobId || null,
-        } as any).select("id").single();
-        if (newEvent && formTechIds.length > 0) {
-          await supabase.from("event_technicians").insert(
-            formTechIds.map((techId) => ({ event_id: newEvent.id, technician_id: techId }))
-          );
-        }
-        // Log creation
-        if (newEvent) {
-          await supabase.from("event_logs").insert({
-            event_id: newEvent.id, tenant_id: tenantId, actor_id: user?.id,
-            action: "created", details: { title: formTitle.trim() },
-          } as any);
-        }
-        toast.success("Hendelse opprettet");
-      }
-      setDialogOpen(false);
-      fetchEvents();
-    } catch { toast.error("Kunne ikke lagre hendelsen"); }
-    finally { setSaving(false); }
-  };
-
-  // Drag-drop handler
+  // Drag-drop handler with logging
   const handleEventDrop = useCallback(async (info: EventDropArg) => {
     const eventId = info.event.id;
     const newStart = info.event.start;
     const newEnd = info.event.end;
+    const calEvent = info.event.extendedProps.calendarEvent as CalendarEvent;
     if (!newStart || !newEnd) { info.revert(); return; }
     const { error } = await supabase.from("events").update({
       start_time: newStart.toISOString(),
       end_time: newEnd.toISOString(),
     } as any).eq("id", eventId);
-    if (error) { info.revert(); toast.error("Kunne ikke flytte hendelsen"); }
-    else {
+    if (error) {
+      info.revert(); toast.error("Kunne ikke flytte hendelsen");
+    } else {
       if (tenantId) {
         await supabase.from("event_logs").insert({
           event_id: eventId, tenant_id: tenantId, actor_id: user?.id,
-          action: "moved", details: { new_time: `${format(newStart, "HH:mm")} – ${format(newEnd, "HH:mm")}` },
+          action: "moved",
+          details: {
+            old_time: `${format(parseISO(calEvent.start_time), "HH:mm")} – ${format(parseISO(calEvent.end_time), "HH:mm")}`,
+            new_time: `${format(newStart, "HH:mm")} – ${format(newEnd, "HH:mm")}`,
+          },
+          old_values: { start_time: calEvent.start_time, end_time: calEvent.end_time },
+          new_values: { start_time: newStart.toISOString(), end_time: newEnd.toISOString() },
         } as any);
       }
-      toast.success("Hendelse flyttet"); fetchEvents();
+      toast.success("Hendelse flyttet");
+      fetchEvents();
     }
   }, [fetchEvents, tenantId, user?.id]);
 
-  // Event resize handler
+  // Resize handler with logging
   const handleEventResize = useCallback(async (info: any) => {
     const eventId = info.event.id;
     const newStart = info.event.start;
     const newEnd = info.event.end;
+    const calEvent = info.event.extendedProps.calendarEvent as CalendarEvent;
     if (!newStart || !newEnd) { info.revert(); return; }
     const { error } = await supabase.from("events").update({
       start_time: newStart.toISOString(),
       end_time: newEnd.toISOString(),
     } as any).eq("id", eventId);
-    if (error) { info.revert(); toast.error("Kunne ikke endre varighet"); }
-    else { toast.success("Varighet oppdatert"); fetchEvents(); }
-  }, [fetchEvents]);
+    if (error) {
+      info.revert(); toast.error("Kunne ikke endre varighet");
+    } else {
+      if (tenantId) {
+        await supabase.from("event_logs").insert({
+          event_id: eventId, tenant_id: tenantId, actor_id: user?.id,
+          action: "resized",
+          details: {
+            old_time: `${format(parseISO(calEvent.start_time), "HH:mm")} – ${format(parseISO(calEvent.end_time), "HH:mm")}`,
+            new_time: `${format(newStart, "HH:mm")} – ${format(newEnd, "HH:mm")}`,
+          },
+          old_values: { start_time: calEvent.start_time, end_time: calEvent.end_time },
+          new_values: { start_time: newStart.toISOString(), end_time: newEnd.toISOString() },
+        } as any);
+      }
+      toast.success("Varighet oppdatert");
+      fetchEvents();
+    }
+  }, [fetchEvents, tenantId, user?.id]);
 
-  // Click on event
   const handleEventClick = useCallback((info: EventClickArg) => {
     const calEvent = info.event.extendedProps.calendarEvent as CalendarEvent;
     if (calEvent) setDetailEvent(calEvent);
   }, []);
 
-  // Select time range to create event
   const handleDateSelect = useCallback((info: DateSelectArg) => {
     if (!canDo("ressursplan.schedule")) return;
-    const start = info.start;
-    const end = info.end;
-    openNewEvent(start, format(start, "HH:mm"), format(end, "HH:mm"));
+    openNewEvent(info.start, format(info.start, "HH:mm"), format(info.end, "HH:mm"));
   }, [canDo, selectedTechId]);
-
-  const toggleTechInForm = (techId: string) => {
-    setFormTechIds((prev) =>
-      prev.includes(techId) ? prev.filter((id) => id !== techId) : [...prev, techId]
-    );
-  };
 
   const getTechNames = (techIds: string[]) =>
     techIds.map(id => technicians.find(t => t.id === id)?.name).filter(Boolean).join(", ");
 
-  // Custom event content renderer
+  // Event content renderer
   const renderEventContent = useCallback((arg: EventContentArg) => {
     const calEvent = arg.event.extendedProps.calendarEvent as CalendarEvent;
-    const isCompact = (arg.event.end && arg.event.start)
-      ? (arg.event.end.getTime() - arg.event.start.getTime()) < 45 * 60 * 1000
-      : false;
+    const durationMs = (arg.event.end && arg.event.start)
+      ? arg.event.end.getTime() - arg.event.start.getTime() : 0;
+    const isCompact = durationMs < 45 * 60 * 1000;
+    const isMedium = durationMs < 90 * 60 * 1000;
 
     return (
-      <div className="px-1.5 py-0.5 overflow-hidden h-full">
-        <div className="flex items-center gap-1">
-          {calEvent?.job_id && <Briefcase className="h-2.5 w-2.5 shrink-0 opacity-80" />}
-          {calEvent?.service_visit_id && <CalendarDays className="h-2.5 w-2.5 shrink-0 opacity-80" />}
-          <span className="font-medium text-xs truncate">{arg.event.title}</span>
+      <div className="fc-event-content-inner px-2 py-1 overflow-hidden h-full flex flex-col">
+        <div className="flex items-center gap-1.5">
+          {calEvent?.job_id && <Briefcase className="h-3 w-3 shrink-0 opacity-80" />}
+          {calEvent?.service_visit_id && <CalendarDays className="h-3 w-3 shrink-0 opacity-80" />}
+          <span className="font-semibold text-xs truncate leading-tight">{arg.event.title}</span>
         </div>
-        {!isCompact && calEvent?.customer && (
-          <p className="text-[10px] opacity-80 truncate">{calEvent.customer}</p>
-        )}
         {!isCompact && arg.timeText && (
-          <p className="text-[10px] opacity-70">{arg.timeText}</p>
+          <p className="text-[11px] opacity-80 mt-0.5">{arg.timeText}</p>
         )}
-        {!isCompact && calEvent?.technician_ids?.length > 0 && (
-          <p className="text-[10px] opacity-70 truncate">{getTechNames(calEvent.technician_ids)}</p>
+        {!isCompact && calEvent?.customer && (
+          <p className="text-[11px] opacity-75 truncate mt-0.5">{calEvent.customer}</p>
+        )}
+        {!isMedium && calEvent?.technician_ids?.length > 0 && (
+          <p className="text-[10px] opacity-65 truncate mt-auto pt-0.5">{getTechNames(calEvent.technician_ids)}</p>
         )}
       </div>
     );
@@ -420,7 +333,9 @@ export default function RessursplanleggerPage() {
           <p className="text-muted-foreground mt-1">Planlegg og administrer jobber og teknikere</p>
         </div>
         {canDo("ressursplan.schedule") && (
-          <Button onClick={() => openNewEvent()} className="gap-2"><Plus className="h-4 w-4" />Ny hendelse</Button>
+          <Button onClick={() => openNewEvent()} className="gap-2 shadow-sm">
+            <Plus className="h-4 w-4" />Ny hendelse
+          </Button>
         )}
       </div>
 
@@ -451,17 +366,21 @@ export default function RessursplanleggerPage() {
       {/* Unplanned Jobs Strip */}
       <UnplannedJobsStrip
         onJobClick={(job) => {
-          openNewEvent();
-          setFormJobId(job.id);
-          setFormTitle(`${job.job_number} – ${job.title}`);
-          setFormCustomer(job.company_name || "");
-          setFormAddress(job.site_address || "");
+          setEditingEvent(null);
+          setPrefillDate(format(new Date(), "yyyy-MM-dd"));
+          setPrefillStartTime("08:00");
+          setPrefillEndTime("16:00");
+          setPrefillJobId(job.id);
+          setPrefillTitle(`${job.job_number} – ${job.title}`);
+          setPrefillCustomer(job.company_name || "");
+          setPrefillAddress(job.site_address || "");
+          setCreateDrawerOpen(true);
         }}
       />
 
       <div className="flex gap-4">
         {/* Technician sidebar */}
-        <Card className="w-60 shrink-0">
+        <Card className="w-60 shrink-0 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2"><Users className="h-4 w-4" /> Teknikere</CardTitle>
           </CardHeader>
@@ -500,7 +419,7 @@ export default function RessursplanleggerPage() {
         </Card>
 
         {/* FullCalendar */}
-        <div className="flex-1 overflow-hidden rounded-xl border border-border/30 bg-card shadow-sm">
+        <div className="flex-1 overflow-hidden rounded-xl border border-border/40 bg-card shadow-sm">
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
@@ -510,10 +429,11 @@ export default function RessursplanleggerPage() {
             firstDay={1}
             headerToolbar={false}
             height="auto"
-            contentHeight={calendarView === "dayGridMonth" ? 600 : undefined}
+            contentHeight={calendarView === "dayGridMonth" ? 620 : undefined}
             slotMinTime="06:00:00"
             slotMaxTime="20:00:00"
-            slotDuration="00:30:00"
+            slotDuration="00:15:00"
+            snapDuration="00:15:00"
             slotLabelInterval="01:00:00"
             slotLabelFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
             eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
@@ -536,7 +456,7 @@ export default function RessursplanleggerPage() {
         </div>
       </div>
 
-      {/* Event Drawer */}
+      {/* Event Detail Drawer */}
       <EventDrawer
         open={!!detailEvent}
         onOpenChange={(o) => { if (!o) setDetailEvent(null); }}
@@ -547,66 +467,22 @@ export default function RessursplanleggerPage() {
         onRefresh={fetchEvents}
       />
 
-      {/* Event Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>{editEvent ? "Rediger hendelse" : "Ny hendelse"}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Koble til jobb</Label>
-              <Select value={formJobId || "__none__"} onValueChange={handleJobSelect}>
-                <SelectTrigger><SelectValue placeholder="Velg jobb..." /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Ingen jobb (frittstående)</SelectItem>
-                  {jobsLoading ? (
-                    <SelectItem value="__loading__" disabled>Laster...</SelectItem>
-                  ) : (
-                    availableJobs.map((j: any) => (
-                      <SelectItem key={j.id} value={j.id}>
-                        {j.job_number} – {j.title} {j.company?.name ? `(${j.company.name})` : ""}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-              {formJobId && <p className="text-[11px] text-muted-foreground">Kunde og adresse er fylt inn fra jobben.</p>}
-            </div>
-            <div className="space-y-1.5">
-              <Label>Tittel *</Label>
-              <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="F.eks. Installasjon varmepumpe" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label>Kunde</Label><Input value={formCustomer} onChange={(e) => setFormCustomer(e.target.value)} /></div>
-              <div className="space-y-1.5"><Label>Adresse</Label><Input value={formAddress} onChange={(e) => setFormAddress(e.target.value)} /></div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5"><Label>Dato *</Label><Input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} /></div>
-              <div className="space-y-1.5"><Label>Fra</Label><Input type="time" value={formStartTime} onChange={(e) => setFormStartTime(e.target.value)} /></div>
-              <div className="space-y-1.5"><Label>Til</Label><Input type="time" value={formEndTime} onChange={(e) => setFormEndTime(e.target.value)} /></div>
-            </div>
-            <div className="space-y-1.5"><Label>Beskrivelse</Label><Textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} /></div>
-            <div className="space-y-1.5">
-              <Label>Teknikere</Label>
-              <div className="flex flex-wrap gap-2">
-                {technicians.map((tech) => (
-                  <Button key={tech.id} type="button" variant={formTechIds.includes(tech.id) ? "default" : "outline"} size="sm" className="gap-1.5"
-                    onClick={() => toggleTechInForm(tech.id)}>
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: tech.color }} />{tech.name}
-                  </Button>
-                ))}
-                {technicians.length === 0 && <p className="text-xs text-muted-foreground">Ingen teknikere tilgjengelig</p>}
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Avbryt</Button>
-            <Button onClick={handleSave} disabled={saving || !formTitle.trim() || !formDate}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              {editEvent ? "Lagre" : "Opprett"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Create/Edit Event Drawer */}
+      <CreateEventDrawer
+        open={createDrawerOpen}
+        onOpenChange={setCreateDrawerOpen}
+        technicians={technicians}
+        editEvent={editingEvent}
+        prefillDate={prefillDate}
+        prefillStartTime={prefillStartTime}
+        prefillEndTime={prefillEndTime}
+        prefillJobId={prefillJobId}
+        prefillTitle={prefillTitle}
+        prefillCustomer={prefillCustomer}
+        prefillAddress={prefillAddress}
+        selectedTechId={selectedTechId}
+        onSaved={fetchEvents}
+      />
     </div>
   );
 }
