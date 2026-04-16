@@ -182,9 +182,14 @@ export function CreateEventDrawer({
         body: { event_id: eventId },
       });
       if (data?.ok) {
-        toast.success("Synket til ekstern kalender", { description: `Teknikere mottar kalenderinvitasjon (${data.provider === "google" ? "Google" : "Microsoft"})` });
+        const parts: string[] = [];
+        if (data.calendar === "synced") parts.push("kalendersynk");
+        if (data.notification?.sent > 0) parts.push(`varsel til ${data.notification.sent} tekniker(e)`);
+        if (parts.length > 0) {
+          toast.success("Synk & varsling fullført", { description: parts.join(" + ") });
+        }
       } else if (data?.reason === "no_integration") {
-        // Silently skip - no integration configured
+        // Silently skip
       } else if (error) {
         console.warn("Calendar sync failed:", error);
       }

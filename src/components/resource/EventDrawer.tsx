@@ -49,6 +49,7 @@ type CalendarEvent = {
   job?: any; service_visit?: any; site?: any;
   calendar_sync_status?: string; external_calendar_event_id?: string | null;
   calendar_sync_error?: string | null;
+  notification_status?: string; notified_at?: string | null;
 };
 
 type EventNote = {
@@ -83,6 +84,7 @@ const ACTION_LABELS: Record<string, string> = {
   technician_added: "Tekniker lagt til",
   technician_removed: "Tekniker fjernet",
   status_changed: "Status endret",
+  notification_sent: "Varsel sendt",
   deleted: "Slettet",
 };
 
@@ -375,6 +377,7 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete, onRefresh }: {
   canEdit: boolean; onEdit: () => void; onDelete: () => void; onRefresh: () => void;
 }) {
   const [syncing, setSyncing] = useState(false);
+  const [notifying, setNotifying] = useState(false);
 
   const handleResync = async () => {
     setSyncing(true);
@@ -383,7 +386,7 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete, onRefresh }: {
         body: { event_id: event.id },
       });
       if (data?.ok) {
-        toast.success("Synket til ekstern kalender");
+        toast.success("Synket og varslet");
         onRefresh();
       } else {
         toast.error("Kalendersynk feilet");
@@ -392,6 +395,27 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete, onRefresh }: {
       toast.error("Kalendersynk feilet");
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleNotifyOnly = async () => {
+    setNotifying(true);
+    try {
+      const { data } = await supabase.functions.invoke("calendar-sync", {
+        body: { event_id: event.id, action: "notify" },
+      });
+      if (data?.ok && data?.notification?.sent > 0) {
+        toast.success(`Varsel sendt til ${data.notification.sent} tekniker(e)`);
+        onRefresh();
+      } else if (data?.notification?.sent === 0) {
+        toast.info("Ingen teknikere med e-post å varsle");
+      } else {
+        toast.error("Varsling feilet");
+      }
+    } catch {
+      toast.error("Kunne ikke sende varsel");
+    } finally {
+      setNotifying(false);
     }
   };
   return (
@@ -560,44 +584,94 @@ function DetailsTab({ event, techs, canEdit, onEdit, onDelete, onRefresh }: {
           </section>
         )}
 
-        {/* Calendar Sync Status */}
+        {/* Calendar Sync & Notification Status */}
         <section>
-          <SectionLabel>Kalendersynk</SectionLabel>
-          <div className="rounded-lg border border-border/40 bg-card p-3 space-y-2">
-            {event.calendar_sync_status === "synced" && (
-              <div className="flex items-center gap-2 text-sm">
-                <CalendarCheck className="h-4 w-4 text-emerald-600 shrink-0" />
-                <span className="text-emerald-700 font-medium">Synket til ekstern kalender</span>
-              </div>
-            )}
-            {event.calendar_sync_status === "pending" && (
-              <div className="flex items-center gap-2 text-sm">
-                <Loader2 className="h-4 w-4 animate-spin text-amber-600 shrink-0" />
-                <span className="text-amber-700">Synkroniserer...</span>
-              </div>
-            )}
-            {event.calendar_sync_status === "failed" && (
-              <div className="space-y-1.5">
+          <SectionLabel>Synk & Varsling</SectionLabel>
+          <div className="rounded-lg border border-border/40 bg-card p-3 space-y-3">
+            {/* Calendar sync status */}
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Kalendersynk</p>
+              {event.calendar_sync_status === "synced" && (
                 <div className="flex items-center gap-2 text-sm">
-                  <CalendarX2 className="h-4 w-4 text-destructive shrink-0" />
-                  <span className="text-destructive font-medium">Synk feilet</span>
+                  <CalendarCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span className="text-emerald-700 font-medium">Synket til ekstern kalender</span>
                 </div>
-                {event.calendar_sync_error && (
-                  <p className="text-xs text-muted-foreground pl-6">{event.calendar_sync_error}</p>
-                )}
-              </div>
-            )}
-            {(!event.calendar_sync_status || event.calendar_sync_status === "none") && (
-              <div className="flex items-center gap-2 text-sm">
-                <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span className="text-muted-foreground">Kun i VPK – ikke synket til kalender</span>
-              </div>
-            )}
+              )}
+              {event.calendar_sync_status === "pending" && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Loader2 className="h-4 w-4 animate-spin text-amber-600 shrink-0" />
+                  <span className="text-amber-700">Synkroniserer...</span>
+                </div>
+              )}
+              {event.calendar_sync_status === "failed" && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm">
+                    <CalendarX2 className="h-4 w-4 text-destructive shrink-0" />
+                    <span className="text-destructive font-medium">Synk feilet</span>
+                  </div>
+                  {event.calendar_sync_error && (
+                    <p className="text-xs text-muted-foreground pl-6">{event.calendar_sync_error}</p>
+                  )}
+                </div>
+              )}
+              {(!event.calendar_sync_status || event.calendar_sync_status === "none") && (
+                <div className="flex items-center gap-2 text-sm">
+                  <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">Kun i VPK – ikke synket</span>
+                </div>
+              )}
+            </div>
+
+            <Separator className="!my-2" />
+
+            {/* Notification status */}
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">E-postvarsling</p>
+              {event.notification_status === "sent" && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <div>
+                    <span className="text-emerald-700 font-medium">Varsel sendt</span>
+                    {event.notified_at && (
+                      <p className="text-[11px] text-muted-foreground">
+                        {formatDistanceToNow(parseISO(event.notified_at), { addSuffix: true, locale: nb })}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+              {event.notification_status === "partial" && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-amber-600 shrink-0" />
+                  <span className="text-amber-700 font-medium">Delvis sendt – noen feilet</span>
+                </div>
+              )}
+              {event.notification_status === "failed" && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-destructive shrink-0" />
+                  <span className="text-destructive font-medium">Varsling feilet</span>
+                </div>
+              )}
+              {(!event.notification_status || event.notification_status === "none") && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">Ingen varsel sendt</span>
+                </div>
+              )}
+            </div>
+
+            {/* Action buttons */}
             {canEdit && (
-              <Button variant="outline" size="sm" className="w-full gap-1.5 mt-1" onClick={handleResync} disabled={syncing}>
-                {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                {event.calendar_sync_status === "synced" ? "Synk på nytt" : "Synk til kalender"}
-              </Button>
+              <div className="flex gap-2 pt-1">
+                <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={handleResync} disabled={syncing}>
+                  {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                  {event.calendar_sync_status === "synced" ? "Synk på nytt" : "Synk & varsle"}
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={handleNotifyOnly} disabled={notifying}>
+                  {notifying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                  Send varsel
+                </Button>
+              </div>
             )}
           </div>
         </section>

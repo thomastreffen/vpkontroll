@@ -957,6 +957,8 @@ export type Database = {
           external_calendar_event_id: string | null
           id: string
           job_id: string | null
+          notification_status: string
+          notified_at: string | null
           service_visit_id: string | null
           site_id: string | null
           start_time: string
@@ -978,6 +980,8 @@ export type Database = {
           external_calendar_event_id?: string | null
           id?: string
           job_id?: string | null
+          notification_status?: string
+          notified_at?: string | null
           service_visit_id?: string | null
           site_id?: string | null
           start_time: string
@@ -999,6 +1003,8 @@ export type Database = {
           external_calendar_event_id?: string | null
           id?: string
           job_id?: string | null
+          notification_status?: string
+          notified_at?: string | null
           service_visit_id?: string | null
           site_id?: string | null
           start_time?: string

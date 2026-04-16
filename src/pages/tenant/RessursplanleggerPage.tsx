@@ -39,6 +39,7 @@ type CalendarEvent = {
   job?: any; service_visit?: any; site?: any;
   calendar_sync_status?: string; external_calendar_event_id?: string | null;
   calendar_sync_error?: string | null;
+  notification_status?: string; notified_at?: string | null;
 };
 
 type CalendarViewType = "timeGridDay" | "timeGridWeek" | "dayGridMonth" | "listWeek";
@@ -393,10 +394,13 @@ export default function RessursplanleggerPage() {
           {calEvent?.service_visit_id && <CalendarDays className="h-3 w-3 shrink-0 opacity-80" />}
           <span className="font-semibold text-xs truncate leading-tight">{arg.event.title}</span>
           {calEvent?.calendar_sync_status === "synced" && (
-            <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 ml-auto" title="Synket til kalender" />
+            <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" title="Synket til kalender" />
           )}
           {calEvent?.calendar_sync_status === "failed" && (
-            <span className="w-2 h-2 rounded-full bg-red-400 shrink-0 ml-auto" title="Kalendersynk feilet" />
+            <span className="w-2 h-2 rounded-full bg-red-400 shrink-0" title="Kalendersynk feilet" />
+          )}
+          {calEvent?.notification_status === "sent" && !calEvent?.calendar_sync_status?.match(/synced/) && (
+            <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0 ml-auto" title="Varsel sendt" />
           )}
         </div>
         {!isCompact && arg.timeText && (
