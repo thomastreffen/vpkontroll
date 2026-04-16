@@ -487,150 +487,16 @@ export default function RessursplanleggerPage() {
         </div>
       </div>
 
-      {/* Detail Sheet */}
-      <Sheet open={!!detailEvent} onOpenChange={(o) => { if (!o) setDetailEvent(null); }}>
-        <SheetContent className="w-[400px] sm:w-[440px]">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              {detailEvent?.job_id && <Briefcase className="h-4 w-4 text-primary" />}
-              {detailEvent?.service_visit_id && <CalendarDays className="h-4 w-4 text-primary" />}
-              {detailEvent?.title}
-            </SheetTitle>
-          </SheetHeader>
-          {detailEvent && (
-            <div className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <p className="text-[11px] text-muted-foreground font-medium uppercase">Tidspunkt</p>
-                  <p>{format(parseISO(detailEvent.start_time), "d. MMM yyyy", { locale: nb })}</p>
-                  <p>{format(parseISO(detailEvent.start_time), "HH:mm")} – {format(parseISO(detailEvent.end_time), "HH:mm")}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-muted-foreground font-medium uppercase">Status</p>
-                  <Badge variant="outline">{detailEvent.status}</Badge>
-                </div>
-              </div>
-
-              {detailEvent.customer && (
-                <div className="text-sm">
-                  <p className="text-[11px] text-muted-foreground font-medium uppercase">Kunde</p>
-                  <p>{detailEvent.customer}</p>
-                </div>
-              )}
-              {detailEvent.address && (
-                <div className="text-sm">
-                  <p className="text-[11px] text-muted-foreground font-medium uppercase">Adresse</p>
-                  <p>{detailEvent.address}</p>
-                </div>
-              )}
-              {detailEvent.site && (
-                <div className="text-sm">
-                  <p className="text-[11px] text-muted-foreground font-medium uppercase">Anleggsadresse</p>
-                  <p>{detailEvent.site.name || detailEvent.site.address}, {detailEvent.site.city}</p>
-                </div>
-              )}
-
-              {detailEvent.job && (
-                <Card className="p-3">
-                  <p className="text-[11px] text-muted-foreground font-medium uppercase mb-1">Koblet jobb</p>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-sm">{detailEvent.job.job_number} – {detailEvent.job.title}</p>
-                      <div className="flex gap-2 mt-1">
-                        <Badge variant="secondary" className={`text-[10px] ${JOB_STATUS_COLORS[detailEvent.job.status] || ""}`}>
-                          {JOB_STATUS_LABELS[detailEvent.job.status] || detailEvent.job.status}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">{JOB_TYPE_LABELS[detailEvent.job.job_type] || detailEvent.job.job_type}</span>
-                      </div>
-                    </div>
-                    <Link to={`/tenant/crm/jobs/${detailEvent.job.id}`}>
-                      <Button variant="ghost" size="icon"><ExternalLink className="h-4 w-4" /></Button>
-                    </Link>
-                  </div>
-                </Card>
-              )}
-
-              {detailEvent.service_visit && (
-                <Card className="p-3">
-                  <p className="text-[11px] text-muted-foreground font-medium uppercase mb-1">Servicebesøk</p>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm">Planlagt: {detailEvent.service_visit.scheduled_date || "–"}</p>
-                      <div className="flex gap-1.5 mt-1">
-                        <Badge variant="outline" className="text-[10px]">{VISIT_STATUS_LABELS[detailEvent.service_visit.status] || detailEvent.service_visit.status}</Badge>
-                        {detailEvent.service_visit.report_data?.schema_version === 1 ? (
-                          <Badge variant="secondary" className="text-[10px] gap-1 bg-emerald-500/10 text-emerald-600">
-                            <CalendarDays className="h-2.5 w-2.5" />Skjema utfylt
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-200">Skjema mangler</Badge>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-1">
-                      {detailEvent.service_visit.agreement_id && (
-                        <Link to={`/tenant/crm/agreements/${detailEvent.service_visit.agreement_id}`}>
-                          <Button variant="ghost" size="icon"><ExternalLink className="h-4 w-4" /></Button>
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              )}
-
-              {detailEvent.technician_ids.length > 0 && (
-                <div>
-                  <p className="text-[11px] text-muted-foreground font-medium uppercase mb-1">Teknikere</p>
-                  <div className="flex flex-wrap gap-2">
-                    {detailEvent.technician_ids.map(id => {
-                      const tech = technicians.find(t => t.id === id);
-                      if (!tech) return null;
-                      return (
-                        <Badge key={id} variant="secondary" className="gap-1.5">
-                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tech.color }} />
-                          {tech.name}
-                        </Badge>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {detailEvent.description && (
-                <div className="text-sm">
-                  <p className="text-[11px] text-muted-foreground font-medium uppercase">Beskrivelse</p>
-                  <p className="text-muted-foreground">{detailEvent.description}</p>
-                </div>
-              )}
-
-              <div className="flex gap-2 pt-2 flex-wrap">
-                <Button variant="outline" size="sm" onClick={() => { openEditEvent(detailEvent); setDetailEvent(null); }}>Rediger</Button>
-                {detailEvent.service_visit_id && detailEvent.service_visit && (
-                  detailEvent.service_visit.report_data?.schema_version === 1 ? (
-                    <Link to={`/tenant/crm/agreements/${detailEvent.service_visit.agreement_id}`}>
-                      <Button variant="outline" size="sm" className="gap-1.5"><Eye className="h-3 w-3" />Se skjema</Button>
-                    </Link>
-                  ) : detailEvent.service_visit.agreement_id ? (
-                    <Link to={`/tenant/crm/agreements/${detailEvent.service_visit.agreement_id}`}>
-                      <Button size="sm" className="gap-1.5"><ClipboardList className="h-3 w-3" />Fyll ut skjema</Button>
-                    </Link>
-                  ) : null
-                )}
-                {detailEvent.job_id && detailEvent.job && (
-                  (detailEvent.job.job_type === "installation" || detailEvent.job.job_type === "service") && (
-                    <Link to={`/tenant/crm/jobs/${detailEvent.job.id}`}>
-                      <Button variant="outline" size="sm" className="gap-1.5">
-                        <ClipboardList className="h-3 w-3" />
-                        {detailEvent.job.form_data?.schema_version === 1 ? "Se skjema" : "Fyll ut skjema"}
-                      </Button>
-                    </Link>
-                  )
-                )}
-              </div>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
+      {/* Event Drawer */}
+      <EventDrawer
+        open={!!detailEvent}
+        onOpenChange={(o) => { if (!o) setDetailEvent(null); }}
+        event={detailEvent}
+        technicians={technicians}
+        onEdit={(ev) => { openEditEvent(ev); setDetailEvent(null); }}
+        onDeleted={fetchEvents}
+        onRefresh={fetchEvents}
+      />
 
       {/* Event Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
