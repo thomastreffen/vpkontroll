@@ -448,25 +448,53 @@ export default function RessursplanleggerPage() {
         </div>
       </div>
 
+      {/* Unplanned Jobs Strip */}
+      <UnplannedJobsStrip
+        onJobClick={(job) => {
+          openNewEvent();
+          setFormJobId(job.id);
+          setFormTitle(`${job.job_number} – ${job.title}`);
+          setFormCustomer(job.company_name || "");
+          setFormAddress(job.site_address || "");
+        }}
+      />
+
       <div className="flex gap-4">
         {/* Technician sidebar */}
-        <Card className="w-56 shrink-0">
+        <Card className="w-60 shrink-0">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2"><Users className="h-4 w-4" /> Teknikere</CardTitle>
           </CardHeader>
-          <CardContent className="p-2">
-            <Button variant={selectedTechId === null ? "default" : "ghost"} size="sm" className="w-full justify-start mb-1" onClick={() => setSelectedTechId(null)}>Alle</Button>
-            {technicians.map((tech) => (
-              <Button key={tech.id} variant={selectedTechId === tech.id ? "default" : "ghost"} size="sm"
-                className="w-full justify-start gap-2 mb-0.5"
-                onClick={() => setSelectedTechId(selectedTechId === tech.id ? null : tech.id)}>
-                <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: tech.color }} />
-                <span className="truncate">{tech.name}</span>
-                <Badge variant="secondary" className="ml-auto text-[10px] px-1.5">
-                  {events.filter(e => e.technician_ids.includes(tech.id)).length}
-                </Badge>
-              </Button>
-            ))}
+          <CardContent className="p-2 space-y-0.5">
+            <Button variant={selectedTechId === null ? "default" : "ghost"} size="sm" className="w-full justify-start mb-1" onClick={() => setSelectedTechId(null)}>
+              <Users className="h-3.5 w-3.5 mr-2" />Alle
+              <Badge variant="secondary" className="ml-auto text-[10px] px-1.5">{events.length}</Badge>
+            </Button>
+            {technicians.map((tech) => {
+              const techEventCount = events.filter(e => e.technician_ids.includes(tech.id)).length;
+              const isSelected = selectedTechId === tech.id;
+              return (
+                <Button key={tech.id} variant={isSelected ? "default" : "ghost"} size="sm"
+                  className="w-full justify-start gap-2 h-auto py-2"
+                  onClick={() => setSelectedTechId(isSelected ? null : tech.id)}>
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+                    style={{ backgroundColor: tech.color }}>
+                    {tech.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1 text-left">
+                    <p className="text-xs font-medium truncate">{tech.name}</p>
+                    {tech.phone && (
+                      <p className={cn("text-[10px] truncate", isSelected ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                        <Phone className="h-2.5 w-2.5 inline mr-0.5" />{tech.phone}
+                      </p>
+                    )}
+                  </div>
+                  <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 shrink-0">
+                    {techEventCount}
+                  </Badge>
+                </Button>
+              );
+            })}
             {technicians.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Ingen teknikere lagt til ennå</p>}
           </CardContent>
         </Card>
