@@ -170,9 +170,11 @@ function encodeSubject(subject: string): string {
 /* ── Email notification ── */
 
 function buildNotificationHtml(event: any, dateStr: string, timeStr: string, isUpdate: boolean): string {
-  const preheader = isUpdate
-    ? `Oppdatert: ${event.title} - ${dateStr}, ${timeStr}`
-    : `${event.title} - ${dateStr}, ${timeStr}`;
+  const preheaderText = isUpdate
+    ? `Oppdatert: ${event.title} \u2013 ${dateStr}, ${timeStr}${event.customer ? `, ${event.customer}` : ""}`
+    : `${event.title} \u2013 ${dateStr}, ${timeStr}${event.customer ? `, ${event.customer}` : ""}`;
+  // Zero-width spaces + non-breaking spaces to fill Gmail snippet and prevent body text leaking in
+  const snippetPad = "\u200C\u00A0".repeat(80);
 
   const rows: string[] = [];
   rows.push(`<tr><td style="color:#6b7280;padding:4px 12px 4px 0;white-space:nowrap">Dato</td><td style="padding:4px 0">${dateStr}</td></tr>`);
