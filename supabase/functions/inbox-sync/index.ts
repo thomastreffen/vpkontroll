@@ -177,7 +177,7 @@ async function fetchGoogleEmails(accessToken: string, _mailbox: string, cursor?:
     const batchResults = await Promise.all(
       batch.map(async (msgId) => {
         const res = await fetch(
-          `https://gmail.googleapis.com/gmail/v1/users/${mailbox}/messages/${msgId}?format=full`,
+          `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msgId}?format=full`,
           { headers: { Authorization: `Bearer ${accessToken}` } }
         );
         if (!res.ok) { await res.text(); return null; }
