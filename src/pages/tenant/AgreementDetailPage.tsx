@@ -104,9 +104,30 @@ export default function AgreementDetailPage() {
   const [visitSignoff, setVisitSignoff] = useState<SignoffData>(DEFAULT_SIGNOFF);
   const [sendReportOpen, setSendReportOpen] = useState(false);
   const [sendVisitId, setSendVisitId] = useState<string | null>(null);
+  const triggerNow = async () => {
+    if (!id) return;
+    setTriggering(true);
+    const { data, error } = await supabase.rpc("generate_service_visit_now" as any, { p_agreement_id: id });
+    setTriggering(false);
+    if (error) {
+      toast.error("Feil under generering: " + error.message);
+      return;
+    }
+    const res = data as { visits_created: number; jobs_created: number } | null;
+    if (res?.visits_created === 0) {
+      toast.info("Ingen nye besøk å generere – avtalen er allerede à jour.");
+    } else {
+      toast.success(`Genererte ${res?.visits_created ?? 0} besøk og ${res?.jobs_created ?? 0} jobber.`);
+    }
+    generationRuns.refetch();
+    visits.refetch();
+    jobs.refetch();
+  };
+
   // Fetch sites/assets for edit dialog
   const [editSites, setEditSites] = useState<any[]>([]);
   const [editAssets, setEditAssets] = useState<any[]>([]);
+  const [triggering, setTriggering] = useState(false);
 
   // Fetch template fields if agreement has a service_template_id
   const serviceTemplateId = agreement.data?.service_template_id;
@@ -439,31 +460,95 @@ export default function AgreementDetailPage() {
         </TabsContent>
 
         {/* Automation tab */}
-        <TabsContent value="automation" className="mt-4">
+        <TabsContent value="automation" className="mt-4 space-y-4">
+          {/* Status + manuell trigger */}
           <Card className="p-5">
-            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><Settings2 className="h-4 w-4" />Automatisk generering</h3>
-            <p className="text-xs text-muted-foreground mb-4">
-              Systemet sjekker daglig om neste service nærmer seg og oppretter automatisk servicebesøk og jobber basert på avtalens intervall.
-            </p>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-sm font-semibold flex items-center gap-2 mb-1">
+                  <Settings2 className="h-4 w-4" />Automatisk generering
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Systemet kjører daglig kl. 06:00 og genererer servicebesøk og jobber for alle aktive avtaler med forfalt eller nær forestående dato.
+                  Kjør manuelt for å teste eller hente inn forsinkede besøk.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={triggerNow}
+                disabled={triggering || a.status !== "active"}
+                className="gap-1.5 shrink-0"
+              >
+                {triggering
+                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  : <RefreshCw className="h-3.5 w-3.5" />}
+                Kjør nå
+              </Button>
+            </div>
+
+            {a.next_visit_due && (
+              <div className="mt-4 pt-4 border-t">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-muted/40 rounded-lg px-3 py-2.5">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Neste forfall</p>
+                    <p className="text-sm font-semibold">{formatDate(a.next_visit_due)}</p>
+                  </div>
+                  <div className="bg-muted/40 rounded-lg px-3 py-2.5">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Intervall</p>
+                    <p className="text-sm font-semibold">{intervalLabel}</p>
+                  </div>
+                  <div className="bg-muted/40 rounded-lg px-3 py-2.5">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Status</p>
+                    <p className={`text-sm font-semibold ${due.color}`}>{due.label}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </Card>
+
+          {/* Kjøringslogg */}
+          <Card className="p-5">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <Clock className="h-4 w-4" />Kjøringslogg
+            </h3>
             {generationRuns.data && generationRuns.data.length > 0 ? (
               <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Siste kjøringer</p>
-                {generationRuns.data.map(run => (
-                  <div key={run.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 text-sm">
+                {generationRuns.data.map((run: any) => (
+                  <div key={run.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                     <div>
-                      <p className="font-medium">{formatDateTime(run.started_at)}</p>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <p className="text-sm font-medium">{formatDateTime(run.started_at)}</p>
+                        <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 rounded bg-muted">
+                          {run.triggered_by === "manual" ? "Manuell" : run.triggered_by === "pg_cron" ? "Automatisk" : run.triggered_by}
+                        </span>
+                      </div>
                       <p className="text-xs text-muted-foreground">
-                        {run.agreements_scanned} avtaler skannet · {run.visits_created} besøk · {run.jobs_created} jobber
+                        {run.agreements_scanned} avtaler · {run.visits_created} besøk · {run.jobs_created} jobber
+                        {run.errors_count > 0 && ` · ${run.errors_count} feil`}
                       </p>
                     </div>
-                    <Badge variant="outline" className={`text-[10px] ${run.status === "completed" ? "text-emerald-600" : run.status === "running" ? "text-amber-600" : "text-destructive"}`}>
-                      {run.status === "completed" ? "Fullført" : run.status === "running" ? "Kjører" : "Feil"}
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] ${
+                        run.status === "completed" ? "text-emerald-600 border-emerald-200" :
+                        run.status === "running"   ? "text-amber-600 border-amber-200" :
+                        "text-destructive border-destructive/30"
+                      }`}
+                    >
+                      {run.status === "completed" ? "Fullført" :
+                       run.status === "completed_with_errors" ? "Fullført m/feil" :
+                       run.status === "running" ? "Kjører" : "Feil"}
                     </Badge>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Ingen kjøringer registrert ennå.</p>
+              <div className="text-center py-8">
+                <Settings2 className="h-7 w-7 text-muted-foreground/30 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Ingen kjøringer ennå.</p>
+                <p className="text-xs text-muted-foreground mt-1">Bruk «Kjør nå» for å teste genereringen.</p>
+              </div>
             )}
           </Card>
         </TabsContent>

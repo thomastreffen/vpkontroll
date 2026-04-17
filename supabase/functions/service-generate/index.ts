@@ -11,6 +11,7 @@ const INTERVAL_MONTHS: Record<string, number> = {
   semi_annual: 6,
   annual: 12,
   biennial: 24,
+  custom: 12, // fallback; use ag.custom_interval_months when set
 };
 
 function addMonths(date: Date, months: number): string {
@@ -65,13 +66,13 @@ Deno.serve(async (req) => {
   const errorDetails: unknown[] = [];
 
   try {
-    // Fetch active agreements with next_visit_due in window
+    // Fetch active agreements due within the window.
+    // No lower bound — overdue agreements (next_visit_due < today) must also be processed.
     const { data: agreements, error: agErr } = await supabase
       .from("service_agreements")
-      .select("id, tenant_id, company_id, site_id, asset_id, interval, next_visit_due, scope_description")
+      .select("id, tenant_id, company_id, site_id, asset_id, interval, custom_interval_months, next_visit_due, scope_description")
       .eq("status", "active")
       .not("next_visit_due", "is", null)
-      .gte("next_visit_due", today)
       .lte("next_visit_due", futureDateStr)
       .is("deleted_at", null);
 
@@ -133,7 +134,9 @@ Deno.serve(async (req) => {
         visitsCreated++;
 
         // Update next_visit_due
-        const months = INTERVAL_MONTHS[ag.interval] ?? 12;
+        const months = ag.interval === "custom"
+          ? ((ag as any).custom_interval_months ?? 12)
+          : (INTERVAL_MONTHS[ag.interval] ?? 12);
         const nextDue = addMonths(new Date(period), months);
 
         const { error: updateErr } = await supabase
