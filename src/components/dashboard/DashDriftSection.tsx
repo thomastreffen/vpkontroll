@@ -1,9 +1,8 @@
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Wrench, CalendarCheck, ArrowRight } from "lucide-react";
+import { Wrench, CalendarCheck, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { nb } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface Job {
   id: string;
@@ -31,10 +30,10 @@ interface Props {
   companyMap: Record<string, string>;
 }
 
-const statusColor: Record<string, string> = {
-  planned: "bg-[hsl(var(--crm-lead))]/10 text-[hsl(var(--crm-lead))]",
-  in_progress: "bg-[hsl(var(--crm-visit))]/10 text-[hsl(var(--crm-visit))]",
-  on_hold: "bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))]",
+const statusDot: Record<string, string> = {
+  planned: "bg-blue-400",
+  in_progress: "bg-emerald-400",
+  on_hold: "bg-amber-400",
 };
 
 const statusLabel: Record<string, string> = {
@@ -43,133 +42,102 @@ const statusLabel: Record<string, string> = {
   on_hold: "På vent",
 };
 
-const jobTypeLabel: Record<string, string> = {
-  installation: "Installasjon",
-  service: "Service",
-  maintenance: "Vedlikehold",
-  inspection: "Inspeksjon",
-  repair: "Reparasjon",
-};
-
 export default function DashDriftSection({ jobsThisWeek, visitsNext14, companyMap }: Props) {
   const navigate = useNavigate();
+  const hasJobs = jobsThisWeek.length > 0;
+  const hasVisits = visitsNext14.length > 0;
+
+  if (!hasJobs && !hasVisits) return null;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <Card className="border-border/50">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Wrench className="w-4 h-4" /> Jobber denne uken
-            </CardTitle>
+    <div className="rounded-xl border border-border overflow-hidden bg-card [box-shadow:var(--shadow-card)]">
+      {hasJobs && (
+        <>
+          <div className="px-5 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <button className="text-xs text-primary hover:underline" onClick={() => navigate("/tenant/ressursplanlegger")}>
-                Planlegger →
-              </button>
-              <button className="text-xs text-primary hover:underline" onClick={() => navigate("/tenant/crm/jobs")}>
-                Alle →
-              </button>
+              <Wrench className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-semibold">Jobber denne uken</span>
+              <span className="text-xs text-muted-foreground">{jobsThisWeek.length}</span>
             </div>
+            <button
+              className="text-xs text-primary hover:underline"
+              onClick={() => navigate("/tenant/ressursplanlegger")}
+            >
+              Planlegger →
+            </button>
           </div>
-        </CardHeader>
-        <CardContent className="pb-3">
-          {!jobsThisWeek.length ? (
-            <div className="flex flex-col items-center py-6 text-center">
-              <Wrench className="w-8 h-8 text-muted-foreground/30 mb-2" />
-              <p className="text-sm text-muted-foreground">Ingen jobber planlagt denne uken</p>
-              <button className="text-xs text-primary hover:underline mt-1" onClick={() => navigate("/tenant/ressursplanlegger")}>
-                Åpne planlegger →
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {jobsThisWeek.slice(0, 6).map((j) => {
-                const hasForm = j.form_data && (j.form_data as any)?.template_id;
-                const customer = j.company_id ? companyMap[j.company_id] : null;
-                return (
-                  <div
-                    key={j.id}
-                    className="flex items-center gap-3 py-2 cursor-pointer hover:bg-muted/50 rounded-md px-2 -mx-2 transition-colors"
-                    onClick={() => navigate(`/tenant/crm/jobs/${j.id}`)}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-muted-foreground">{j.job_number}</span>
-                        <p className="text-sm font-medium truncate">{j.title}</p>
-                      </div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        {j.scheduled_start && (
-                          <span className="text-[10px] text-muted-foreground">{format(new Date(j.scheduled_start), "EEE d. MMM", { locale: nb })}</span>
-                        )}
-                        {customer && <span className="text-[10px] text-muted-foreground">· {customer}</span>}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {(j.job_type === "installation" || j.job_type === "service") && (
-                        <Badge variant="outline" className={`text-[9px] ${hasForm ? "bg-[hsl(var(--success))]/10 text-[hsl(var(--success))]" : "bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))]"}`}>
-                          {hasForm ? "Skjema ✓" : "Skjema ✗"}
-                        </Badge>
-                      )}
-                      <Badge variant="outline" className={`${statusColor[j.status] ?? ""} text-[10px]`}>
-                        {statusLabel[j.status] ?? j.status}
-                      </Badge>
-                    </div>
+          <div className="divide-y divide-border">
+            {jobsThisWeek.slice(0, 5).map(j => {
+              const customer = j.company_id ? companyMap[j.company_id] : null;
+              return (
+                <div
+                  key={j.id}
+                  className="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-muted/40 transition-colors group"
+                  onClick={() => navigate(`/tenant/crm/jobs/${j.id}`)}
+                >
+                  <span className={cn("w-2 h-2 rounded-full shrink-0", statusDot[j.status] ?? "bg-muted-foreground/30")} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{j.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {j.scheduled_start && format(new Date(j.scheduled_start), "EEE d. MMM", { locale: nb })}
+                      {customer && <span> · {customer}</span>}
+                    </p>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  <span className="text-xs text-muted-foreground shrink-0">{statusLabel[j.status] ?? j.status}</span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0 group-hover:text-muted-foreground transition-colors" />
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
 
-      <Card className="border-border/50">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
-              <CalendarCheck className="w-4 h-4" /> Servicebesøk neste 14 dager
-            </CardTitle>
-            <button className="text-xs text-primary hover:underline" onClick={() => navigate("/tenant/crm/agreements")}>
+      {hasVisits && (
+        <>
+          <div className={cn(
+            "px-5 py-3 border-b border-border bg-muted/30 flex items-center justify-between",
+            hasJobs && "border-t"
+          )}>
+            <div className="flex items-center gap-2">
+              <CalendarCheck className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-semibold">Servicebesøk neste 14 dager</span>
+              <span className="text-xs text-muted-foreground">{visitsNext14.length}</span>
+            </div>
+            <button
+              className="text-xs text-primary hover:underline"
+              onClick={() => navigate("/tenant/crm/agreements")}
+            >
               Alle avtaler →
             </button>
           </div>
-        </CardHeader>
-        <CardContent className="pb-3">
-          {!visitsNext14.length ? (
-            <div className="flex flex-col items-center py-6 text-center">
-              <CalendarCheck className="w-8 h-8 text-muted-foreground/30 mb-2" />
-              <p className="text-sm text-muted-foreground">Ingen kommende servicebesøk</p>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {visitsNext14.slice(0, 6).map((v) => {
-                const hasReport = v.report_data && (v.report_data as any)?.template_id;
-                return (
-                  <div
-                    key={v.id}
-                    className="flex items-center gap-3 py-2 cursor-pointer hover:bg-muted/50 rounded-md px-2 -mx-2 transition-colors"
-                    onClick={() => navigate(v.agreement_id ? `/tenant/crm/agreements/${v.agreement_id}` : `/tenant/crm/jobs/${v.job_id}`)}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">Servicebesøk</p>
-                      {v.scheduled_date && (
-                        <p className="text-[10px] text-muted-foreground">{format(new Date(v.scheduled_date), "EEEE d. MMMM", { locale: nb })}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <Badge variant="outline" className={`text-[9px] ${hasReport ? "bg-[hsl(var(--success))]/10 text-[hsl(var(--success))]" : "bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))]"}`}>
-                        {hasReport ? "Rapport ✓" : "Rapport ✗"}
-                      </Badge>
-                      <Badge variant="outline" className={`${statusColor[v.status] ?? ""} text-[10px]`}>
-                        {statusLabel[v.status] ?? v.status}
-                      </Badge>
-                    </div>
+          <div className="divide-y divide-border">
+            {visitsNext14.slice(0, 5).map(v => {
+              const hasReport = v.report_data && (v.report_data as any)?.template_id;
+              return (
+                <div
+                  key={v.id}
+                  className="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-muted/40 transition-colors group"
+                  onClick={() => navigate(v.agreement_id ? `/tenant/crm/agreements/${v.agreement_id}` : `/tenant/crm/jobs/${v.job_id}`)}
+                >
+                  <span className={cn("w-2 h-2 rounded-full shrink-0", statusDot[v.status] ?? "bg-muted-foreground/30")} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">Servicebesøk</p>
+                    {v.scheduled_date && (
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(v.scheduled_date), "EEEE d. MMMM", { locale: nb })}
+                      </p>
+                    )}
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  {!hasReport && (
+                    <span className="text-xs text-amber-500 shrink-0">Mangler rapport</span>
+                  )}
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0 group-hover:text-muted-foreground transition-colors" />
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }
