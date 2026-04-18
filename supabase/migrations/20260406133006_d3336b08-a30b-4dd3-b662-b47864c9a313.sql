@@ -116,61 +116,61 @@ CREATE INDEX idx_tenant_user_role_user ON public.tenant_user_role_assignments(us
 CREATE INDEX idx_tenant_user_role_tenant ON public.tenant_user_role_assignments(tenant_id);
 CREATE INDEX idx_tenant_user_perm_ov_user ON public.tenant_user_permission_overrides(user_id);
 
--- 8) SEED DEFAULT ROLES FOR TEST TENANT
-INSERT INTO public.tenant_roles (id, tenant_id, name, description, is_system_role) VALUES
-  ('a0000000-0000-0000-0000-000000000001', '504920aa-0f4f-4dc8-8f9f-b343e24ff88b', 'Tekniker', 'Basistilgang for teknikere – kan se sin kalender og saker', true),
-  ('a0000000-0000-0000-0000-000000000002', '504920aa-0f4f-4dc8-8f9f-b343e24ff88b', 'Admin', 'Full tilgang til administrasjon og alle moduler', true),
-  ('a0000000-0000-0000-0000-000000000003', '504920aa-0f4f-4dc8-8f9f-b343e24ff88b', 'Superadmin', 'Superadmin med tilgang til alt', true);
+-- 8) SEED DEFAULT ROLES FOR TEST TENANT (skipped in prod — tenant may not exist)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.tenants WHERE id = '504920aa-0f4f-4dc8-8f9f-b343e24ff88b') THEN
+    INSERT INTO public.tenant_roles (id, tenant_id, name, description, is_system_role) VALUES
+      ('a0000000-0000-0000-0000-000000000001', '504920aa-0f4f-4dc8-8f9f-b343e24ff88b', 'Tekniker', 'Basistilgang for teknikere – kan se sin kalender og saker', true),
+      ('a0000000-0000-0000-0000-000000000002', '504920aa-0f4f-4dc8-8f9f-b343e24ff88b', 'Admin', 'Full tilgang til administrasjon og alle moduler', true),
+      ('a0000000-0000-0000-0000-000000000003', '504920aa-0f4f-4dc8-8f9f-b343e24ff88b', 'Superadmin', 'Superadmin med tilgang til alt', true)
+    ON CONFLICT DO NOTHING;
 
--- Tekniker permissions
-INSERT INTO public.tenant_role_permissions (role_id, permission_key, allowed) VALUES
-  ('a0000000-0000-0000-0000-000000000001', 'module.dashboard', true),
-  ('a0000000-0000-0000-0000-000000000001', 'module.ressursplanlegger', true),
-  ('a0000000-0000-0000-0000-000000000001', 'ressursplan.view', true),
-  ('a0000000-0000-0000-0000-000000000001', 'cases.view', true);
-
--- Admin permissions
-INSERT INTO public.tenant_role_permissions (role_id, permission_key, allowed) VALUES
-  ('a0000000-0000-0000-0000-000000000002', 'module.dashboard', true),
-  ('a0000000-0000-0000-0000-000000000002', 'module.postkontoret', true),
-  ('a0000000-0000-0000-0000-000000000002', 'module.ressursplanlegger', true),
-  ('a0000000-0000-0000-0000-000000000002', 'module.integrations', true),
-  ('a0000000-0000-0000-0000-000000000002', 'module.users', true),
-  ('a0000000-0000-0000-0000-000000000002', 'module.modules', true),
-  ('a0000000-0000-0000-0000-000000000002', 'module.access_control', true),
-  ('a0000000-0000-0000-0000-000000000002', 'cases.view', true),
-  ('a0000000-0000-0000-0000-000000000002', 'cases.create', true),
-  ('a0000000-0000-0000-0000-000000000002', 'cases.edit', true),
-  ('a0000000-0000-0000-0000-000000000002', 'cases.delete', true),
-  ('a0000000-0000-0000-0000-000000000002', 'ressursplan.view', true),
-  ('a0000000-0000-0000-0000-000000000002', 'ressursplan.schedule', true),
-  ('a0000000-0000-0000-0000-000000000002', 'ressursplan.edit_others', true),
-  ('a0000000-0000-0000-0000-000000000002', 'technicians.manage', true),
-  ('a0000000-0000-0000-0000-000000000002', 'admin.manage_users', true),
-  ('a0000000-0000-0000-0000-000000000002', 'admin.manage_roles', true),
-  ('a0000000-0000-0000-0000-000000000002', 'admin.manage_settings', true),
-  ('a0000000-0000-0000-0000-000000000002', 'integrations.manage', true);
-
--- Superadmin permissions (all of admin + extras)
-INSERT INTO public.tenant_role_permissions (role_id, permission_key, allowed) VALUES
-  ('a0000000-0000-0000-0000-000000000003', 'module.dashboard', true),
-  ('a0000000-0000-0000-0000-000000000003', 'module.postkontoret', true),
-  ('a0000000-0000-0000-0000-000000000003', 'module.ressursplanlegger', true),
-  ('a0000000-0000-0000-0000-000000000003', 'module.integrations', true),
-  ('a0000000-0000-0000-0000-000000000003', 'module.users', true),
-  ('a0000000-0000-0000-0000-000000000003', 'module.modules', true),
-  ('a0000000-0000-0000-0000-000000000003', 'module.access_control', true),
-  ('a0000000-0000-0000-0000-000000000003', 'cases.view', true),
-  ('a0000000-0000-0000-0000-000000000003', 'cases.create', true),
-  ('a0000000-0000-0000-0000-000000000003', 'cases.edit', true),
-  ('a0000000-0000-0000-0000-000000000003', 'cases.delete', true),
-  ('a0000000-0000-0000-0000-000000000003', 'cases.assign', true),
-  ('a0000000-0000-0000-0000-000000000003', 'ressursplan.view', true),
-  ('a0000000-0000-0000-0000-000000000003', 'ressursplan.schedule', true),
-  ('a0000000-0000-0000-0000-000000000003', 'ressursplan.edit_others', true),
-  ('a0000000-0000-0000-0000-000000000003', 'technicians.manage', true),
-  ('a0000000-0000-0000-0000-000000000003', 'admin.manage_users', true),
-  ('a0000000-0000-0000-0000-000000000003', 'admin.manage_roles', true),
-  ('a0000000-0000-0000-0000-000000000003', 'admin.manage_settings', true),
-  ('a0000000-0000-0000-0000-000000000003', 'integrations.manage', true),
-  ('a0000000-0000-0000-0000-000000000003', 'postkontor.admin', true);
+    INSERT INTO public.tenant_role_permissions (role_id, permission_key, allowed) VALUES
+      ('a0000000-0000-0000-0000-000000000001', 'module.dashboard', true),
+      ('a0000000-0000-0000-0000-000000000001', 'module.ressursplanlegger', true),
+      ('a0000000-0000-0000-0000-000000000001', 'ressursplan.view', true),
+      ('a0000000-0000-0000-0000-000000000001', 'cases.view', true),
+      ('a0000000-0000-0000-0000-000000000002', 'module.dashboard', true),
+      ('a0000000-0000-0000-0000-000000000002', 'module.postkontoret', true),
+      ('a0000000-0000-0000-0000-000000000002', 'module.ressursplanlegger', true),
+      ('a0000000-0000-0000-0000-000000000002', 'module.integrations', true),
+      ('a0000000-0000-0000-0000-000000000002', 'module.users', true),
+      ('a0000000-0000-0000-0000-000000000002', 'module.modules', true),
+      ('a0000000-0000-0000-0000-000000000002', 'module.access_control', true),
+      ('a0000000-0000-0000-0000-000000000002', 'cases.view', true),
+      ('a0000000-0000-0000-0000-000000000002', 'cases.create', true),
+      ('a0000000-0000-0000-0000-000000000002', 'cases.edit', true),
+      ('a0000000-0000-0000-0000-000000000002', 'cases.delete', true),
+      ('a0000000-0000-0000-0000-000000000002', 'ressursplan.view', true),
+      ('a0000000-0000-0000-0000-000000000002', 'ressursplan.schedule', true),
+      ('a0000000-0000-0000-0000-000000000002', 'ressursplan.edit_others', true),
+      ('a0000000-0000-0000-0000-000000000002', 'technicians.manage', true),
+      ('a0000000-0000-0000-0000-000000000002', 'admin.manage_users', true),
+      ('a0000000-0000-0000-0000-000000000002', 'admin.manage_roles', true),
+      ('a0000000-0000-0000-0000-000000000002', 'admin.manage_settings', true),
+      ('a0000000-0000-0000-0000-000000000002', 'integrations.manage', true),
+      ('a0000000-0000-0000-0000-000000000003', 'module.dashboard', true),
+      ('a0000000-0000-0000-0000-000000000003', 'module.postkontoret', true),
+      ('a0000000-0000-0000-0000-000000000003', 'module.ressursplanlegger', true),
+      ('a0000000-0000-0000-0000-000000000003', 'module.integrations', true),
+      ('a0000000-0000-0000-0000-000000000003', 'module.users', true),
+      ('a0000000-0000-0000-0000-000000000003', 'module.modules', true),
+      ('a0000000-0000-0000-0000-000000000003', 'module.access_control', true),
+      ('a0000000-0000-0000-0000-000000000003', 'cases.view', true),
+      ('a0000000-0000-0000-0000-000000000003', 'cases.create', true),
+      ('a0000000-0000-0000-0000-000000000003', 'cases.edit', true),
+      ('a0000000-0000-0000-0000-000000000003', 'cases.delete', true),
+      ('a0000000-0000-0000-0000-000000000003', 'cases.assign', true),
+      ('a0000000-0000-0000-0000-000000000003', 'ressursplan.view', true),
+      ('a0000000-0000-0000-0000-000000000003', 'ressursplan.schedule', true),
+      ('a0000000-0000-0000-0000-000000000003', 'ressursplan.edit_others', true),
+      ('a0000000-0000-0000-0000-000000000003', 'technicians.manage', true),
+      ('a0000000-0000-0000-0000-000000000003', 'admin.manage_users', true),
+      ('a0000000-0000-0000-0000-000000000003', 'admin.manage_roles', true),
+      ('a0000000-0000-0000-0000-000000000003', 'admin.manage_settings', true),
+      ('a0000000-0000-0000-0000-000000000003', 'integrations.manage', true),
+      ('a0000000-0000-0000-0000-000000000003', 'postkontor.admin', true)
+    ON CONFLICT DO NOTHING;
+  END IF;
+END $$;
