@@ -51,13 +51,15 @@ export default function DashDriftSection({ jobsThisWeek, visitsNext14, companyMa
 
   return (
     <div className="rounded-xl border border-border overflow-hidden bg-card [box-shadow:var(--shadow-card)]">
+
       {hasJobs && (
         <>
-          <div className="px-5 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
+          <div className="px-5 py-2.5 border-b border-border bg-muted/30 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Wrench className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-semibold">Jobber denne uken</span>
-              <span className="text-xs text-muted-foreground">{jobsThisWeek.length}</span>
+              <Wrench className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">
+                {jobsThisWeek.length} {jobsThisWeek.length === 1 ? "jobb" : "jobber"} denne uken
+              </span>
             </div>
             <button
               className="text-xs text-primary hover:underline"
@@ -95,13 +97,14 @@ export default function DashDriftSection({ jobsThisWeek, visitsNext14, companyMa
       {hasVisits && (
         <>
           <div className={cn(
-            "px-5 py-3 border-b border-border bg-muted/30 flex items-center justify-between",
+            "px-5 py-2.5 border-b border-border bg-muted/30 flex items-center justify-between",
             hasJobs && "border-t"
           )}>
             <div className="flex items-center gap-2">
-              <CalendarCheck className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-semibold">Servicebesøk neste 14 dager</span>
-              <span className="text-xs text-muted-foreground">{visitsNext14.length}</span>
+              <CalendarCheck className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">
+                {visitsNext14.length} {visitsNext14.length === 1 ? "servicebesøk" : "servicebesøk"} neste 14 dager
+              </span>
             </div>
             <button
               className="text-xs text-primary hover:underline"

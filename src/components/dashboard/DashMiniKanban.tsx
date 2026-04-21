@@ -49,11 +49,11 @@ export default function DashMiniKanban({ dealsByStage, wonDeals, companyMap }: P
   return (
     <div className="rounded-xl border border-border bg-card [box-shadow:var(--shadow-card)] p-5">
       <div className="flex items-center justify-between mb-4">
-        <div>
-          <span className="text-sm font-semibold">Salgspipeline</span>
-          <span className="text-muted-foreground text-sm ml-2">
-            {totalDeals} aktive deals
-            {totalValue > 0 && <span className="ml-1">· {formatCurrency(totalValue)}</span>}
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold">Pipeline</span>
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {totalDeals} {totalDeals === 1 ? "deal" : "deals"}
+            {totalValue > 0 && <span> · {formatCurrency(totalValue)}</span>}
           </span>
         </div>
         <div className="flex items-center gap-4">

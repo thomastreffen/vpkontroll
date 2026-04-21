@@ -61,7 +61,7 @@ export default function OnboardingChecklist() {
   const totalCount = items.length;
   const percent = Math.round((doneCount / totalCount) * 100);
 
-  if (doneCount === totalCount) return null;
+  if (doneCount >= totalCount - 1) return null;
 
   return (
     <Card className="p-4">

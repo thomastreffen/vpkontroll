@@ -36,9 +36,13 @@ export default function DashActionItems({ items }: Props) {
 
   return (
     <div className="rounded-xl border border-border overflow-hidden bg-card [box-shadow:var(--shadow-card)]">
-      <div className="px-5 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
-        <span className="text-sm font-semibold">Krever handling</span>
-        <span className="text-xs text-muted-foreground">{items.length} oppgaver</span>
+      <div className="px-5 py-2.5 border-b border-border bg-muted/30 flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">{items.length} {items.length === 1 ? "oppgave" : "oppgaver"}</span>
+        {items.filter(i => i.severity === "critical").length > 0 && (
+          <span className="text-[11px] font-medium text-red-600 dark:text-red-400">
+            {items.filter(i => i.severity === "critical").length} kritisk
+          </span>
+        )}
       </div>
       <div className="divide-y divide-border">
         {items.map((item, i) => (
