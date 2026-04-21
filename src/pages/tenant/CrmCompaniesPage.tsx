@@ -1,16 +1,10 @@
 import { useState, useCallback, useEffect } from "react";
-import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
-import { Plus, Search, Building2, Phone, Mail, Loader2, FileUp, ChevronRight } from "lucide-react";
+import { Search, Plus, Building2, Phone, Mail, Loader2, FileUp, ChevronRight } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CUSTOMER_TYPE_LABELS, CUSTOMER_TYPE_COLORS } from "@/lib/domain-labels";
@@ -39,21 +33,13 @@ function countByCompany(rows: { company_id: string }[]): Record<string, number> 
 }
 
 export default function CrmCompaniesPage() {
-  const { tenantId, user } = useAuth();
+  const { tenantId } = useAuth();
   const { canDo } = useCanDo();
   const navigate = useNavigate();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editCompany, setEditCompany] = useState<Company | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  const [form, setForm] = useState({
-    name: "", org_number: "", industry: "varmepumpe", customer_type: "private",
-    website: "", phone: "", email: "", address: "", city: "", postal_code: "", notes: "",
-  });
 
   const fetchData = useCallback(async () => {
     if (!tenantId) return;
@@ -79,58 +65,6 @@ export default function CrmCompaniesPage() {
   }, [tenantId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const openNew = () => {
-    setEditCompany(null);
-    setForm({ name: "", org_number: "", industry: "varmepumpe", customer_type: "private", website: "", phone: "", email: "", address: "", city: "", postal_code: "", notes: "" });
-    setDialogOpen(true);
-  };
-
-  const openEdit = (c: Company, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditCompany(c);
-    setForm({
-      name: c.name, org_number: c.org_number || "", industry: c.industry || "",
-      customer_type: c.customer_type || "private",
-      website: c.website || "", phone: c.phone || "", email: c.email || "",
-      address: c.address || "", city: c.city || "", postal_code: c.postal_code || "", notes: c.notes || "",
-    });
-    setDialogOpen(true);
-  };
-
-  const save = async () => {
-    if (!tenantId || !form.name.trim()) return;
-    setSaving(true);
-    try {
-      const payload = {
-        tenant_id: tenantId, name: form.name.trim(),
-        org_number: form.org_number || null, industry: form.industry || null,
-        customer_type: form.customer_type as any,
-        website: form.website || null, phone: form.phone || null,
-        email: form.email || null, address: form.address || null,
-        city: form.city || null, postal_code: form.postal_code || null,
-        notes: form.notes || null,
-      };
-      if (editCompany) {
-        await supabase.from("crm_companies").update(payload as any).eq("id", editCompany.id);
-        toast.success("Kunde oppdatert");
-      } else {
-        const { data: created } = await supabase.from("crm_companies").insert({ ...payload, created_by: user?.id } as any).select("id").single();
-        toast.success("Kunde opprettet", {
-          action: created ? { label: "Åpne kunde", onClick: () => navigate(`/tenant/crm/companies/${created.id}`) } : undefined,
-        });
-      }
-      setDialogOpen(false);
-      fetchData();
-    } catch (err: any) {
-      const msg = err?.message || "";
-      if (msg.includes("row-level security") || msg.includes("policy")) {
-        toast.error("Du har ikke tilgang til å utføre denne handlingen.");
-      } else {
-        toast.error("Kunne ikke lagre");
-      }
-    } finally { setSaving(false); }
-  };
 
   const filtered = companies.filter((c) => {
     if (typeFilter !== "all" && c.customer_type !== typeFilter) return false;
@@ -158,7 +92,7 @@ export default function CrmCompaniesPage() {
             <Button variant="outline" onClick={() => navigate("/tenant/crm/customers/import")} className="gap-2 h-9">
               <FileUp className="h-4 w-4" /> Importer
             </Button>
-            <Button onClick={openNew} className="gap-2 h-9">
+            <Button onClick={() => navigate("/tenant/crm/companies/new")} className="gap-2 h-9">
               <Plus className="h-4 w-4" /> Ny kunde
             </Button>
           </div>
@@ -210,7 +144,7 @@ export default function CrmCompaniesPage() {
             title="Ingen kunder ennå"
             description="Start med å legge til din første kunde. Kunden er utgangspunktet for kontaktpersoner, anlegg, deals og jobber."
             actionLabel={canDo("companies.create") ? "Ny kunde" : undefined}
-            onAction={canDo("companies.create") ? openNew : undefined}
+            onAction={canDo("companies.create") ? () => navigate("/tenant/crm/companies/new") : undefined}
             hint="Kunde → Kontaktperson → Anleggssted → Anlegg → Deal → Jobb"
           />
         )
@@ -282,88 +216,21 @@ export default function CrmCompaniesPage() {
                 )}
               </div>
 
-              <ChevronRight className="h-4 w-4 text-muted-foreground ml-3 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+              <div className="flex items-center gap-2 ml-3 shrink-0">
+                {canDo("companies.edit") && (
+                  <button
+                    className="hidden group-hover:flex items-center h-7 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+                    onClick={(e) => { e.stopPropagation(); navigate(`/tenant/crm/companies/${c.id}/edit`); }}
+                  >
+                    Rediger
+                  </button>
+                )}
+                <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
             </div>
           ))}
         </div>
       )}
-
-      {/* Opprett/rediger-sheet */}
-      <Sheet open={dialogOpen} onOpenChange={setDialogOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{editCompany ? "Rediger kunde" : "Ny kunde"}</SheetTitle>
-          </SheetHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Navn *</Label>
-                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Kundetype</Label>
-                <Select value={form.customer_type} onValueChange={(v) => setForm({ ...form, customer_type: v })}>
-                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(CUSTOMER_TYPE_LABELS).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Org.nummer</Label>
-                <Input value={form.org_number} onChange={(e) => setForm({ ...form, org_number: e.target.value })} placeholder="999 999 999" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>E-post</Label>
-                <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Telefon</Label>
-                <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Nettside</Label>
-              <Input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://" />
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label>Adresse</Label>
-                <AddressAutocomplete
-                  value={form.address}
-                  onChange={v => setForm({ ...form, address: v })}
-                  onSelect={r => setForm(f => ({ ...f, address: r.address, postal_code: r.postalCode, city: r.city }))}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Postnr</Label>
-                <Input value={form.postal_code} onChange={(e) => setForm({ ...form, postal_code: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>By</Label>
-                <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Notater</Label>
-              <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} />
-            </div>
-          </div>
-          <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Avbryt</Button>
-            <Button onClick={save} disabled={saving || !form.name.trim()}>
-              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {editCompany ? "Lagre" : "Opprett"}
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }

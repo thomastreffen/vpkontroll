@@ -29,7 +29,6 @@ import { SiteFormDialog } from "@/components/crud/SiteFormDialog";
 import { AssetFormDialog } from "@/components/crud/AssetFormDialog";
 import { AgreementFormDialog } from "@/components/crud/AgreementFormDialog";
 import { WarrantyFormDialog } from "@/components/crud/WarrantyFormDialog";
-import { CompanyEditDialog } from "@/components/crud/CompanyEditDialog";
 import { useCanDo } from "@/hooks/useCanDo";
 import { format } from "date-fns";
 import { nb } from "date-fns/locale";
@@ -61,7 +60,6 @@ export default function CompanyDetailPage() {
   const [assetDialog, setAssetDialog] = useState<{ open: boolean; asset?: any }>({ open: false });
   const [agreementDialog, setAgreementDialog] = useState<{ open: boolean; agreement?: any }>({ open: false });
   const [warrantyDialog, setWarrantyDialog] = useState(false);
-  const [editCompanyOpen, setEditCompanyOpen] = useState(false);
 
   if (company.isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -125,7 +123,7 @@ export default function CompanyDetailPage() {
           </div>
         </div>
         {canDo("companies.edit") && (
-          <Button variant="outline" size="sm" onClick={() => setEditCompanyOpen(true)} className="gap-1.5 shrink-0">
+          <Button variant="outline" size="sm" onClick={() => navigate(`/tenant/crm/companies/${id}/edit`)} className="gap-1.5 shrink-0">
             <Pencil className="h-3.5 w-3.5" /> Rediger
           </Button>
         )}
@@ -450,12 +448,6 @@ export default function CompanyDetailPage() {
         onOpenChange={setWarrantyDialog}
         companyId={id!}
         assets={assets.data?.map(a => ({ id: a.id, manufacturer: a.manufacturer, model: a.model })) || []}
-      />
-      <CompanyEditDialog
-        open={editCompanyOpen}
-        onOpenChange={setEditCompanyOpen}
-        company={c}
-        onSaved={() => company.refetch()}
       />
     </div>
   );

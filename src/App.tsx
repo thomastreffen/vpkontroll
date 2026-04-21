@@ -31,6 +31,7 @@ import RessursplanleggerPage from "@/pages/tenant/RessursplanleggerPage";
 import TenantAccessControlPage from "@/pages/tenant/AccessControlPage";
 import CrmContactsPage from "@/pages/tenant/CrmContactsPage";
 import CrmCompaniesPage from "@/pages/tenant/CrmCompaniesPage";
+import CompanyFormPage from "@/pages/tenant/CompanyFormPage";
 import CrmDealsPage from "@/pages/tenant/CrmDealsPage";
 import CompanyDetailPage from "@/pages/tenant/CompanyDetailPage";
 import AssetDetailPage from "@/pages/tenant/AssetDetailPage";
@@ -142,6 +143,8 @@ function AppRoutes() {
       <Route path="/tenant/crm/assets" element={<TenantRoute module="crm" permission="module.crm"><AssetsListPage /></TenantRoute>} />
       <Route path="/tenant/crm/agreements" element={<TenantRoute module="crm" permission="module.crm"><AgreementsListPage /></TenantRoute>} />
       <Route path="/tenant/crm/warranties" element={<TenantRoute module="crm" permission="module.crm"><WarrantyListPage /></TenantRoute>} />
+      <Route path="/tenant/crm/companies/new" element={<TenantRoute module="crm" permission="module.crm"><CompanyFormPage /></TenantRoute>} />
+      <Route path="/tenant/crm/companies/:id/edit" element={<TenantRoute module="crm" permission="module.crm"><CompanyFormPage /></TenantRoute>} />
       <Route path="/tenant/crm/companies/:id" element={<TenantRoute module="crm" permission="module.crm"><CompanyDetailPage /></TenantRoute>} />
       <Route path="/tenant/crm/assets/:id" element={<TenantRoute module="crm" permission="module.crm"><AssetDetailPage /></TenantRoute>} />
       <Route path="/tenant/crm/jobs/:id" element={<TenantRoute module="crm" permission="module.crm"><JobDetailPage /></TenantRoute>} />
