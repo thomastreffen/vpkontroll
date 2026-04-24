@@ -52,7 +52,7 @@ export default function DashMiniKanban({ dealsByStage, wonDeals, companyMap }: P
         <div className="flex items-center gap-3">
           <span className="text-sm font-semibold">Pipeline</span>
           <span className="text-xs text-muted-foreground tabular-nums">
-            {totalDeals} {totalDeals === 1 ? "deal" : "deals"}
+            {totalDeals} {totalDeals === 1 ? "salg" : "salg"}
             {totalValue > 0 && <span> · {formatCurrency(totalValue)}</span>}
           </span>
         </div>

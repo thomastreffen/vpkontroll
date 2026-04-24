@@ -251,8 +251,8 @@ export default function DealDetailPage() {
     setLinkSaving(true);
     const { error } = await supabase.from("crm_deals").update({ [field]: value } as any).eq("id", deal.id);
     setLinkSaving(false);
-    if (error) { toast.error("Kunne ikke koble til deal"); return; }
-    toast.success("Tilknyttet deal");
+    if (error) { toast.error("Kunne ikke koble til salg"); return; }
+    toast.success("Tilknyttet salg");
     fetchDeal();
   };
 
@@ -354,7 +354,7 @@ export default function DealDetailPage() {
         created_by: user?.id,
       } as any);
     }
-    toast.success("Deal oppdatert");
+    toast.success("Salg oppdatert");
     setEditOpen(false);
     fetchDeal();
   };
@@ -392,7 +392,7 @@ export default function DealDetailPage() {
     // Log activity
     await supabase.from("crm_activities").insert({
       tenant_id: tenantId, deal_id: deal.id, company_id: deal.company_id,
-      type: "task", subject: `Jobb ${data.job_number} opprettet fra deal`, created_by: user?.id,
+      type: "task", subject: `Jobb ${data.job_number} opprettet fra salg`, created_by: user?.id,
     } as any);
     toast.success(`Jobb ${data.job_number} opprettet`, {
       action: { label: "Gå til jobb", onClick: () => navigate(`/tenant/crm/jobs/${data.id}`) },
@@ -443,7 +443,7 @@ export default function DealDetailPage() {
 
   const createAgreement = async () => {
     if (!deal || !tenantId || !agreementForm.start_date) return;
-    if (!deal.company_id) { toast.error("Deal mangler kunde – kan ikke opprette avtale"); return; }
+    if (!deal.company_id) { toast.error("Salg mangler kunde – kan ikke opprette avtale"); return; }
     setCreatingAgreement(true);
     const { data, error } = await supabase.from("service_agreements").insert({
       tenant_id: tenantId,
@@ -477,7 +477,7 @@ export default function DealDetailPage() {
 
   /* ─── Render ────────────────────────────────────────────────── */
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
-  if (!deal) return <div className="text-center py-20 text-muted-foreground">Deal ikke funnet</div>;
+  if (!deal) return <div className="text-center py-20 text-muted-foreground">Salg ikke funnet</div>;
 
   const stageColor = DEAL_STAGE_COLORS[deal.stage as DealStage] || "";
   const stageNext = STAGE_NEXT[deal.stage as DealStage];
@@ -606,7 +606,7 @@ export default function DealDetailPage() {
           )}
           {isLost && canDo("deals.edit") && (
             <Button variant="outline" size="sm" onClick={() => changeStage("lead")} className="gap-1.5">
-              Gjenåpne deal
+              Gjenåpne salg
             </Button>
           )}
           {isWon && !linkedJob && canDo("jobs.create") && (
@@ -970,7 +970,7 @@ export default function DealDetailPage() {
       {/* ── Edit deal sheet ─────────────────────────────────────── */}
       <Sheet open={editOpen} onOpenChange={setEditOpen}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader><SheetTitle>Rediger deal</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>Rediger salg</SheetTitle></SheetHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-1.5">
               <Label>Tittel *</Label>
@@ -1063,11 +1063,11 @@ export default function DealDetailPage() {
       {/* ── Create job sheet ────────────────────────────────────── */}
       <Sheet open={jobSheetOpen} onOpenChange={setJobSheetOpen}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader><SheetTitle>Opprett jobb fra deal</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>Opprett jobb fra salg</SheetTitle></SheetHeader>
           <div className="space-y-4 py-4">
             {/* Transfer summary */}
             <Card className="p-4 bg-muted/30">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Følgende overføres til jobben</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Overføres fra salget til jobben</p>
               <div className="space-y-2 text-sm">
                 {company && (
                   <div className="flex items-center gap-2">
@@ -1106,7 +1106,7 @@ export default function DealDetailPage() {
                 )}
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-muted-foreground">Deal:</span>
+                  <span className="text-muted-foreground">Salg:</span>
                   <span className="font-medium">{deal.title}</span>
                 </div>
               </div>
@@ -1192,7 +1192,7 @@ export default function DealDetailPage() {
           <SheetHeader><SheetTitle>Opprett serviceavtale</SheetTitle></SheetHeader>
           <div className="space-y-4 py-4">
             <Card className="p-4 bg-muted/30">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Overføres fra deal</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Overføres fra salg</p>
               <div className="space-y-2 text-sm">
                 {company && (
                   <div className="flex items-center gap-2">

@@ -4,19 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  Plus, TrendingUp, Loader2, DollarSign, Calendar, User, Building2,
-  GripVertical, List, LayoutGrid,
+  Plus, TrendingUp, Loader2, Building2, List, LayoutGrid, Pencil,
 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useCanDo } from "@/hooks/useCanDo";
@@ -36,26 +28,13 @@ type Deal = {
   company_name?: string; contact_name?: string;
 };
 
-type Company = { id: string; name: string };
-type Contact = { id: string; first_name: string; last_name: string | null; company_id: string | null };
-
 export default function CrmDealsPage() {
   const navigate = useNavigate();
-  const { tenantId, user } = useAuth();
+  const { tenantId } = useAuth();
   const { canDo } = useCanDo();
   const [deals, setDeals] = useState<Deal[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"pipeline" | "list">("pipeline");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editDeal, setEditDeal] = useState<Deal | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  const [form, setForm] = useState({
-    title: "", stage: "lead" as DealStage, value: "", company_id: "", contact_id: "",
-    expected_close_date: "", description: "",
-  });
 
   const fetchAll = useCallback(async () => {
     if (!tenantId) return;
@@ -72,75 +51,16 @@ export default function CrmDealsPage() {
       company_name: companyMap.get(x.company_id) || null,
       contact_name: contactMap.get(x.contact_id) || null,
     })));
-    setCompanies((co || []) as Company[]);
-    setContacts((ct || []) as Contact[]);
     setLoading(false);
   }, [tenantId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  // Realtime
   useEffect(() => {
     if (!tenantId) return;
     const ch = supabase.channel("deals-rt").on("postgres_changes", { event: "*", schema: "public", table: "crm_deals" }, () => fetchAll()).subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [fetchAll, tenantId]);
-
-  const openNew = (stage?: DealStage) => {
-    setEditDeal(null);
-    setForm({ title: "", stage: stage || "lead", value: "", company_id: "", contact_id: "", expected_close_date: "", description: "" });
-    setDialogOpen(true);
-  };
-
-  const openEdit = (d: Deal) => {
-    setEditDeal(d);
-    setForm({
-      title: d.title, stage: d.stage, value: d.value?.toString() || "",
-      company_id: d.company_id || "", contact_id: d.contact_id || "",
-      expected_close_date: d.expected_close_date || "", description: d.description || "",
-    });
-    setDialogOpen(true);
-  };
-
-  const save = async () => {
-    if (!tenantId || !form.title.trim()) return;
-    setSaving(true);
-    try {
-      const payload = {
-        tenant_id: tenantId, title: form.title.trim(), stage: form.stage,
-        value: form.value ? parseFloat(form.value) : null,
-        company_id: form.company_id || null, contact_id: form.contact_id || null,
-        expected_close_date: form.expected_close_date || null,
-        description: form.description || null,
-        closed_at: (form.stage === "won" || form.stage === "lost") ? new Date().toISOString() : null,
-      };
-      if (editDeal) {
-        await supabase.from("crm_deals").update(payload as any).eq("id", editDeal.id);
-        toast.success("Deal oppdatert");
-      } else {
-        await supabase.from("crm_deals").insert({ ...payload, created_by: user?.id, owner_user_id: user?.id } as any);
-        toast.success("Deal opprettet");
-      }
-      setDialogOpen(false);
-      fetchAll();
-    } catch (err: any) {
-      const msg = err?.message || "";
-      if (msg.includes("row-level security") || msg.includes("policy")) {
-        toast.error("Du har ikke tilgang til å utføre denne handlingen.");
-      } else {
-        toast.error("Kunne ikke lagre");
-      }
-    }
-    finally { setSaving(false); }
-  };
-
-  const moveStage = async (dealId: string, newStage: DealStage) => {
-    await supabase.from("crm_deals").update({
-      stage: newStage,
-      closed_at: (newStage === "won" || newStage === "lost") ? new Date().toISOString() : null,
-    } as any).eq("id", dealId);
-    fetchAll();
-  };
 
   const stageDeals = (stage: DealStage) => deals.filter((d) => d.stage === stage);
   const stageTotal = (stage: DealStage) => stageDeals(stage).reduce((sum, d) => sum + (d.value || 0), 0);
@@ -158,9 +78,9 @@ export default function CrmDealsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Deals</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Salg</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {deals.length} deals · Pipeline: {formatCurrency(totalPipelineValue)} · Vunnet: {formatCurrency(wonValue)}
+            {deals.length} salg · Pipeline: {formatCurrency(totalPipelineValue)} · Vunnet: {formatCurrency(wonValue)}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -173,8 +93,8 @@ export default function CrmDealsPage() {
             </Button>
           </div>
           {canDo("deals.create") && (
-            <Button onClick={() => openNew()} className="gap-2">
-              <Plus className="h-4 w-4" /> Ny deal
+            <Button onClick={() => navigate("/tenant/crm/deals/new")} className="gap-2">
+              <Plus className="h-4 w-4" /> Nytt salg
             </Button>
           )}
         </div>
@@ -183,11 +103,11 @@ export default function CrmDealsPage() {
       {deals.length === 0 ? (
         <EmptyState
           icon={TrendingUp}
-          title="Ingen deals ennå"
-          description="Deals representerer salgsmuligheter. Opprett en deal fra en kundeside eller legg til en ny her for å starte salgsprosessen."
-          actionLabel={canDo("deals.create") ? "Ny deal" : undefined}
-          onAction={canDo("deals.create") ? () => openNew() : undefined}
-          hint="Kunde → Deal → Tilbud → Jobb"
+          title="Ingen salg ennå"
+          description="Salg representerer salgsmuligheter. Opprett et salg fra en kundeside eller legg til ett her for å starte salgsprosessen."
+          actionLabel={canDo("deals.create") ? "Nytt salg" : undefined}
+          onAction={canDo("deals.create") ? () => navigate("/tenant/crm/deals/new") : undefined}
+          hint="Kunde → Salg → Tilbud → Jobb"
         />
       ) : view === "pipeline" ? (
         <div className="flex gap-3 overflow-x-auto pb-4">
@@ -206,8 +126,20 @@ export default function CrmDealsPage() {
                 </div>
                 <div className="space-y-2 min-h-[100px] bg-muted/30 rounded-lg p-2">
                   {ds.map((d) => (
-                    <Card key={d.id} className="p-3 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/tenant/crm/deals/${d.id}`)}>
-                      <p className="text-sm font-medium truncate">{d.title}</p>
+                    <Card key={d.id} className="p-3 cursor-pointer hover:shadow-md transition-shadow group relative" onClick={() => navigate(`/tenant/crm/deals/${d.id}`)}>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-medium truncate flex-1">{d.title}</p>
+                        {canDo("deals.edit") && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100 shrink-0 text-muted-foreground hover:text-foreground -mt-0.5 -mr-0.5"
+                            onClick={e => { e.stopPropagation(); navigate(`/tenant/crm/deals/${d.id}/edit`); }}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
                       {d.company_name && (
                         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                           <Building2 className="h-3 w-3" /> {d.company_name}
@@ -224,7 +156,7 @@ export default function CrmDealsPage() {
                     </Card>
                   ))}
                   {canDo("deals.create") && (
-                    <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground gap-1" onClick={() => openNew(stage)}>
+                    <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground gap-1" onClick={() => navigate(`/tenant/crm/deals/new`)}>
                       <Plus className="h-3 w-3" /> Legg til
                     </Button>
                   )}
@@ -239,11 +171,12 @@ export default function CrmDealsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/30">
-                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Deal</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Salg</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground hidden md:table-cell">Kunde</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Fase</th>
                   <th className="text-right py-3 px-4 font-medium text-muted-foreground">Verdi</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground hidden lg:table-cell">Forventet</th>
+                  {canDo("deals.edit") && <th className="w-0" />}
                 </tr>
               </thead>
               <tbody>
@@ -263,6 +196,18 @@ export default function CrmDealsPage() {
                     <td className="py-3 px-4 hidden lg:table-cell text-muted-foreground text-xs">
                       {d.expected_close_date ? format(new Date(d.expected_close_date), "d. MMM yyyy", { locale: nb }) : "–"}
                     </td>
+                    {canDo("deals.edit") && (
+                      <td onClick={e => e.stopPropagation()}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                          onClick={() => navigate(`/tenant/crm/deals/${d.id}/edit`)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -283,7 +228,7 @@ export default function CrmDealsPage() {
               </div>
               <div className="space-y-2">
                 {stageDeals("won").map((d) => (
-                   <div key={d.id} className="flex items-center justify-between p-2 rounded bg-muted/30 cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/tenant/crm/deals/${d.id}`)}>
+                  <div key={d.id} className="flex items-center justify-between p-2 rounded bg-muted/30 cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/tenant/crm/deals/${d.id}`)}>
                     <span className="text-sm">{d.title}</span>
                     <span className="text-sm font-medium text-[hsl(var(--crm-won))]">{formatCurrency(d.value)}</span>
                   </div>
@@ -309,77 +254,6 @@ export default function CrmDealsPage() {
           )}
         </div>
       )}
-
-      {/* Deal Sheet */}
-      <Sheet open={dialogOpen} onOpenChange={setDialogOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{editDeal ? "Rediger deal" : "Ny deal"}</SheetTitle>
-          </SheetHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-1.5">
-              <Label>Tittel *</Label>
-              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="F.eks. Daikin Altherma installasjon" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Fase</Label>
-                <Select value={form.stage} onValueChange={(v) => setForm({ ...form, stage: v as DealStage })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {DEAL_STAGE_ORDER.map((s) => (
-                      <SelectItem key={s} value={s}>{DEAL_STAGE_LABELS[s]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Verdi (NOK)</Label>
-                <Input type="number" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} placeholder="150000" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Kunde</Label>
-                <Select value={form.company_id} onValueChange={(v) => setForm({ ...form, company_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Velg kunde" /></SelectTrigger>
-                  <SelectContent>
-                    {companies.map((co) => (
-                      <SelectItem key={co.id} value={co.id}>{co.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Kontakt</Label>
-                <Select value={form.contact_id} onValueChange={(v) => setForm({ ...form, contact_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Velg kontakt" /></SelectTrigger>
-                  <SelectContent>
-                    {contacts.map((ct) => (
-                      <SelectItem key={ct.id} value={ct.id}>{ct.first_name} {ct.last_name || ""}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Forventet lukkedato</Label>
-              <Input type="date" value={form.expected_close_date} onChange={(e) => setForm({ ...form, expected_close_date: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Beskrivelse</Label>
-              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} placeholder="Detaljer om dealen..." />
-            </div>
-          </div>
-          <SheetFooter className="flex flex-row justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Avbryt</Button>
-            <Button onClick={save} disabled={saving || !form.title.trim()}>
-              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {editDeal ? "Lagre" : "Opprett"}
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }

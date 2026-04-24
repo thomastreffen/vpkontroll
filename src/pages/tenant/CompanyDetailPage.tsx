@@ -78,7 +78,7 @@ export default function CompanyDetailPage() {
     { value: "contacts", icon: Contact, label: "Kontakter", count: contacts.data?.length ?? 0 },
     { value: "sites", icon: MapPin, label: "Anleggssteder", count: sites.data?.length ?? 0 },
     { value: "assets", icon: Thermometer, label: "Anlegg", count: totalAssets },
-    { value: "deals", icon: TrendingUp, label: "Deals", count: deals.data?.length ?? 0 },
+    { value: "deals", icon: TrendingUp, label: "Salg", count: deals.data?.length ?? 0 },
     { value: "jobs", icon: Wrench, label: "Jobber", count: jobs.data?.length ?? 0 },
     { value: "agreements", icon: ShieldCheck, label: "Avtaler", count: agreements.data?.length ?? 0 },
     { value: "warranty", icon: ShieldCheck, label: "Garanti", count: warrantyCases.data?.length ?? 0 },
@@ -145,7 +145,7 @@ export default function CompanyDetailPage() {
             <TrendingUp className="h-4 w-4 text-orange-500" />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Åpne deals</p>
+            <p className="text-xs text-muted-foreground">Åpne salg</p>
             <p className="font-semibold text-sm">{openDeals}</p>
           </div>
         </div>
@@ -192,8 +192,8 @@ export default function CompanyDetailPage() {
           </Button>
         )}
         {canDo("deals.create") && (
-          <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={() => navigate(`/tenant/crm/deals?company_id=${id}`)}>
-            <TrendingUp className="h-3.5 w-3.5" /> Ny deal
+          <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={() => navigate(`/tenant/crm/deals/new?company_id=${id}`)}>
+            <TrendingUp className="h-3.5 w-3.5" /> Nytt salg
           </Button>
         )}
         {canDo("jobs.create") && (
@@ -308,7 +308,7 @@ export default function CompanyDetailPage() {
             </TabsContent>
 
             <TabsContent value="deals" className="mt-4">
-              {!deals.data?.length ? <EmptyTabState text="Ingen deals" /> : (
+              {!deals.data?.length ? <EmptyTabState text="Ingen salg" /> : (
                 <div className="rounded-xl border border-border overflow-hidden bg-card">
                   {deals.data.map(d => (
                     <Link key={d.id} to={`/tenant/crm/deals/${d.id}`}>

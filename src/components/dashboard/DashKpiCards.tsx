@@ -15,7 +15,7 @@ interface Props {
 
 const kpiConfig = [
   { key: "openCases", label: "Åpne saker", sub: "i Postkontoret", icon: Mail, color: "text-[hsl(var(--crm-lead))]", bg: "bg-[hsl(var(--crm-lead))]/10", link: "/tenant/postkontoret", urgentAt: 5 },
-  { key: "dealsNeedAction", label: "Aktive deals", sub: "i pipeline", icon: TrendingUp, color: "text-[hsl(var(--crm-qualified))]", bg: "bg-[hsl(var(--crm-qualified))]/10", link: "/tenant/crm/deals", urgentAt: 0 },
+  { key: "dealsNeedAction", label: "Aktive salg", sub: "i pipeline", icon: TrendingUp, color: "text-[hsl(var(--crm-qualified))]", bg: "bg-[hsl(var(--crm-qualified))]/10", link: "/tenant/crm/deals", urgentAt: 0 },
   { key: "jobsThisWeek", label: "Jobber", sub: "denne uken", icon: Wrench, color: "text-[hsl(var(--crm-visit))]", bg: "bg-[hsl(var(--crm-visit))]/10", link: "/tenant/crm/jobs", urgentAt: 0 },
   { key: "visitsNext14", label: "Servicebesøk", sub: "neste 14 dager", icon: CalendarCheck, color: "text-[hsl(var(--crm-quote))]", bg: "bg-[hsl(var(--crm-quote))]/10", link: "/tenant/crm/agreements", urgentAt: 0 },
   { key: "overdueAgreements", label: "Forfalt", sub: "krever oppfølging", icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10", link: "/tenant/crm/agreements", urgentAt: 1 },

@@ -37,7 +37,7 @@ const navSections: { label: string; items: NavItem[] }[] = [
     items: [
       { label: "Kontaktpersoner", href: "/tenant/crm/contacts", icon: Contact, module: "crm", permission: "module.crm" },
       { label: "Kunder", href: "/tenant/crm/companies", icon: Building2, module: "crm", permission: "module.crm" },
-      { label: "Deals", href: "/tenant/crm/deals", icon: TrendingUp, module: "crm", permission: "module.crm" },
+      { label: "Salg", href: "/tenant/crm/deals", icon: TrendingUp, module: "crm", permission: "module.crm" },
       { label: "Jobber", href: "/tenant/crm/jobs", icon: Briefcase, module: "crm", permission: "module.crm" },
       { label: "Anlegg", href: "/tenant/crm/assets", icon: Cpu, module: "crm", permission: "module.crm" },
       { label: "Serviceavtaler", href: "/tenant/crm/agreements", icon: FileText, module: "crm", permission: "module.crm" },
@@ -151,7 +151,7 @@ function TopBar({ user, signOut, onMenuClick, isMobile }: { user: any; signOut: 
         )}
         <div className="relative hidden sm:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Søk kontakter, deals..." className="pl-9 h-9 w-64 bg-muted/50 border-0 focus-visible:ring-1" />
+          <Input placeholder="Søk kontakter, salg..." className="pl-9 h-9 w-64 bg-muted/50 border-0 focus-visible:ring-1" />
         </div>
       </div>
       <div className="flex items-center gap-2">

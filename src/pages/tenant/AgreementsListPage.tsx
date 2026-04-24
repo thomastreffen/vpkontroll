@@ -119,7 +119,7 @@ export default function AgreementsListPage() {
             </div>
             <h3 className="text-lg font-semibold tracking-tight mb-1">Ingen serviceavtaler ennå</h3>
             <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-              Serviceavtaler opprettes fra en kundeside, anleggsside eller fra en vunnet deal, og styrer automatisk generering av servicebesøk og jobber.
+              Serviceavtaler opprettes fra en kundeside, anleggsside eller fra et vunnet salg, og styrer automatisk generering av servicebesøk og jobber.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-md">
               <button onClick={() => navigate("/tenant/crm/companies")} className="flex flex-col items-center gap-2 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors text-center">
@@ -128,14 +128,14 @@ export default function AgreementsListPage() {
               </button>
               <button onClick={() => navigate("/tenant/crm/deals")} className="flex flex-col items-center gap-2 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors text-center">
                 <TrendingUp className="h-5 w-5 text-primary" />
-                <span className="text-xs font-medium">Gå til deals</span>
+                <span className="text-xs font-medium">Gå til salg</span>
               </button>
               <button onClick={() => navigate("/tenant/crm/assets")} className="flex flex-col items-center gap-2 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors text-center">
                 <MapPin className="h-5 w-5 text-primary" />
                 <span className="text-xs font-medium">Gå til anlegg</span>
               </button>
             </div>
-            <p className="text-xs text-muted-foreground/70 mt-4 italic">Vanlig flyt: Kunde → Anleggssted → Deal → Serviceavtale</p>
+            <p className="text-xs text-muted-foreground/70 mt-4 italic">Vanlig flyt: Kunde → Anleggssted → Salg → Serviceavtale</p>
           </div>
         )
       ) : (
