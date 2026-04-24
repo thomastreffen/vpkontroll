@@ -23,3 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Supabase CLI temp files
+supabase/.temp/
