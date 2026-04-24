@@ -7,11 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, FileText, Loader2, AlertTriangle, Clock, CheckCircle2, ScrollText, Building2, MapPin, TrendingUp, Plus, ClipboardCheck } from "lucide-react";
+import { Search, Loader2, AlertTriangle, Clock, CheckCircle2, ScrollText, Building2, MapPin, TrendingUp, Plus, ClipboardCheck, Pencil } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AGREEMENT_STATUS_LABELS, AGREEMENT_STATUS_COLORS, AGREEMENT_INTERVAL_LABELS, formatDate } from "@/lib/domain-labels";
 import { formatCurrency } from "@/lib/crm-labels";
-import AgreementCreateSheet from "@/components/crud/AgreementCreateSheet";
 import { useCanDo } from "@/hooks/useCanDo";
 
 type DueFilter = "all" | "overdue" | "due_soon" | "ok";
@@ -33,7 +32,6 @@ export default function AgreementsListPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dueFilter, setDueFilter] = useState<DueFilter>("all");
-  const [createOpen, setCreateOpen] = useState(false);
 
   const fetch = useCallback(async () => {
     if (!tenantId) return;
@@ -80,8 +78,8 @@ export default function AgreementsListPage() {
           </p>
         </div>
         {canDo("agreements.create") && (
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" /> Ny serviceavtale
+          <Button onClick={() => navigate("/tenant/crm/agreements/new")} className="gap-2 shrink-0">
+            <Plus className="h-4 w-4" /> Ny serviceavtale
           </Button>
         )}
       </div>
@@ -153,6 +151,7 @@ export default function AgreementsListPage() {
                 <TableHead className="hidden md:table-cell">Anlegg</TableHead>
                 <TableHead className="hidden lg:table-cell">Mal</TableHead>
                 <TableHead className="hidden lg:table-cell">Årspris</TableHead>
+                {canDo("agreements.edit") && <TableHead className="w-0" />}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -191,6 +190,18 @@ export default function AgreementsListPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-sm hidden lg:table-cell">{a.annual_price ? formatCurrency(a.annual_price) : "–"}</TableCell>
+                    {canDo("agreements.edit") && (
+                      <TableCell onClick={e => e.stopPropagation()}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                          onClick={() => navigate(`/tenant/crm/agreements/${a.id}/edit`)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })}
@@ -199,7 +210,6 @@ export default function AgreementsListPage() {
         </div>
       )}
 
-      <AgreementCreateSheet open={createOpen} onOpenChange={setCreateOpen} onCreated={fetch} />
     </div>
   );
 }
