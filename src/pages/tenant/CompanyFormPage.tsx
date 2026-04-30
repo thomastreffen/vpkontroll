@@ -305,18 +305,18 @@ export default function CompanyFormPage() {
             <div className="space-y-2 text-xs text-muted-foreground leading-relaxed">
               {isEdit ? (
                 <>
-                  <p>Endringer lagres umiddelbart og vises overalt der kunden er referert — jobber, deals, serviceavtaler og kontakter.</p>
+                  <p>Endringer lagres umiddelbart og vises overalt der kunden er referert — jobber, salg, serviceavtaler og kontakter.</p>
                   <p>Adressefeltet bruker Kartverket — søk på gateadresse for automatisk utfylling av postnr og by.</p>
                 </>
               ) : (
                 <>
-                  <p>Kunden er utgangspunktet i VPKontroll. Etter opprettelse kan du legge til kontaktpersoner, anleggssteder, anlegg, deals og jobber.</p>
+                  <p>Kunden er utgangspunktet i VPKontroll. Etter opprettelse kan du legge til kontaktpersoner, anleggssteder, anlegg, salg og jobber.</p>
                   <p className="font-medium text-foreground/70">Typisk oppsett:</p>
                   <ol className="space-y-1 list-decimal list-inside">
                     <li>Opprett kunde ← du er her</li>
                     <li>Legg til kontaktperson</li>
                     <li>Registrer anleggssted og varmepumpe</li>
-                    <li>Knytt til deal eller jobb</li>
+                    <li>Knytt til salg eller jobb</li>
                   </ol>
                 </>
               )}

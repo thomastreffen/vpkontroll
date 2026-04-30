@@ -77,7 +77,7 @@ export default function ContactDetailPage() {
       <Tabs defaultValue="overview">
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="overview" className="gap-1.5"><Building2 className="h-3.5 w-3.5" />Oversikt</TabsTrigger>
-          <TabsTrigger value="deals" className="gap-1.5"><TrendingUp className="h-3.5 w-3.5" />Deals ({deals.data?.length ?? 0})</TabsTrigger>
+          <TabsTrigger value="deals" className="gap-1.5"><TrendingUp className="h-3.5 w-3.5" />Salg ({deals.data?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="jobs" className="gap-1.5"><Wrench className="h-3.5 w-3.5" />Jobber ({jobs.data?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="activity" className="gap-1.5"><ClipboardList className="h-3.5 w-3.5" />Aktivitet ({activities.data?.length ?? 0})</TabsTrigger>
         </TabsList>
@@ -120,7 +120,7 @@ export default function ContactDetailPage() {
         </TabsContent>
 
         <TabsContent value="deals" className="mt-4">
-          {!deals.data?.length ? <Empty text="Ingen deals" /> : (
+          {!deals.data?.length ? <Empty text="Ingen salg" /> : (
             <div className="grid gap-3">
               {deals.data.map(d => (
                 <Link key={d.id} to={`/tenant/crm/deals/${d.id}`}>

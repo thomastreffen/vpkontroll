@@ -14,7 +14,7 @@ type TenantModule = Tables<"tenant_modules">;
 const moduleInfo: Record<string, { label: string; description: string; icon: typeof Mail; tier: string; deps?: string[] }> = {
   crm: {
     label: "CRM",
-    description: "Kontakter, bedrifter, deals, pipeline og salgsoppfølging",
+    description: "Kontakter, bedrifter, salg, pipeline og salgsoppfølging",
     icon: TrendingUp,
     tier: "Kjerne",
   },

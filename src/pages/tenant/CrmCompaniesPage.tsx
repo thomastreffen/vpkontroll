@@ -142,10 +142,10 @@ export default function CrmCompaniesPage() {
           <EmptyState
             icon={Building2}
             title="Ingen kunder ennå"
-            description="Start med å legge til din første kunde. Kunden er utgangspunktet for kontaktpersoner, anlegg, deals og jobber."
+            description="Start med å legge til din første kunde. Kunden er utgangspunktet for kontaktpersoner, anlegg, salg og jobber."
             actionLabel={canDo("companies.create") ? "Ny kunde" : undefined}
             onAction={canDo("companies.create") ? () => navigate("/tenant/crm/companies/new") : undefined}
-            hint="Kunde → Kontaktperson → Anleggssted → Anlegg → Deal → Jobb"
+            hint="Kunde → Kontaktperson → Anleggssted → Anlegg → Salg → Jobb"
           />
         )
       ) : (
@@ -205,7 +205,7 @@ export default function CrmCompaniesPage() {
                 {c.open_deals > 0 && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-orange-50 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400">
                     <span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" />
-                    {c.open_deals} deal{c.open_deals !== 1 ? "s" : ""}
+                    {c.open_deals} salg
                   </span>
                 )}
                 {c.active_jobs > 0 && (
