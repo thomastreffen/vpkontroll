@@ -521,7 +521,7 @@ function ActivityLogSidebar({ companyId, tenantId, userId }: { companyId: string
         setTableReady(false);
       }
     } else {
-      setActivities((data || []) as Activity[]);
+      setActivities((data || []) as unknown as Activity[]);
     }
     setLoading(false);
   }, [companyId, tenantId]);
