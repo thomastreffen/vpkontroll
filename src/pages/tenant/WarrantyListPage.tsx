@@ -2,16 +2,19 @@ import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useCanDo } from "@/hooks/useCanDo";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, ShieldAlert, Loader2 } from "lucide-react";
+import { Search, ShieldAlert, Loader2, Plus } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { WARRANTY_STATUS_LABELS, WARRANTY_STATUS_COLORS, formatDate } from "@/lib/domain-labels";
 
 export default function WarrantyListPage() {
   const { tenantId } = useAuth();
+  const { canDo } = useCanDo();
   const navigate = useNavigate();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,9 +46,16 @@ export default function WarrantyListPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Garantisaker</h1>
-        <p className="text-sm text-muted-foreground mt-1">{items.length} saker totalt</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Garantisaker</h1>
+          <p className="text-sm text-muted-foreground mt-1">{items.length} saker totalt</p>
+        </div>
+        {canDo("warranties.create") && (
+          <Button onClick={() => navigate("/tenant/crm/warranties/new")} className="gap-2 shrink-0">
+            <Plus className="h-4 w-4" />Ny garantisak
+          </Button>
+        )}
       </div>
       <div className="flex flex-wrap gap-3">
         <div className="relative max-w-sm flex-1 min-w-[200px]">
